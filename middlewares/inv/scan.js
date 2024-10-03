@@ -1,15 +1,10 @@
 const Inventory = require("../../schemas/inventory");
-const parseDataMatrix = require("../../services/parseDataMatrix");
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 
 const scan = async (req, res, next) => {
-  const { mode, dataMatrix, inputDate, source } = req.body;
-  const { gtin, lot, exp, sn } = parseDataMatrix(dataMatrix);
-  if (!gtin | !lot | !exp | !sn) {
-    return res.sendStatus(500);
-  }
+  const { mode, gtin, lot, exp, sn, inputDate, source } = req.body;
   const _inputDate = dayjs(inputDate);
   const _exp = dayjs(exp, "YYMMDD");
   const now = dayjs();
