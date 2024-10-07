@@ -2,7 +2,7 @@ const Alternative = require("../schemas/alternative");
 const createDrug = require("../services/createDrug");
 
 module.exports = async (ndcDir, package_id) => {
-  const { active_ingredients } = ndcDir;
+  const { active_ingredients, brand_name_base } = ndcDir;
   const strength = [];
   active_ingredients.forEach((v) => {
     strength.push(v.strength);
@@ -11,6 +11,7 @@ module.exports = async (ndcDir, package_id) => {
   const _result = await Alternative.findOne({
     unii: { $all: unii, $size: unii.length },
     rxcui: { $all: rxcui, $size: rxcui.length },
+    brand_name_base,
     strength: { $all: strength, $size: strength.length },
   }).catch((e) => {
     console.log(e);
@@ -34,6 +35,7 @@ module.exports = async (ndcDir, package_id) => {
   const result = await Alternative.create({
     unii,
     rxcui,
+    brand_name_base,
     strength,
     alternatives: package_id ? [package_id] : [],
   }).catch((e) => {

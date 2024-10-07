@@ -7,7 +7,7 @@ const {
 const drugSchema = new Schema({
   unii: { type: [String], required: true },
   rxcui: { type: [String], required: true },
-  brand_name_base: { type: String, required: true },
+  generic_name: { type: String, required: true },
   dea_schedule: {
     type: String,
     required: true,

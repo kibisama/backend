@@ -7,6 +7,7 @@ const {
 const alternativeSchema = new Schema({
   unii: { type: [String], required: true },
   rxcui: { type: [String], required: true },
+  brand_name_base: { type: String, required: true },
   strength: { type: [{ type: String, uppercase: true }], required: true },
   alternatives: {
     type: [ObjectId],

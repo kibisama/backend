@@ -1,7 +1,7 @@
 const Drug = require("../schemas/drug");
 
 module.exports = async (ndcDir, alternative_id) => {
-  const { brand_name_base, dea_schedule } = ndcDir;
+  const { generic_name, dea_schedule } = ndcDir;
   const { unii, rxcui } = ndcDir.openfda;
   const results = await Drug.find({
     unii: { $all: unii },
@@ -46,7 +46,7 @@ module.exports = async (ndcDir, alternative_id) => {
     return await Drug.create({
       unii,
       rxcui,
-      brand_name_base,
+      generic_name,
       dea_schedule: dea_schedule ?? "0",
       families: alternative_id ? [alternative_id] : [],
     }).catch((e) => {
