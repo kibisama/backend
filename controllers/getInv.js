@@ -4,7 +4,7 @@ const Package = require("../schemas/package");
 const Item = require("../schemas/item");
 const dayjs = require("dayjs");
 
-const search = async (req, res, next) => {
+const getInv = async (req, res, next) => {
   if (Object.keys(req.body).length === 0) {
     const startOfToday = dayjs().startOf("d");
     const endOfToday = dayjs().endOf("d");
@@ -57,4 +57,4 @@ const search = async (req, res, next) => {
   }
 };
 
-module.exports = search;
+module.exports = getInv;
