@@ -9,32 +9,34 @@ module.exports = async (ndcDir, alternative_id) => {
   const arr = [];
   if (results.length > 0) {
     for (let i = 0; i < results.length; i++) {
-      if (v.unii.length !== unii.length) {
+      if (results[i].unii.length !== unii.length) {
         continue;
       }
-      if (v.rxcui.length === rxcui.length) {
-        if (v.rxcui.every((w) => rxcui.includes(w))) {
-          arr.push(v);
+      if (results[i].rxcui.length === rxcui.length) {
+        if (results[i].rxcui.every((v) => rxcui.includes(v))) {
+          arr.push(results[i]);
           break;
         }
         continue;
-      } else if (v.rxcui.length < rxcui.length) {
-        if (v.rxcui.every((w) => rxcui.includes(w))) {
+      } else if (results[i].rxcui.length < rxcui.length) {
+        if (results[i].rxcui.every((v) => rxcui.includes(v))) {
           const result = await Drug.findOneAndUpdate(
-            { ...v },
+            { ...results[i] },
             { $set: { rxcui } },
             { new: true }
           ).catch((e) => {
             console.log(e);
-            arr.push(new Error(`Failed to update Drug document ${v._id}`));
+            arr.push(
+              new Error(`Failed to update Drug document ${results[i]._id}`)
+            );
           });
           arr.push(result);
           break;
         }
         continue;
       } else {
-        if (rxcui.every((w) => v.rxcui.includes(w))) {
-          arr.push(v);
+        if (rxcui.every((v) => results[i].rxcui.includes(v))) {
+          arr.push(results[i]);
           break;
         }
       }
