@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const scan = require("../middlewares/inv/scan");
+const scan = require("../controller/scan");
 const search = require("../middlewares/inv/search");
 
 router.get("/", search);

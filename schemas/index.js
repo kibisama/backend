@@ -9,11 +9,7 @@ const connect = () => {
       dbName: "elcamino",
     })
     .catch((e) => {
-      if (e) {
-        console.log("몽고디비 연결 에러", e);
-      } else {
-        console.log("몽고디비 연결 성공");
-      }
+      console.log("몽고디비 연결 에러", e);
     });
 };
 
