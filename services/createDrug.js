@@ -54,7 +54,7 @@ module.exports = async (ndcDir, alternative_id) => {
   if (alternative_id) {
     return await Drug.findOneAndUpdate(
       {
-        id_: arr[0]._id,
+        _id: arr[0]._id,
       },
       { $addToSet: { families: alternative_id } },
       { new: true }

@@ -14,12 +14,11 @@ const getInv = async (req, res, next) => {
     ).populate([
       {
         path: "families",
-        select: ["name -_id", "brand_name_base", "strength", "optimalQty"],
+        select: ["brand_name_base", "strength", "optimalQty"],
         populate: [
           {
             path: "alternatives",
             select: [
-              "name -_id",
               "ndc",
               "ndc11",
               "dosage_form",
