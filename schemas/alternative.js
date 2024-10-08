@@ -14,6 +14,7 @@ const alternativeSchema = new Schema({
     ref: "Package",
   },
   optimalQty: Number,
+  unit: String,
 });
 
 module.exports = mongoose.model("Alternative", alternativeSchema);

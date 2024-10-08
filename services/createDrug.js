@@ -4,14 +4,11 @@ module.exports = async (ndcDir, alternative_id) => {
   const { generic_name, dea_schedule } = ndcDir;
   const { unii, rxcui } = ndcDir.openfda;
   const results = await Drug.find({
-    unii: { $all: unii },
+    unii: { $all: unii, $size: unii.length },
   });
   const arr = [];
   if (results.length > 0) {
     for (let i = 0; i < results.length; i++) {
-      if (results[i].unii.length !== unii.length) {
-        continue;
-      }
       if (results[i].rxcui.length === rxcui.length) {
         if (results[i].rxcui.every((v) => rxcui.includes(v))) {
           arr.push(results[i]);
@@ -21,7 +18,7 @@ module.exports = async (ndcDir, alternative_id) => {
       } else if (results[i].rxcui.length < rxcui.length) {
         if (results[i].rxcui.every((v) => rxcui.includes(v))) {
           const result = await Drug.findOneAndUpdate(
-            { ...results[i] },
+            { _id: results[i]._id },
             { $set: { rxcui } },
             { new: true }
           ).catch((e) => {
@@ -57,7 +54,7 @@ module.exports = async (ndcDir, alternative_id) => {
   if (alternative_id) {
     return await Drug.findOneAndUpdate(
       {
-        ...arr[0],
+        id_: arr[0]._id,
       },
       { $addToSet: { families: alternative_id } },
       { new: true }

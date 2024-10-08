@@ -23,6 +23,7 @@ const packageSchema = new Schema({
     uppercase: true,
   },
   size: [Number],
+  optimalQty: [Number],
   unit: [{ type: String, uppercase: true }],
   preferred: { type: Boolean, default: false },
   inventories: {

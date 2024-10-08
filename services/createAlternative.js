@@ -21,7 +21,7 @@ module.exports = async (ndcDir, package_id) => {
     if (package_id) {
       return await Alternative.findOneAndUpdate(
         {
-          ..._result,
+          id_: _result._id,
         },
         { $addToSet: { alternatives: package_id } },
         { new: true }
