@@ -7,7 +7,7 @@ const {
 const packageSchema = new Schema({
   unii: [String],
   ingredients: [{ type: String, uppercase: true }],
-  brand_name: String,
+  name: { type: String, uppercase: true },
   rxcui: [String],
   nui: [String],
   ndc: {

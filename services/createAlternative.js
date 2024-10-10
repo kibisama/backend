@@ -4,20 +4,32 @@ const createDrug = require("../services/createDrug");
 
 module.exports = async (ndcDir, package_id) => {
   const { active_ingredients, brand_name, brand_name_base } = ndcDir;
-  const name = brand_name_base ?? brand_name;
   const strength = [];
+  let str = "";
   if (active_ingredients instanceof Array) {
     active_ingredients.forEach((v) => {
       strength.push(v.strength);
     });
+    strength.forEach((v, i, a) => {
+      let text = v;
+      const match = v.match(/(\D+)/);
+      if (match && match[0] === a[i + 1]?.match(/(\D+)/)[0]) {
+        text = v.substring(0, v.length - match[0].length - 1);
+      }
+      if (i === strength.length - 1 && v.endsWith("/1")) {
+        str += text.substring(0, v.length - 2);
+      } else {
+        str += text + "-";
+      }
+    });
   }
+  const name = `${(brand_name_base ?? brand_name) + str ? " " + str : ""}`;
   const { rxcui } = ndcDir.openfda;
   if (!rxcui) {
     return new Error("RxCUI is missing in the NDC Directory document");
   }
   const results = await Alternative.find({
-    name,
-    strength: { $all: strength, $size: strength.length },
+    rxcui: { $in: rxcui },
   }).catch((e) => {
     console.log(e);
     return e;

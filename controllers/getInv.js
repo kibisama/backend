@@ -8,10 +8,7 @@ const getInv = async (req, res, next) => {
   if (Object.keys(req.body).length === 0) {
     const startOfToday = dayjs().startOf("d");
     const endOfToday = dayjs().endOf("d");
-    const drugs = await Drug.find(
-      {},
-      { _id: 0, generic_name: 1, dea_schedule: 1 }
-    )
+    const drugs = await Drug.find({}, { generic_name: 1, dea_schedule: 1 })
       .populate([
         {
           path: "families",
@@ -28,6 +25,7 @@ const getInv = async (req, res, next) => {
                 "unit",
                 "preferred",
               ],
+              // options: { sort: { name: 1 } },
               populate: [
                 {
                   path: "inventories",
@@ -39,7 +37,6 @@ const getInv = async (req, res, next) => {
                   },
                   select: [
                     "name -_id",
-                    "gtin",
                     "lot",
                     "sn",
                     "exp",

@@ -49,7 +49,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
   for (let i = 0; i < ndcDir.packaging.length; i++) {
     const target = ndcDir.packaging[i].description;
     const match = target.match(regEx);
-    if (match && target === match[0]) {
+    if (match) {
       ndc = match[0];
       description = target;
       break;
@@ -57,9 +57,16 @@ module.exports = async (ndcDir, item_id, arg, type) => {
   }
   const [size, unit] = convertDescriptionToSizeAndUnit(description);
   const ndc11 = convertNdcToNdc11(ndc);
+  let name = "";
+  if (manufacturer_name) {
+    name = `${
+      manufacturer_name[0].match(/([^\,s]+)/)?.[0] + " " ?? ""
+    }[${ndc11}] ${dosage_form}`;
+  }
   const package = await Package.create({
     unii,
     ingredients,
+    name,
     rxcui,
     nui,
     ndc,
