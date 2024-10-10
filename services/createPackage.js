@@ -57,12 +57,8 @@ module.exports = async (ndcDir, item_id, arg, type) => {
   }
   const [size, unit] = convertDescriptionToSizeAndUnit(description);
   const ndc11 = convertNdcToNdc11(ndc);
-  let name = "";
-  if (manufacturer_name) {
-    name = `${
-      manufacturer_name[0].match(/([^\,s]+)/)?.[0] + " " ?? ""
-    }[${ndc11}] ${dosage_form}`;
-  }
+  const match = manufacturer_name[0].match(/([^\s,]+)/);
+  let name = `${match ? match[0] + " " : ""}[${ndc11}] ${dosage_form}`;
   const package = await Package.create({
     unii,
     ingredients,
