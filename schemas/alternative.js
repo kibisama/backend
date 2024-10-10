@@ -5,10 +5,9 @@ const {
 } = Schema;
 
 const alternativeSchema = new Schema({
-  unii: { type: [String], required: true },
-  rxcui: { type: [String], required: true },
-  brand_name_base: { type: String, required: true, uppercase: true },
-  strength: { type: [{ type: String, uppercase: true }], required: true },
+  rxcui: [String],
+  name: { type: String, uppercase: true },
+  strength: [{ type: String, uppercase: true }],
   alternatives: {
     type: [ObjectId],
     ref: "Package",

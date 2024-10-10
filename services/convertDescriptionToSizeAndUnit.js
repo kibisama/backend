@@ -1,7 +1,14 @@
+/**
+ * @param {string} desc
+ * @returns {[[Number],[String]]}
+ */
 module.exports = (desc) => {
   const gMatch = desc.match(
     /([\d\.]+)(\s)(\D+)(\s)(in)(\s)([\d\.]+)(\s)(\D+)(\s)/g
   );
+  if (!gMatch) {
+    return [[0], ["unknown"]];
+  }
   const match = gMatch.map((v) =>
     v.match(/([\d\.]+)(\s)(\D+)(\s)(in)(\s)([\d\.]+)(\s)(\D+)(\s)/)
   );

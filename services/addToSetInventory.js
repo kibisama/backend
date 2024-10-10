@@ -6,6 +6,9 @@ module.exports = async (_id, ndc) => {
     const { gtin } = await Item.findById(_id).catch((e) => {
       console.log(e);
     });
+    if (gtin) {
+      return new Error("Cannot find Item Document");
+    }
     const _ndc = [
       gtin.slice(3, 7),
       gtin[7],

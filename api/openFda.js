@@ -5,8 +5,8 @@ client.defaults.baseURL = "https://api.fda.gov";
 module.exports = {
   ndc: {
     url: "/drug/ndc.json",
-    async searchOneByPackageNdc(ndc) {
-      const query = `${this.url}?search=packaging.package_ndc:${ndc}&limit=1`;
+    async searchOneByPackageDescription(_query) {
+      const query = `${this.url}?search=packaging.description:${_query}&limit=1`;
       try {
         return await client.get(query);
       } catch (e) {

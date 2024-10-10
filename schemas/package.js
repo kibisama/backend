@@ -5,6 +5,11 @@ const {
 } = Schema;
 
 const packageSchema = new Schema({
+  unii: [String],
+  ingredients: [{ type: String, uppercase: true }],
+  brand_name: String,
+  rxcui: [String],
+  nui: [String],
   ndc: {
     type: String,
     unique: true,
@@ -16,24 +21,25 @@ const packageSchema = new Schema({
     minLength: 13,
     maxLength: 13,
   },
-  dosage_form: { type: String, required: true, uppercase: true },
+  dosage_form: { type: String, uppercase: true },
   manufacturer_name: {
     type: String,
     required: true,
     uppercase: true,
   },
   size: [Number],
-  optimalQty: [Number],
   unit: [{ type: String, uppercase: true }],
+  optimalQty: Number,
+  optimalUnit: String,
   preferred: { type: Boolean, default: false },
   inventories: {
     type: [ObjectId],
     ref: "Item",
   },
+  alternative: { type: ObjectId, ref: "Alternative" },
   ndcDir: {
     type: ObjectId,
     ref: "NDC Directory",
-    required: true,
   },
   // add price data here
 });

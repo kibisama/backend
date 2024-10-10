@@ -5,13 +5,9 @@ const {
 } = Schema;
 
 const drugSchema = new Schema({
-  unii: { type: [String], required: true },
-  rxcui: { type: [String], required: true },
+  rxcui: [String],
   generic_name: { type: String, required: true, uppercase: true },
-  dea_schedule: {
-    type: String,
-    required: true,
-  },
+  dea_schedule: String,
   families: {
     type: [ObjectId],
     ref: "Alternative",
