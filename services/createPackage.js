@@ -36,7 +36,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       "Cannot create Package Document. Packaging information is not defined in the NDC Directory document"
     );
   }
-  const { _id, dosage_form } = ndcDir;
+  const { _id, labeler_name, dosage_form } = ndcDir;
   const { unii, rxcui, nui, active_ingredients, manufacturer_name } =
     ndcDir.openfda;
   let ingredients = [];
@@ -57,8 +57,22 @@ module.exports = async (ndcDir, item_id, arg, type) => {
   }
   const [size, unit] = convertDescriptionToSizeAndUnit(description);
   const ndc11 = convertNdcToNdc11(ndc);
-  const match = manufacturer_name[0].match(/([^\s,]+)/);
-  let name = `${match ? match[0] + " " : ""}[${ndc11}] ${dosage_form}`;
+
+  // Default name generation
+  let _manufacturer_name = manufacturer_name
+    ? manufacturer_name[0]
+    : labeler_name;
+  const match = _manufacturer_name.match(/([^\s,]+)/);
+  if (match) {
+    _manufacturer_name = match[0];
+  }
+  const unitIndex = unit.indexOf(dosage_form);
+  let desc = "";
+  if (unitIndex > -1) {
+    desc += size[unitIndex] + " " + unit[unitIndex];
+  }
+  const name = `${ndc11} | ${_manufacturer_name}${desc ? " | " + desc : ""}`;
+
   const package = await Package.create({
     unii,
     ingredients,
@@ -68,7 +82,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
     ndc,
     ndc11,
     dosage_form,
-    manufacturer_name: manufacturer_name?.[0],
+    manufacturer_name: _manufacturer_name,
     size,
     unit,
     ndcDir: _id,

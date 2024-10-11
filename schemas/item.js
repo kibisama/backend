@@ -6,6 +6,7 @@ const itemSchema = new Schema({
   lot: { type: String, required: true, maxLength: 20 },
   sn: { type: String, required: true, maxLength: 20 },
   exp: { type: Date, required: true, minLength: 6, maxLength: 6 },
+  cost: Number,
   dateReceived: Date,
   source: String,
   dateFilled: Date,

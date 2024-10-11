@@ -5,25 +5,35 @@ const createDrug = require("../services/createDrug");
 module.exports = async (ndcDir, package_id) => {
   const { active_ingredients, brand_name, brand_name_base } = ndcDir;
   const strength = [];
+
+  // Default name generation
   let name = brand_name_base ?? brand_name;
   if (active_ingredients instanceof Array) {
     active_ingredients.forEach((v) => {
       strength.push(v.strength);
     });
-    name += " ";
+    if (strength.length > 0) {
+      name += " ";
+    }
     strength.forEach((v, i, a) => {
       let text = v;
       const match = v.match(/(\D+)/);
       if (match && match[0] === a[i + 1]?.match(/(\D+)/)[0]) {
         text = v.substring(0, v.length - match[0].length - 1);
       }
+      if (text.startsWith(".")) {
+        text = "0" + v;
+      }
       if (i === strength.length - 1 && v.endsWith("/1")) {
-        name += text.substring(0, v.length - 2);
-      } else {
+        name += text.substring(0, text.length - 2);
+      } else if (i < a.length - 1) {
         name += text + "-";
+      } else {
+        name += text;
       }
     });
   }
+
   const { rxcui } = ndcDir.openfda;
   if (!rxcui) {
     return new Error("RxCUI is missing in the NDC Directory document");
