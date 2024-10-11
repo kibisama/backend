@@ -12,7 +12,7 @@ const getInv = async (req, res, next) => {
       .populate([
         {
           path: "families",
-          select: ["brand_name_base", "strength", "optimalQty"],
+          select: ["name", "strength", "optimalQty", "unit"],
           populate: [
             {
               path: "alternatives",
@@ -20,10 +20,12 @@ const getInv = async (req, res, next) => {
                 "ndc",
                 "ndc11",
                 "dosage_form",
-                "manufacturer_name",
+                "name",
                 "size",
                 "unit",
                 "preferred",
+                "optimalQty",
+                "optimalUnit",
               ],
               // options: { sort: { name: 1 } },
               populate: [
@@ -40,6 +42,7 @@ const getInv = async (req, res, next) => {
                     "lot",
                     "sn",
                     "exp",
+                    "cost",
                     "dateReceived",
                     "source",
                     "dateFilled",
