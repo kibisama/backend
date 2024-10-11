@@ -40,6 +40,7 @@ module.exports = async (ndcDir, package_id) => {
   }
   const results = await Alternative.find({
     rxcui: { $in: rxcui },
+    strength,
   }).catch((e) => {
     console.log(e);
     return e;
