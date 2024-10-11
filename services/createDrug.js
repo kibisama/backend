@@ -58,6 +58,7 @@ module.exports = async (ndcDir, alternative_id) => {
     return await Drug.create({
       rxcui,
       generic_name,
+      name: generic_name,
       dea_schedule,
       families: alternative_id ? [alternative_id] : [],
     }).catch((e) => {
