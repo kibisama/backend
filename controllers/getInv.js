@@ -3,6 +3,7 @@ const Alternative = require("../schemas/alternative");
 const Package = require("../schemas/package");
 const Item = require("../schemas/item");
 const dayjs = require("dayjs");
+const constructDrugTrees = require("../services/constructDrugTrees");
 
 const getInv = async (req, res, next) => {
   if (Object.keys(req.body).length === 0) {
@@ -13,6 +14,7 @@ const getInv = async (req, res, next) => {
         {
           path: "families",
           select: ["name", "strength", "optimalQty", "unit"],
+          options: { sort: { name: 1 } },
           populate: [
             {
               path: "alternatives",
@@ -27,15 +29,15 @@ const getInv = async (req, res, next) => {
                 "optimalQty",
                 "optimalUnit",
               ],
-              // options: { sort: { name: 1 } },
               populate: [
                 {
                   path: "inventories",
                   match: {
-                    $or: [
-                      { dateFilled: { $gte: startOfToday, $lte: endOfToday } },
-                      { dateFilled: undefined },
-                    ],
+                    dateFilled: undefined,
+                    // $or: [
+                    //   { dateFilled: { $gte: startOfToday, $lte: endOfToday } },
+                    //   { dateFilled: undefined },
+                    // ],
                   },
                   select: [
                     "lot",
@@ -52,8 +54,9 @@ const getInv = async (req, res, next) => {
           ],
         },
       ])
-      .sort({ generic_name: 1 });
-    return res.send(drugs);
+      .sort({ name: 1 });
+    const trees = constructDrugTrees(drugs);
+    return res.send(trees);
   }
 };
 
