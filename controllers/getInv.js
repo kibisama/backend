@@ -33,7 +33,10 @@ const getInv = async (req, res, next) => {
                 {
                   path: "inventories",
                   match: {
-                    dateFilled: undefined,
+                    $and: [
+                      { dateFilled: undefined },
+                      { dateReturned: undefined },
+                    ],
                     // $or: [
                     //   { dateFilled: { $gte: startOfToday, $lte: endOfToday } },
                     //   { dateFilled: undefined },

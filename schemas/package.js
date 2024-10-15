@@ -21,14 +21,14 @@ const packageSchema = new Schema({
     minLength: 13,
     maxLength: 13,
   },
-  dosage_form: { type: String, uppercase: true },
   manufacturer_name: {
     type: String,
-    required: true,
     uppercase: true,
   },
   size: [Number],
+  repSize: Number,
   unit: [{ type: String, uppercase: true }],
+  repUnit: { type: String, uppercase: true },
   optimalQty: Number,
   preferred: { type: Boolean, default: false },
   inventories: {

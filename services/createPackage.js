@@ -36,9 +36,22 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       "Cannot create Package Document. Packaging information is not defined in the NDC Directory document"
     );
   }
-  const { _id, labeler_name, dosage_form } = ndcDir;
-  const { unii, rxcui, nui, active_ingredients, manufacturer_name } =
-    ndcDir.openfda;
+  const {
+    _id,
+    brand_name,
+    brand_name_base,
+    generic_name,
+    labeler_name,
+    active_ingredients,
+    dosage_form,
+  } = ndcDir;
+  const { unii, rxcui, nui, manufacturer_name } = ndcDir.openfda;
+  let brandName = "";
+  if (brand_name && generic_name) {
+    if (brand_name.toUpperCase() !== generic_name.toUpperCase()) {
+      brandName = brand_name;
+    }
+  }
   let ingredients = [];
   if (active_ingredients instanceof Array) {
     active_ingredients.forEach((v) => {
@@ -48,32 +61,64 @@ module.exports = async (ndcDir, item_id, arg, type) => {
   let ndc, description;
   for (let i = 0; i < ndcDir.packaging.length; i++) {
     const target = ndcDir.packaging[i].description;
+    const target2 = ndcDir.packaging[i].package_ndc;
     const match = target.match(regEx);
-    if (match) {
-      ndc = match[0];
+    const match2 = target2.match(regEx);
+    if (match && match2) {
       description = target;
+      ndc = target2;
       break;
+    } else if (match) {
+      const newRegEx = new RegExp(
+        String.raw`(\/\s)(.+\(${regEx.toString()}\).+)`
+      );
+      const newMatch = target.match(newRegEx);
+      if (newMatch) {
+        description = newMatch[2];
+        ndc = match[0];
+        break;
+      }
     }
   }
   const [size, unit] = convertDescriptionToSizeAndUnit(description);
+  let repUnit;
+  let repSize = 1;
+  if (size.length > 1 && unit.length > 1) {
+    if (unit.includes(dosage_form)) {
+      repUnit = dosage_form;
+    } else {
+      repUnit = unit[unit.length - 2];
+    }
+    const unitIndex = unit.indexOf(repUnit);
+    for (let i = 0; i < unitIndex + 2; i++) {
+      if (i % 2) {
+        repSize /= size[i];
+      } else {
+        repSize *= size[i];
+      }
+    }
+  }
   const ndc11 = convertNdcToNdc11(ndc);
 
   // Default name generation
   let _manufacturer_name = manufacturer_name
     ? manufacturer_name[0]
     : labeler_name;
+  let mfrName;
   const match = _manufacturer_name.match(/([^\s,]+)/);
-  if (match) {
-    _manufacturer_name = match[0];
+  if (match && match[0].length > 2) {
+    mfrName = match[0];
   }
-  const unitIndex = unit.indexOf(dosage_form);
   let desc = "";
-  if (unitIndex > -1) {
-    desc += size[unitIndex] + " " + unit[unitIndex];
+  if (repSize && repUnit) {
+    desc += repSize.toString() + " " + repUnit;
   }
-  const name = `${ndc11} | ${_manufacturer_name}${desc ? " | " + desc : ""}`;
+  const name = `${ndc11} | ${mfrName ?? _manufacturer_name}${
+    brandName ? " | " + brandName : ""
+  }${desc ? " | " + desc : ""}`;
 
   const package = await Package.create({
+    brand_name: brand_name_base ?? brand_name,
     unii,
     ingredients,
     name,
@@ -81,10 +126,11 @@ module.exports = async (ndcDir, item_id, arg, type) => {
     nui,
     ndc,
     ndc11,
-    dosage_form,
     manufacturer_name: _manufacturer_name,
     size,
+    repSize,
     unit,
+    repUnit,
     ndcDir: _id,
   }).catch((e) => {
     console.log(e);

@@ -3,11 +3,11 @@ const Alternative = require("../schemas/alternative");
 const createDrug = require("../services/createDrug");
 
 module.exports = async (ndcDir, package_id) => {
-  const { active_ingredients, brand_name, brand_name_base } = ndcDir;
+  const { active_ingredients, generic_name } = ndcDir;
   const strength = [];
 
   // Default name generation
-  let name = brand_name_base ?? brand_name;
+  let name = generic_name;
   if (active_ingredients instanceof Array) {
     active_ingredients.forEach((v) => {
       strength.push(v.strength);

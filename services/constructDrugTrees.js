@@ -17,6 +17,7 @@ module.exports = (data) =>
               hierarchy: 2,
               id: x._id,
               label: x.name,
+              ndc11: x.ndc11,
               // dosage_form: x.dosage_form,
               // size: x.size,
               // unit: x.unit,
