@@ -18,9 +18,7 @@ module.exports = async (req, res, next) => {
       source: "Cardinal",
       dateReceived: { $gte: dateStart, $lte: dateEnd },
     });
-    const expiringItems = items.filter((v) =>
-      dayjs(v.exp).isBefore(v.dateReceived)
-    );
+    const expiringItems = items.filter((v) => dayjs(v.exp).isBefore(shortDate));
     const missingItems = [];
     for (let i = 0; i < invoices.length; i++) {
       for (let j = 0; j < invoices[i].item.length; j++) {
