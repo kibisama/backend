@@ -9,7 +9,7 @@ const createPackage = require("../services/createPackage");
 const addToSetInventory = require("../services/addToSetInventory");
 
 module.exports = async (req, res, next) => {
-  const { mode, gtin, lot, exp, sn, inputDate, source, offLineMode } = req.body;
+  const { mode, gtin, lot, exp, sn, inputDate, source } = req.body;
   const now = dayjs();
   const item = await Item.findOne({ gtin, sn }).catch((e) => {
     console.log(e);
@@ -59,17 +59,10 @@ module.exports = async (req, res, next) => {
     console.log(e);
     next(e);
   });
-  if (offLineMode && !ndcDir) {
-    return res.send({
-      data,
-      error:
-        //
-        "Package nor NDC Directory document is not found, and cannot create due to Offline Mode.",
-      //
-    });
-  } else if (!ndcDir) {
+  if (!ndcDir) {
     ndcDir = await updateLocalNdcDir(gtin, "gtin");
     if (ndcDir instanceof Error) {
+      // todo: scheduleJob to try later
       return res.send({
         data,
         //

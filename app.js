@@ -19,7 +19,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 const invRouter = require("./routes/inv");
+const cardinalRouter = require("./routes/cardinal");
 app.use("/inv", invRouter);
+app.use("/cardinal", cardinalRouter);
 
 app.use((req, res, next) => {
   const error = new Error(`${req.method} ${req.url} 라우터가 없습니다.`);
@@ -31,7 +33,6 @@ app.use((err, req, res, next) => {
   res.locals.message = err.message;
   res.locals.error = process.env.NODE_ENV !== "production" ? err : {};
   res.status(err.status || 500);
-  // res.render('error');
 });
 
 const createServer = async () => {
@@ -40,3 +41,7 @@ const createServer = async () => {
   });
 };
 createServer();
+
+//
+const checkInvoice = require("./services/cardinal/checkInvoice");
+// checkInvoice();

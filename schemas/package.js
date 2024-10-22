@@ -13,7 +13,6 @@ const packageSchema = new Schema({
   ndc: {
     type: String,
     unique: true,
-    required: true,
   },
   ndc11: {
     type: String,

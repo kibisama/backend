@@ -11,7 +11,6 @@ module.exports = {
         return await client.get(query);
       } catch (e) {
         console.log(e);
-        return;
       }
     },
   },
