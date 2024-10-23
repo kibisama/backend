@@ -13,18 +13,18 @@ const cardinalInvoiceSchema = new Schema({
   poNumber: String,
   invoiceType: String,
   item: [String],
+  cin: [String],
   tradeName: [String],
-  origQty: [String],
-  orderQty: [String],
-  shipQty: [String],
+  origQty: [Number],
+  orderQty: [Number],
+  shipQty: [Number],
   omitCode: [String],
-  cost: [String],
+  cost: [Number],
   confirmNumber: [String],
-  totalShipped: String,
-  totalAmount: String,
-
-  checkStatus: String,
-  isCSOSReported: Boolean,
+  totalShipped: Number,
+  totalAmount: Number,
+  checkStatus: { type: String, default: "unchecked" },
+  isCSOSReported: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("Cardinal Invoice", cardinalInvoiceSchema);

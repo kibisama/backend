@@ -16,6 +16,7 @@ module.exports = async (invoiceDetails) => {
       totalAmount,
       cin,
       ndcupc,
+      tradeName,
       origQty,
       orderQty,
       shipQty,
@@ -26,12 +27,12 @@ module.exports = async (invoiceDetails) => {
     } = invoiceDetails;
     const _invoiceDate = dayjs(invoiceDate, "MM/DD/YYYY");
     const _orderDate = dayjs(orderDate, "MM/DD/YYYY");
-    for (let i = 0; i < cin.length; i++) {
-      const result = await CardinalItem.findOne({ cin: cin[i] });
-      if (!result) {
-        await CardinalItem.create({ cin: cin[i], ndcupc: ndcupc[i] });
-      }
-    }
+    // for (let i = 0; i < cin.length; i++) {
+    //   const result = await CardinalItem.findOne({ cin: cin[i] });
+    //   if (!result) {
+    //     await CardinalItem.create({ cin: cin[i], ndcupc: ndcupc[i] });
+    //   }
+    // }
     let invoiceType = "";
     switch (true) {
       case ndcupc.some((v) => v[6] === "-"):
@@ -61,14 +62,16 @@ module.exports = async (invoiceDetails) => {
       poNumber,
       invoiceType,
       item: ndcupc,
-      origQty,
-      orderQty,
-      shipQty,
+      cin,
+      tradeName,
+      origQty: origQty.map((v) => (v ? Number(v) : 0)),
+      orderQty: orderQty.map((v) => (v ? Number(v) : 0)),
+      shipQty: shipQty.map((v) => (v ? Number(v) : 0)),
       omitCode,
-      cost,
+      cost: cost.map((v) => v.replace(/[^0-9.-]+/g, "")),
       confirmNumber,
-      totalShipped,
-      totalAmount,
+      totalShipped: totalShipped ? Number(totalShipped) : 0,
+      totalAmount: totalAmount.replace(/[^0-9.-]+/g, ""),
     });
   } catch (e) {
     console.log(e);
