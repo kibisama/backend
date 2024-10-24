@@ -2,29 +2,26 @@ const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
 const Item = require("../../schemas/item");
 const Package = require("../../schemas/package");
 const dayjs = require("dayjs");
+const mergeDailyInvoices = require("../../services/cardinal/mergeDailyInvoices");
 const inputItemCost = require("../../services/cardinal/inputItemCost");
 
 module.exports = async (req, res, next) => {
-  const date = dayjs(req.params.date, "MM-DD-YYYY");
   console.log(`Checking Cardinal Inventories ...`);
-  const dateStart = dayjs(date).startOf("date");
-  const dateEnd = dayjs(date).endOf("date");
-  const shortDate = date.add(1, "year");
+
   try {
-    const invoices = await CardinalInvoice.find({
-      invoiceDate: { $gte: dateStart, $lte: dateEnd },
-      invoiceType: { $ne: "other" },
-    });
-    let invoiceItems = [];
-    let invoiceCosts = [];
-    let invoiceShipQty = [];
-    let invoiceTradeNames = [];
-    invoices.forEach((v) => {
-      invoiceItems = [...invoiceItems, ...v.item];
-      invoiceCosts = [...invoiceCosts, ...v.cost];
-      invoiceShipQty = [...invoiceShipQty, ...v.shipQty];
-      invoiceTradeNames = [...invoiceTradeNames, ...v.tradeName];
-    });
+    const {
+      invoiceItems,
+      invoiceCosts,
+      invoiceShipQty,
+      invoiceTradeNames,
+      invoiceNumbers,
+    } = await mergeDailyInvoices(req.params.date, true, { needles: true });
+    const date = dayjs(req.params.date, "MM-DD-YYYY");
+    const dateStart = dayjs(date).startOf("date");
+    const dateEnd = dayjs(date).endOf("date");
+
+    // Todo: Make shortDate variable via global option
+    const shortDate = date.add(1, "year");
     const items = await Item.find({
       source: "Cardinal",
       dateReceived: { $gte: dateStart, $lte: dateEnd },
@@ -69,11 +66,16 @@ module.exports = async (req, res, next) => {
         }
       }
     }
-    //
-    // checkStatus: "unchecked" => "pending" or "checked" if no missingItems
-    //
-    // testing
-    await inputItemCost(req.params.date);
+    if (missingItems.length === 0) {
+      for (const invoiceNumber in invoiceNumbers) {
+        await CardinalInvoice.findOneAndUpdate(
+          { invoiceNumber },
+          { $set: { checkStatus: "CHECKED" } }
+        );
+      }
+      await inputItemCost(req.params.date);
+    }
+
     return res.send({ extraItems: items, missingItems, expiringItems });
   } catch (e) {
     console.log(e);

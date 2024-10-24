@@ -15,6 +15,7 @@ const cardinalInvoiceSchema = new Schema({
   item: [String],
   cin: [String],
   tradeName: [String],
+  form: [String],
   origQty: [Number],
   orderQty: [Number],
   shipQty: [Number],
@@ -23,7 +24,7 @@ const cardinalInvoiceSchema = new Schema({
   confirmNumber: [String],
   totalShipped: Number,
   totalAmount: Number,
-  checkStatus: { type: String, default: "unchecked" },
+  checkStatus: { type: String, default: "UNCHECKED" },
   isCSOSReported: { type: Boolean, default: false },
 });
 

@@ -2,7 +2,6 @@ const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
-const CardinalItem = require("../../schemas/cardinal/cardinalItem");
 
 module.exports = async (invoiceDetails) => {
   try {
@@ -17,6 +16,7 @@ module.exports = async (invoiceDetails) => {
       cin,
       ndcupc,
       tradeName,
+      form,
       origQty,
       orderQty,
       shipQty,
@@ -27,16 +27,10 @@ module.exports = async (invoiceDetails) => {
     } = invoiceDetails;
     const _invoiceDate = dayjs(invoiceDate, "MM/DD/YYYY");
     const _orderDate = dayjs(orderDate, "MM/DD/YYYY");
-    // for (let i = 0; i < cin.length; i++) {
-    //   const result = await CardinalItem.findOne({ cin: cin[i] });
-    //   if (!result) {
-    //     await CardinalItem.create({ cin: cin[i], ndcupc: ndcupc[i] });
-    //   }
-    // }
     let invoiceType = "";
     switch (true) {
       case ndcupc.some((v) => v[6] === "-"):
-        invoiceType = "other";
+        invoiceType = "OTHER";
         break;
       case itemClass.includes("C2"):
         invoiceType = "C2";
@@ -44,15 +38,13 @@ module.exports = async (invoiceDetails) => {
       case itemClass.includes("C3") ||
         itemClass.includes("C4") ||
         itemClass.includes("C5"):
-        invoiceType = "scheduled";
+        invoiceType = "SCHEDULED";
         break;
-      //   case itemClass.includes("Rx"):
-      //     invoiceType = "Rx";
-      //     break;
-      //   case itemClass.includes("HBC") || itemClass.includes("OTHER"):
-      //     invoiceType = "other";
+      case itemClass.includes("Rx"):
+        invoiceType = "RX";
+        break;
       default:
-        invoiceType = "rx";
+        invoiceType = "RX";
     }
     await CardinalInvoice.create({
       invoiceNumber,
@@ -64,6 +56,7 @@ module.exports = async (invoiceDetails) => {
       item: ndcupc,
       cin,
       tradeName,
+      form,
       origQty: origQty.map((v) => (v ? Number(v) : 0)),
       orderQty: orderQty.map((v) => (v ? Number(v) : 0)),
       shipQty: shipQty.map((v) => (v ? Number(v) : 0)),

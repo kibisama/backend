@@ -15,7 +15,7 @@ module.exports = async function checkInvoice() {
   }
   try {
     const invoices = await CardinalInvoice.find({
-      invoiceDate: { $gt: yesterday },
+      invoiceDate: { $gt: yesterday, $lt: tomorrow },
     });
     if (invoices.length > 0) {
       scheduleJob(tomorrow.toDate(), checkInvoice);
@@ -30,8 +30,8 @@ module.exports = async function checkInvoice() {
         await createInvoice(invoiceDetails[i]);
       }
     } else {
-      const twoHoursLater = dayjs().add(2, "hour");
-      scheduleJob(twoHoursLater.toDate(), checkInvoice);
+      const oneHourLater = dayjs().add(1, "hour");
+      scheduleJob(oneHourLater.toDate(), checkInvoice);
       return;
     }
     scheduleJob(tomorrow.toDate(), checkInvoice);
