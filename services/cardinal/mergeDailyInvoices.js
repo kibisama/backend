@@ -13,7 +13,10 @@ module.exports = async (_date, rxOnly, exceptions) => {
     let invoiceNumbers = [];
     let invoiceItems = [];
     let invoiceCosts = [];
+    let invoiceOrigQty = [];
+    let inoviceOrderQty = [];
     let invoiceShipQty = [];
+    let invoiceOmitCodes = [];
     let invoiceTradeNames = [];
     let invoiceForms = [];
     invoices.forEach((v, i) => {

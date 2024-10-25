@@ -70,11 +70,11 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       break;
     } else if (match) {
       const newRegEx = new RegExp(
-        String.raw`(\/\s)(.+\(${regEx.toString()}\).+)`
+        String.raw`([^\/\n]+)(\(${regEx.toString()}\)).*`
       );
       const newMatch = target.match(newRegEx);
       if (newMatch) {
-        description = newMatch[2];
+        description = newMatch[0].trim();
         ndc = match[0];
         break;
       }

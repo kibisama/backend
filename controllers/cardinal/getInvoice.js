@@ -15,7 +15,7 @@ module.exports = async (req, res, next) => {
     );
     const { duplicatesWithDifferentPrices } = evalInvoice(date);
     return res.send({
-      invoiceNumber: results.map((v) => v.invoiceNumber),
+      invoiceNumbers: results.map((v) => v.invoiceNumber),
       duplicatesWithDifferentPrices,
     });
   } catch (e) {

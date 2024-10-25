@@ -63,8 +63,8 @@ module.exports = async (invoiceDetails) => {
       omitCode,
       cost: cost.map((v) => v.replace(/[^0-9.-]+/g, "")),
       confirmNumber,
-      totalShipped: totalShipped ? Number(totalShipped) : 0,
-      totalAmount: totalAmount.replace(/[^0-9.-]+/g, ""),
+      totalShipped: Number(totalShipped),
+      totalAmount: Number(totalAmount.replace(/[^0-9.-]+/g, "")),
     });
   } catch (e) {
     console.log(e);

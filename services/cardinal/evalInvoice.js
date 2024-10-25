@@ -11,14 +11,16 @@ const omitCodes = {
   "5B": "NON STOCK",
   6: "TEMP OUT",
 };
-// mergeDailyInvoices.js에 omitCodes도 반환해야함
+// mergeDailyInvoices.js에 omitCodes, invoiceOrigQty, invoiceOrderQty도 반환해야함
 
 module.exports = async (date) => {
   const priceChangedItems = [];
   const duplicatesWithDifferentPrices = [];
+  const differentQtyShipped = [];
   try {
     const { invoiceItems, invoiceCosts, invoiceShipQty, invoiceTradeNames } =
       await mergeDailyInvoices(date);
+
     const duplicates = new Set(
       invoiceItems.filter((v, i) => invoiceItems.indexOf(v) !== i)
     );
@@ -35,6 +37,7 @@ module.exports = async (date) => {
         }
       }
     }
+
     // // Eval 1: Find a previous invoice with the same item and compare their costs
     // //이역시 인보이스를 배열평탄화해야할듯 .... spread문법사용하자
     // for (let i = 0; i < item.length; i++) {
@@ -74,5 +77,4 @@ module.exports = async (date) => {
 };
 
 // 기능 1: checkStatus 에따라 체크안됫음을 확인 => 스케쥴잡으로 자동체크도 추가한다
-// 기능 2: 동일아이템에 다른가격으로 왔을경우 보고 =>이것은 모든 인보이스를 한번에 확인해야하므로 모듈밖에서 짠다
 // 기능 3: 주문수량과 배송수량이 다르면 보고

@@ -22,12 +22,16 @@ module.exports = async function checkInvoice() {
       return;
     }
     const result = await puppet.cardinal.getInvoice({
+      //testing
+      //date: today.format("10/24/2024"),
       date: today.format("MM/DD/YYYY"),
     });
     if (result) {
       const { invoiceDetails } = result.data.results;
-      for (let i = 0; i < invoiceDetails.length; i++) {
-        await createInvoice(invoiceDetails[i]);
+      if (invoiceDetails.length > 0) {
+        for (let i = 0; i < invoiceDetails.length; i++) {
+          await createInvoice(invoiceDetails[i]);
+        }
       }
     } else {
       const oneHourLater = dayjs().add(1, "hour");
