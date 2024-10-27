@@ -52,7 +52,7 @@ module.exports = async (invoiceDetails) => {
     cost.forEach((v) => {
       totalAmount += Number(v.replace(/[^0-9.-]+/g, ""));
     });
-    totalAmount.toLocaleString("en-US", {
+    totalAmount = totalAmount.toLocaleString("en-US", {
       style: "currency",
       currency: "USD",
     });
