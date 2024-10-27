@@ -14,18 +14,23 @@ module.exports = async (req, res, next) => {
       },
       { _id: 0, invoiceNumber: 1 }
     );
-    const {
-      duplicatesWithDifferentPrices,
-      backorderedItems,
-      differentQtyShipped,
-      priceChangedItems,
-    } = await evalInvoice(dateParam);
+    if (results.length > 0) {
+      const {
+        duplicatesWithDifferentPrices,
+        backorderedItems,
+        differentQtyShipped,
+        priceChangedItems,
+      } = await evalInvoice(dateParam);
+      return res.send({
+        invoiceNumbers: results.map((v) => v.invoiceNumber),
+        duplicatesWithDifferentPrices,
+        backorderedItems,
+        differentQtyShipped,
+        priceChangedItems,
+      });
+    }
     return res.send({
-      invoiceNumbers: results.map((v) => v.invoiceNumber),
-      duplicatesWithDifferentPrices,
-      backorderedItems,
-      differentQtyShipped,
-      priceChangedItems,
+      invoiceNumbers: [],
     });
   } catch (e) {
     console.log(e);

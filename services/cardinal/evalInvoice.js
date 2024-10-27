@@ -29,6 +29,8 @@ module.exports = async (date) => {
       inoviceOrderQty,
       invoiceShipQty,
       invoiceOmitCodes,
+      inoviceTotalShipped,
+      invoiceTotalAmount,
     } = await mergeDailyInvoices(date);
     // Eval 1: If the same item has two different prices, push the item into duplicateWithDifferentPrcies
     const duplicates = new Set(
@@ -115,13 +117,15 @@ module.exports = async (date) => {
         }
       }
     }
+    return {
+      duplicatesWithDifferentPrices,
+      backorderedItems,
+      differentQtyShipped,
+      priceChangedItems,
+      inoviceTotalShipped,
+      invoiceTotalAmount,
+    };
   } catch (e) {
     console.log(e);
   }
-  return {
-    duplicatesWithDifferentPrices,
-    backorderedItems,
-    differentQtyShipped,
-    priceChangedItems,
-  };
 };
