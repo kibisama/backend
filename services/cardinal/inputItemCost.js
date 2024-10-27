@@ -1,5 +1,5 @@
-const Package = require("../../schemas/package");
-const Item = require("../../schemas/item");
+const Package = require("../../schemas/inventory/package");
+const Item = require("../../schemas/inventory/item");
 const mergeDailyInvoices = require("./mergeDailyInvoices");
 
 module.exports = async (_date) => {

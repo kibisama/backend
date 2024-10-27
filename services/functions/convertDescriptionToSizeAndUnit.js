@@ -7,7 +7,7 @@ module.exports = (desc) => {
     /([\d\.]+)(\s)(\D+)(\s)(in)(\s)([\d\.]+)(\s)(\D[^\(]+)/g
   );
   if (!gMatch) {
-    return [[0], ["unknown"]];
+    return;
   }
   const match = gMatch.map((v) =>
     v.match(/([\d\.]+)(\s)(\D+)(\s)(in)(\s)([\d\.]+)(\s)(\D[^\(]+)/)

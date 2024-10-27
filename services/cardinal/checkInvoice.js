@@ -5,40 +5,45 @@ const puppet = require("../../api/puppet");
 const createInvoice = require("./createInvoice");
 
 module.exports = async function checkInvoice() {
-  console.log(`Checking Caridnal Invoice ...`);
-  const today = dayjs().set("hour", 7).set("minute", 0).set("second", 0);
-  const tomorrow = today.add(1, "d");
-  const yesterday = today.subtract(1, "d");
-  const dayYesterday = yesterday.day();
-  if (dayYesterday > 4) {
-    scheduleJob(tomorrow.toDate(), checkInvoice);
-  }
+  const now = dayjs();
   try {
+    const dayToday = now.day();
+    const tomorrow = now
+      .add(1, "d")
+      .set("hour", 8)
+      .set("minute", 0)
+      .set("second", 0);
+    if (dayToday === 0) {
+      return scheduleJob(tomorrow.toDate(), checkInvoice);
+    }
+    console.log(
+      `Checking Caridnal Invoice ${now.format("MM/DD/YY HH:mm:ss")}...`
+    );
+    const todayStart = dayjs(now).startOf("date");
+    const todayEnd = dayjs(now).endOf("date");
     const invoices = await CardinalInvoice.find({
-      invoiceDate: { $gt: yesterday, $lt: tomorrow },
+      invoiceDate: { $gte: todayStart, $lte: todayEnd },
     });
     if (invoices.length > 0) {
-      scheduleJob(tomorrow.toDate(), checkInvoice);
-      return;
+      return scheduleJob(tomorrow, checkInvoice);
     }
     const result = await puppet.cardinal.getInvoice({
       //testing
       //date: today.format("10/24/2024"),
-      date: today.format("MM/DD/YYYY"),
+      date: now.format("MM/DD/YYYY"),
     });
     if (result) {
       const { invoiceDetails } = result.data.results;
       if (invoiceDetails.length > 0) {
-        for (let i = 0; i < invoiceDetails.length; i++) {
-          await createInvoice(invoiceDetails[i]);
+        for (const invoiceDetail in invoiceDetails) {
+          await createInvoice(invoiceDetail);
         }
       }
     } else {
-      const oneHourLater = dayjs().add(1, "hour");
-      scheduleJob(oneHourLater.toDate(), checkInvoice);
-      return;
+      const thirtyMinsLater = now.add(30, "minute");
+      return scheduleJob(thirtyMinsLater.toDate(), checkInvoice);
     }
-    scheduleJob(tomorrow.toDate(), checkInvoice);
+    return scheduleJob(tomorrow.toDate(), checkInvoice);
   } catch (e) {
     console.log(e);
   }

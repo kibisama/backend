@@ -39,7 +39,6 @@ const packageSchema = new Schema({
     type: ObjectId,
     ref: "NDC Directory",
   },
-  // add price data here
 });
 
 module.exports = mongoose.model("Package", packageSchema);

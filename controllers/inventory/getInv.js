@@ -3,7 +3,7 @@ const Alternative = require("../schemas/alternative");
 const Package = require("../schemas/package");
 const Item = require("../schemas/item");
 const dayjs = require("dayjs");
-const constructDrugTrees = require("../services/constructDrugTrees");
+const constructDrugTrees = require("../../services/functions/constructDrugTrees");
 
 const getInv = async (req, res, next) => {
   if (Object.keys(req.body).length === 0) {

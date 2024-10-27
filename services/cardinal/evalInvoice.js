@@ -1,3 +1,6 @@
+const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
 const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
 const mergeDailyInvoices = require("./mergeDailyInvoices");
 
@@ -11,16 +14,23 @@ const omitCodes = {
   "5B": "NON STOCK",
   6: "TEMP OUT",
 };
-// mergeDailyInvoices.js에 omitCodes, invoiceOrigQty, invoiceOrderQty도 반환해야함
 
 module.exports = async (date) => {
-  const priceChangedItems = [];
   const duplicatesWithDifferentPrices = [];
+  const backorderedItems = [];
   const differentQtyShipped = [];
+  const priceChangedItems = [];
   try {
-    const { invoiceItems, invoiceCosts, invoiceShipQty, invoiceTradeNames } =
-      await mergeDailyInvoices(date);
-
+    const {
+      invoiceItems,
+      invoiceTradeNames,
+      invoiceCosts,
+      invoiceOrigQty,
+      inoviceOrderQty,
+      invoiceShipQty,
+      invoiceOmitCodes,
+    } = await mergeDailyInvoices(date);
+    // Eval 1: If the same item has two different prices, push the item into duplicateWithDifferentPrcies
     const duplicates = new Set(
       invoiceItems.filter((v, i) => invoiceItems.indexOf(v) !== i)
     );
@@ -33,48 +43,85 @@ module.exports = async (date) => {
           }
         });
         if (!costs.every((v, i, a) => v === a[0])) {
-          duplicatesWithDifferentPrices.push(duplicate);
+          duplicatesWithDifferentPrices.push({
+            item: duplicate,
+            tradeName: invoiceTradeNames[invoiceItems.indexOf(v)],
+            costs,
+          });
         }
       }
     }
-
-    // // Eval 1: Find a previous invoice with the same item and compare their costs
-    // //이역시 인보이스를 배열평탄화해야할듯 .... spread문법사용하자
-    // for (let i = 0; i < item.length; i++) {
-    //   const result = CardinalInvoice.findOne({
-    //     item: item[i],
-    //     invoiceDate: { $lt: invoiceDate },
-    //   });
-    //   let prevCost = Number(result.cost[i].replace(/[^0-9.-]+/g, ""));
-    //   if (result) {
-    //     const indices = [];
-    //     result.item.forEach((v, i) => {
-    //       if (v === item[i]) {
-    //         indices.push(i);
-    //       }
-    //     });
-    //     if (indices.length > 1) {
-    //       const costs = [];
-    //       indices.forEach((v) => {
-    //         costs.push(Number(result.cost[v].replace(/[^0-9.-]+/g, "")));
-    //       });
-    //       prevCost = Math.max(...costs);
-    //     }
-    //     if (result.cost[i] !== cost[i]) {
-    //       priceChangedItems.push({
-    //         item: item[i],
-    //         costNow: Number(cost[i].replace(/[^0-9.-]+/g, "")),
-    //         prevCost: prevCost,
-    //         prevInvoiceDate: result.invoiceDate,
-    //       });
-    //     }
-    //   }
-    // }
+    // Eval 2: If OrigQty exists, push the item into backorderedItems
+    invoiceOrigQty.forEach((v, i) => {
+      if (v > 0) {
+        backorderedItems.push({
+          item: invoiceItems[i],
+          tradeName: invoiceTradeNames[i],
+          origQty: v,
+          shipQty: invoiceShipQty[i],
+        });
+      }
+    });
+    // Eval 3: If OrderQty and ShipQty are not the same, push the item into differentQtyShipped
+    inoviceOrderQty.forEach((v, i) => {
+      if (v !== invoiceShipQty[i]) {
+        differentQtyShipped.push({
+          item: invoiceItems[i],
+          tradeName: invoiceTradeNames[i],
+          orderQty: v,
+          shipQty: invoiceShipQty[i],
+          omitCode: invoiceOmitCodes[i]
+            ? omitCodes[invoiceOmitCodes[i]]
+            : invoiceOmitCodes[i],
+        });
+      }
+    });
+    // Eval 4: If a item has a different price from the previous invoice, push the item into priceChangedItems
+    if (invoiceItems.length > 0) {
+      for (let i = 0; i < invoiceItems.length; i++) {
+        const item = invoiceItems[i];
+        const result = CardinalInvoice.findOne(
+          {
+            item,
+            invoiceDate: { lt: dayjs(date, "MM-DD-YYYY") },
+          },
+          { _id: 0, invoiceDate: 1 }
+        );
+        if (result) {
+          const { invoiceItems, invoiceCosts } = await mergeDailyInvoices(
+            dayjs(result.invoiceDate).format("MM-DD-YYYY")
+          );
+          let prevCost;
+          const costs = [];
+          invoiceItems.forEach((v, j) => {
+            if (v === item) {
+              costs.push(invoiceCosts[j]);
+            }
+          });
+          if (costs.length > 1) {
+            prevCost = Math.min(...costs);
+          } else {
+            prevCost = costs[0];
+          }
+          const cost = invoiceCosts[i];
+          if (cost !== prevCost) {
+            priceChangedItems.push({
+              item,
+              tradeName: invoiceTradeNames[i],
+              cost,
+              prevCost,
+            });
+          }
+        }
+      }
+    }
   } catch (e) {
     console.log(e);
   }
-  return { duplicatesWithDifferentPrices };
+  return {
+    duplicatesWithDifferentPrices,
+    backorderedItems,
+    differentQtyShipped,
+    priceChangedItems,
+  };
 };
-
-// 기능 1: checkStatus 에따라 체크안됫음을 확인 => 스케쥴잡으로 자동체크도 추가한다
-// 기능 3: 주문수량과 배송수량이 다르면 보고

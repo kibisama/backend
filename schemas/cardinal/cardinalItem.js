@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const cardinalItemSchema = new Schema({
-  ndcupc: { type: String, unique: true },
   cin: { type: String, unique: true },
   //   tradeName: String,
   //   labelName: String,

@@ -1,7 +1,9 @@
 const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
-const Item = require("../../schemas/item");
-const Package = require("../../schemas/package");
+const Item = require("../../schemas/inventory/item");
+const Package = require("../../schemas/inventory/package");
 const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
 const mergeDailyInvoices = require("../../services/cardinal/mergeDailyInvoices");
 const inputItemCost = require("../../services/cardinal/inputItemCost");
 
@@ -9,13 +11,8 @@ module.exports = async (req, res, next) => {
   console.log(`Checking Cardinal Inventories ...`);
 
   try {
-    const {
-      invoiceItems,
-      invoiceCosts,
-      invoiceShipQty,
-      invoiceTradeNames,
-      invoiceNumbers,
-    } = await mergeDailyInvoices(req.params.date, true, { needles: true });
+    const { invoiceItems, invoiceCosts, invoiceShipQty, invoiceTradeNames } =
+      await mergeDailyInvoices(req.params.date, true, { needles: true });
     const date = dayjs(req.params.date, "MM-DD-YYYY");
     const dateStart = dayjs(date).startOf("date");
     const dateEnd = dayjs(date).endOf("date");
@@ -56,8 +53,8 @@ module.exports = async (req, res, next) => {
           const missingQty = invoiceShipQty[i] - j;
           if (missingQty > 0) {
             missingItems.push({
+              item: invoiceItems[i],
               tradeName: invoiceTradeNames[i],
-              ndc: invoiceItems[i],
               cost: invoiceCosts[i],
               qty: missingQty,
             });
@@ -67,15 +64,9 @@ module.exports = async (req, res, next) => {
       }
     }
     if (missingItems.length === 0) {
-      for (const invoiceNumber in invoiceNumbers) {
-        await CardinalInvoice.findOneAndUpdate(
-          { invoiceNumber },
-          { $set: { checkStatus: "CHECKED" } }
-        );
-      }
       await inputItemCost(req.params.date);
     }
-
+    // Todo: also send items
     return res.send({ extraItems: items, missingItems, expiringItems });
   } catch (e) {
     console.log(e);

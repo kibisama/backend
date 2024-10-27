@@ -1,4 +1,6 @@
 const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
 
 module.exports = async (_date, rxOnly, exceptions) => {
   const date = dayjs(_date, "MM-DD-YYYY");
@@ -19,13 +21,20 @@ module.exports = async (_date, rxOnly, exceptions) => {
     let invoiceOmitCodes = [];
     let invoiceTradeNames = [];
     let invoiceForms = [];
+    let inoviceTotalShipped = 0;
+    let invoiceTotalAmount = 0;
     invoices.forEach((v, i) => {
       invoiceNumbers[i] = v.invoiceNumber;
       invoiceItems = [...invoiceItems, ...v.item];
       invoiceCosts = [...invoiceCosts, ...v.cost];
+      invoiceOrigQty = [...invoiceOrigQty, ...v.origQty];
+      inoviceOrderQty = [...inoviceOrderQty, ...v.orderQty];
       invoiceShipQty = [...invoiceShipQty, ...v.shipQty];
+      invoiceOmitCodes = [...invoiceOmitCodes, ...v.omitCode];
       invoiceTradeNames = [...invoiceTradeNames, ...v.tradeName];
       invoiceForms = [...invoiceForms, ...v.form];
+      inoviceTotalShipped += v.totalShipped;
+      invoiceTotalAmount += v.totalAmount;
     });
 
     if (exceptions) {
@@ -45,9 +54,14 @@ module.exports = async (_date, rxOnly, exceptions) => {
       invoiceNumbers,
       invoiceItems,
       invoiceCosts,
+      invoiceOrigQty,
+      inoviceOrderQty,
       invoiceShipQty,
+      invoiceOmitCodes,
       invoiceTradeNames,
       invoiceForms,
+      inoviceTotalShipped,
+      invoiceTotalAmount,
     };
   } catch (e) {
     console.log(e);
