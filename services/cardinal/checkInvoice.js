@@ -13,9 +13,9 @@ module.exports = async function checkInvoice() {
       .set("hour", 8)
       .set("minute", 0)
       .set("second", 0);
-    if (dayToday === 0) {
-      return scheduleJob(tomorrow.toDate(), checkInvoice);
-    }
+    // if (dayToday === 0) {
+    //   return scheduleJob(tomorrow.toDate(), checkInvoice);
+    // }
     console.log(
       `Checking Caridnal Invoice ${now.format("MM/DD/YY HH:mm:ss")}...`
     );

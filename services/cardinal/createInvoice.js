@@ -47,7 +47,7 @@ module.exports = async (invoiceDetails) => {
     let totalShipped = 0;
     let totalAmount = 0;
     shipQty.forEach((v) => {
-      totalAmount += v;
+      totalShipped += v ? Number(v) : 0;
     });
     cost.forEach((v) => {
       totalAmount += Number(v.replace(/[^0-9.-]+/g, ""));
