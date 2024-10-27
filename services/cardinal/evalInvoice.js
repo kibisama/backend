@@ -45,7 +45,7 @@ module.exports = async (date) => {
         if (!costs.every((v, i, a) => v === a[0])) {
           duplicatesWithDifferentPrices.push({
             item: duplicate,
-            tradeName: invoiceTradeNames[invoiceItems.indexOf(v)],
+            tradeName: invoiceTradeNames[invoiceItems.indexOf(duplicate)],
             costs,
           });
         }
@@ -83,7 +83,7 @@ module.exports = async (date) => {
         const result = CardinalInvoice.findOne(
           {
             item,
-            invoiceDate: { lt: dayjs(date, "MM-DD-YYYY") },
+            invoiceDate: { $lt: dayjs(date, "MM-DD-YYYY") },
           },
           { _id: 0, invoiceDate: 1 }
         );
