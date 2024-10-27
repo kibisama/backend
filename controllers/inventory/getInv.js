@@ -1,7 +1,7 @@
-const Drug = require("../schemas/drug");
-const Alternative = require("../schemas/alternative");
-const Package = require("../schemas/package");
-const Item = require("../schemas/item");
+const Drug = require("../../schemas/inventory/drug");
+const Alternative = require("../../schemas/inventory/alternative");
+const Package = require("../../schemas/inventory/package");
+const Item = require("../../schemas/inventory/item");
 const dayjs = require("dayjs");
 const constructDrugTrees = require("../../services/functions/constructDrugTrees");
 
