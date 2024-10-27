@@ -17,57 +17,77 @@ module.exports = async (_date, rxOnly, exceptions) => {
     let invoiceItems = [];
     let invoiceCosts = [];
     let invoiceOrigQty = [];
-    let inoviceOrderQty = [];
+    let invoiceOrderQty = [];
     let invoiceShipQty = [];
     let invoiceOmitCodes = [];
     let invoiceTradeNames = [];
     let invoiceForms = [];
-    let inoviceTotalShipped = 0;
+    let invoiceTotalShipped = 0;
     let invoiceTotalAmount = 0;
     invoices.forEach((v, i) => {
       invoiceNumbers[i] = v.invoiceNumber;
       invoiceItems = [...invoiceItems, ...v.item];
       invoiceCosts = [...invoiceCosts, ...v.cost];
       invoiceOrigQty = [...invoiceOrigQty, ...v.origQty];
-      inoviceOrderQty = [...inoviceOrderQty, ...v.orderQty];
+      invoiceOrderQty = [...invoiceOrderQty, ...v.orderQty];
       invoiceShipQty = [...invoiceShipQty, ...v.shipQty];
       invoiceOmitCodes = [...invoiceOmitCodes, ...v.omitCode];
       invoiceTradeNames = [...invoiceTradeNames, ...v.tradeName];
       invoiceForms = [...invoiceForms, ...v.form];
-      inoviceTotalShipped += v.totalShipped;
+      invoiceTotalShipped += v.totalShipped;
       invoiceTotalAmount += Number(v.totalAmount.replace(/[^0-9.-]+/g, ""));
     });
     invoiceTotalAmount = invoiceTotalAmount.toLocaleString("en-US", {
       style: "currency",
       currency: "USD",
     });
-
-    if (exceptions) {
-      if (exceptions.needles) {
-        invoiceForms.forEach((v, i) => {
-          if (v === "NEDL") {
-            invoiceItems.splice(i, 1);
-            invoiceCosts.splice(i, 1);
-            invoiceShipQty.splice(i, 1);
-            invoiceTradeNames.splice(i, 1);
-          }
-        });
-      }
-    }
-
-    return {
+    const result = {
       invoiceNumbers,
       invoiceItems,
       invoiceCosts,
       invoiceOrigQty,
-      inoviceOrderQty,
+      invoiceOrderQty,
       invoiceShipQty,
       invoiceOmitCodes,
       invoiceTradeNames,
       invoiceForms,
-      inoviceTotalShipped,
+      invoiceTotalShipped,
       invoiceTotalAmount,
     };
+    if (exceptions) {
+      const exceptionItems = [];
+      const exceptionCosts = [];
+      const exceptionOrigQty = [];
+      const exceptionOrderQty = [];
+      const exceptionShipQty = [];
+      const exceptionOmitCodes = [];
+      const exceptionTradeNames = [];
+      const exceptionForms = [];
+
+      if (exceptions.needles) {
+        invoiceForms.forEach((v, i) => {
+          if (v === "NEDL") {
+            exceptionItems.push(invoiceItems.splice(i, 1)[0]);
+            exceptionCosts.push(invoiceCosts.splice(i, 1)[0]);
+            exceptionOrigQty.push(invoiceOrigQty.splice(i, 1)[0]);
+            exceptionOrderQty.push(invoiceOrderQty.splice(i, 1)[0]);
+            exceptionShipQty.push(invoiceShipQty.splice(i, 1)[0]);
+            exceptionOmitCodes.push(invoiceOmitCodes.splice(i, 1)[0]);
+            exceptionTradeNames.push(invoiceTradeNames.splice(i, 1)[0]);
+            exceptionForms.push(invoiceForms.splice(i, 1)[0]);
+          }
+        });
+      }
+      result.exceptionItems = exceptionItems;
+      result.exceptionCosts = exceptionCosts;
+      result.exceptionOrigQty = exceptionOrigQty;
+      result.exceptionOrderQty = exceptionOrderQty;
+      result.exceptionShipQty = exceptionShipQty;
+      result.exceptionOmitCodes = exceptionOmitCodes;
+      result.exceptionTradeNames = exceptionTradeNames;
+      result.exceptionForms = exceptionForms;
+    }
+    return result;
   } catch (e) {
     console.log(e);
   }

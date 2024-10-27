@@ -79,6 +79,7 @@ module.exports = async (date) => {
       }
     });
     // Eval 4: If a item has a different price from the previous invoice, push the item into priceChangedItems
+    // 많은 반복문이 실행 되므로 checkInventory시 실행하고싶다.
     if (invoiceItems.length > 0) {
       for (let i = 0; i < invoiceItems.length; i++) {
         const item = invoiceItems[i];
@@ -118,6 +119,7 @@ module.exports = async (date) => {
               tradeName: invoiceTradeNames[i],
               cost,
               prevCost,
+              invoiceDate: dayjs(result.invoiceDate).format("MM-DD-YYYY"),
             });
           }
         }

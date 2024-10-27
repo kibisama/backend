@@ -32,14 +32,16 @@ module.exports = async (req, res, next) => {
         },
         { ndc: 1 }
       );
+      // Note: If the corresponding package document is missing, items cannot be checked correctly
       if (!ndc) {
-        // Note: If the corresponding package document is missing, items cannot be checked correctly
-        missingItems.push({
-          tradeName: invoiceTradeNames[i],
-          ndc: invoiceItems[i],
-          cost: invoiceCosts[i],
-          qty: invoiceShipQty[i],
-        });
+        if (invoiceShipQty[i] > 0) {
+          missingItems.push({
+            tradeName: invoiceTradeNames[i],
+            ndc: invoiceItems[i],
+            cost: invoiceCosts[i],
+            qty: invoiceShipQty[i],
+          });
+        }
         continue;
       }
       const match = new RegExp(
