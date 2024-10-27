@@ -61,10 +61,10 @@ module.exports = async (invoiceDetails) => {
       orderQty: orderQty.map((v) => (v ? Number(v) : 0)),
       shipQty: shipQty.map((v) => (v ? Number(v) : 0)),
       omitCode,
-      cost: cost.map((v) => v.replace(/[^0-9.-]+/g, "")),
+      cost,
       confirmNumber,
       totalShipped: Number(totalShipped),
-      totalAmount: Number(totalAmount.replace(/[^0-9.-]+/g, "")),
+      totalAmount,
     });
   } catch (e) {
     console.log(e);

@@ -20,6 +20,8 @@ module.exports = async (req, res, next) => {
         backorderedItems,
         differentQtyShipped,
         priceChangedItems,
+        inoviceTotalShipped,
+        invoiceTotalAmount,
       } = await evalInvoice(dateParam);
       return res.send({
         invoiceNumbers: results.map((v) => v.invoiceNumber),
@@ -27,6 +29,8 @@ module.exports = async (req, res, next) => {
         backorderedItems,
         differentQtyShipped,
         priceChangedItems,
+        inoviceTotalShipped,
+        invoiceTotalAmount,
       });
     }
     return res.send({

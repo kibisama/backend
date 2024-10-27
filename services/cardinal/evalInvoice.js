@@ -5,14 +5,14 @@ const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
 const mergeDailyInvoices = require("./mergeDailyInvoices");
 
 const omitCodes = {
-  1: "RESTRICTED CODE",
-  2: "DC DISCONTINUED",
-  3: "MFG DISCONTINUED",
-  4: "DROPSHIP",
-  5: "AVAILABILITY ISSUE",
+  "01": "RESTRICTED CODE",
+  "02": "DC DISCONTINUED",
+  "03": "MFG DISCONTINUED",
+  "04": "DROPSHIP",
+  "05": "AVAILABILITY ISSUE",
   "5A": "NEW ITEM",
   "5B": "NON STOCK",
-  6: "TEMP OUT",
+  "06": "TEMP OUT",
 };
 
 module.exports = async (date) => {
@@ -101,7 +101,13 @@ module.exports = async (date) => {
             }
           });
           if (costs.length > 1) {
-            prevCost = Math.min(...costs);
+            const _costs = costs.map((v) =>
+              Number(v.replace(/[^0-9.-]+/g, ""))
+            );
+            prevCost = Math.min(..._costs).toLocaleString("en-US", {
+              style: "currency",
+              currency: "USD",
+            });
           } else {
             prevCost = costs[0];
           }

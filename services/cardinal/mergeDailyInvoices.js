@@ -35,7 +35,7 @@ module.exports = async (_date, rxOnly, exceptions) => {
       invoiceTradeNames = [...invoiceTradeNames, ...v.tradeName];
       invoiceForms = [...invoiceForms, ...v.form];
       inoviceTotalShipped += v.totalShipped;
-      invoiceTotalAmount += v.totalAmount;
+      invoiceTotalAmount += Number(v.totalAmount.replace(/[^0-9.-]+/g, ""));
     });
 
     if (exceptions) {

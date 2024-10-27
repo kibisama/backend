@@ -44,4 +44,4 @@ createServer();
 
 //
 const checkInvoice = require("./services/cardinal/checkInvoice");
-// checkInvoice();
+checkInvoice();

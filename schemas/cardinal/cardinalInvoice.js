@@ -20,10 +20,11 @@ const cardinalInvoiceSchema = new Schema({
   orderQty: [Number],
   shipQty: [Number],
   omitCode: [String],
-  cost: [Number],
+  // Note: Currency stored as strings
+  cost: [String],
   confirmNumber: [String],
   totalShipped: Number,
-  totalAmount: Number,
+  totalAmount: String,
   isCSOSReported: { type: Boolean, default: false },
 });
 

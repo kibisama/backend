@@ -18,13 +18,17 @@ module.exports = async (_date) => {
           }
         });
         const costAndShipQty = [];
-        costAndShipQty.sort((a, b) => b.cost - a.cost);
         indices.forEach((v, i) => {
           costAndShipQty[i] = {
             cost: invoiceCosts[v],
             shipQty: invoiceShipQty[v],
           };
         });
+        costAndShipQty.sort(
+          (a, b) =>
+            Number(b.cost.replace(/[^0-9.-]+/g, "")) -
+            Number(a.cost.replace(/[^0-9.-]+/g, ""))
+        );
         const ndc = await Package.findOne(
           {
             ndc11: invoiceItems[i],
@@ -48,7 +52,14 @@ module.exports = async (_date) => {
             if (_ids.length > 0) {
               await Item.findOneAndUpdate(
                 { _id: _ids[_ids.length - 1] },
-                { $set: { cost: costAndShipQty[i].cost } }
+                {
+                  $set: {
+                    cost: costAndShipQty[i].cost.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }),
+                  },
+                }
               );
               _ids.pop();
             } else {
@@ -58,7 +69,10 @@ module.exports = async (_date) => {
         }
         if (_ids.length > 0) {
           for (const _id of _ids) {
-            await Item.findOneAndUpdate({ _id: _id }, { $set: { cost: 0 } });
+            await Item.findOneAndUpdate(
+              { _id: _id },
+              { $set: { cost: "$0.00" } }
+            );
           }
         }
         indices.forEach((v) => {
@@ -95,7 +109,7 @@ module.exports = async (_date) => {
         } else {
           await Item.findOneAndUpdate(
             { _id: items[j]._id },
-            { $set: { cost: 0 } }
+            { $set: { cost: "$0.00" } }
           );
         }
       }
