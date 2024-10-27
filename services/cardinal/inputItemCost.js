@@ -57,7 +57,7 @@ module.exports = async (_date) => {
           }
         }
         if (_ids.length > 0) {
-          for (const _id in _ids) {
+          for (const _id of _ids) {
             await Item.findOneAndUpdate({ _id: _id }, { $set: { cost: 0 } });
           }
         }
