@@ -11,8 +11,6 @@ module.exports = async (invoiceDetails) => {
       orderNumber,
       orderDate,
       poNumber,
-      totalShipped,
-      totalAmount,
       cin,
       ndcupc,
       tradeName,
@@ -46,6 +44,18 @@ module.exports = async (invoiceDetails) => {
       default:
         invoiceType = "RX";
     }
+    let totalShipped = 0;
+    let totalAmount = 0;
+    shipQty.forEach((v) => {
+      totalAmount += v;
+    });
+    cost.forEach((v) => {
+      totalAmount += Number(v.replace(/[^0-9.-]+/g, ""));
+    });
+    totalAmount.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
     await CardinalInvoice.create({
       invoiceNumber,
       invoiceDate: _invoiceDate,
@@ -63,7 +73,7 @@ module.exports = async (invoiceDetails) => {
       omitCode,
       cost,
       confirmNumber,
-      totalShipped: Number(totalShipped),
+      totalShipped,
       totalAmount,
     });
   } catch (e) {

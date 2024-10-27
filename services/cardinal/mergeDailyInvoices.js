@@ -37,6 +37,10 @@ module.exports = async (_date, rxOnly, exceptions) => {
       inoviceTotalShipped += v.totalShipped;
       invoiceTotalAmount += Number(v.totalAmount.replace(/[^0-9.-]+/g, ""));
     });
+    invoiceTotalAmount = invoiceTotalAmount.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
 
     if (exceptions) {
       if (exceptions.needles) {
