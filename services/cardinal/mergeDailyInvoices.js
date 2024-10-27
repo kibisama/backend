@@ -1,6 +1,7 @@
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
+const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
 
 module.exports = async (_date, rxOnly, exceptions) => {
   const date = dayjs(_date, "MM-DD-YYYY");
