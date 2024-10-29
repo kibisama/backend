@@ -65,9 +65,13 @@ module.exports = async (req, res, next) => {
         }
       }
     }
-    if (missingItems.length === 0) {
-      await inputItemCost(req.params.date);
-    }
+    // if (missingItems.length === 0) {
+    //   await inputItemCost(req.params.date);
+    // }
+
+    // test
+    await inputItemCost(req.params.date);
+
     // Todo: also send items
     return res.send({ extraItems: items, missingItems, expiringItems });
   } catch (e) {

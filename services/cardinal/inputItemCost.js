@@ -1,9 +1,13 @@
+const dayjs = require("dayjs");
 const Package = require("../../schemas/inventory/package");
 const Item = require("../../schemas/inventory/item");
 const mergeDailyInvoices = require("./mergeDailyInvoices");
 
 module.exports = async (_date) => {
   try {
+    const date = dayjs(_date, "MM-DD-YYYY");
+    const dateStart = date.startOf("date");
+    const dateEnd = date.endOf("date");
     const { invoiceItems, invoiceCosts, invoiceShipQty, invoiceTradeNames } =
       await mergeDailyInvoices(_date, true, { needles: true });
     const duplicates = new Set(
@@ -31,10 +35,13 @@ module.exports = async (_date) => {
         );
         const ndc = await Package.findOne(
           {
-            ndc11: invoiceItems[i],
+            ndc11: duplicate,
           },
           { ndc: 1 }
         );
+        if (!ndc) {
+          continue;
+        }
         const match = new RegExp(
           String.raw`\d{3}${ndc.ndc.replaceAll("-", "")}\d{1}`
         );
@@ -47,23 +54,26 @@ module.exports = async (_date) => {
         items.forEach((v, i) => {
           _ids[i] = v._id;
         });
+
         for (let i = 0; i < costAndShipQty.length; i++) {
           for (let j = 0; j < costAndShipQty[i].shipQty; j++) {
-            if (_ids.length > 0) {
-              await Item.findOneAndUpdate(
-                { _id: _ids[_ids.length - 1] },
-                {
-                  $set: {
-                    cost: costAndShipQty[i].cost.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    }),
-                  },
-                }
-              );
-              _ids.pop();
-            } else {
-              break;
+            if (costAndShipQty[i].shipQty > 0) {
+              if (_ids.length > 0) {
+                await Item.findOneAndUpdate(
+                  { _id: _ids[_ids.length - 1] },
+                  {
+                    $set: {
+                      cost: costAndShipQty[i].cost.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      }),
+                    },
+                  }
+                );
+                _ids.pop();
+              } else {
+                break;
+              }
             }
           }
         }
@@ -75,11 +85,14 @@ module.exports = async (_date) => {
             );
           }
         }
-        indices.forEach((v) => {
+        indices.forEach((v, i) => {
           invoiceItems.splice(v, 1);
           invoiceCosts.splice(v, 1);
           invoiceShipQty.splice(v, 1);
           invoiceTradeNames.splice(v, 1);
+          if (indices[i + 1]) {
+            indices[i + 1] -= 1;
+          }
         });
       }
     }
@@ -91,6 +104,9 @@ module.exports = async (_date) => {
         },
         { ndc: 1 }
       );
+      if (!ndc) {
+        continue;
+      }
       const match = new RegExp(
         String.raw`\d{3}${ndc.ndc.replaceAll("-", "")}\d{1}`
       );

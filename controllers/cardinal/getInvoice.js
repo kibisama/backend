@@ -19,7 +19,7 @@ module.exports = async (req, res, next) => {
         duplicatesWithDifferentPrices,
         backorderedItems,
         differentQtyShipped,
-        priceChangedItems,
+        // priceChangedItems,
         invoiceTotalShipped,
         invoiceTotalAmount,
       } = await evalInvoice(dateParam);
@@ -28,14 +28,12 @@ module.exports = async (req, res, next) => {
         duplicatesWithDifferentPrices,
         backorderedItems,
         differentQtyShipped,
-        priceChangedItems,
+        // priceChangedItems,
         invoiceTotalShipped,
         invoiceTotalAmount,
       });
     }
-    return res.send({
-      invoiceNumbers: [],
-    });
+    return res.sendStatus(404);
   } catch (e) {
     console.log(e);
     next(e);

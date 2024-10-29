@@ -26,10 +26,10 @@ module.exports = async (date) => {
       invoiceTradeNames,
       invoiceCosts,
       invoiceOrigQty,
-      inoviceOrderQty,
+      invoiceOrderQty,
       invoiceShipQty,
       invoiceOmitCodes,
-      inoviceTotalShipped,
+      invoiceTotalShipped,
       invoiceTotalAmount,
     } = await mergeDailyInvoices(date);
     // Eval 1: If the same item has two different prices, push the item into duplicateWithDifferentPrcies
@@ -65,7 +65,7 @@ module.exports = async (date) => {
       }
     });
     // Eval 3: If OrderQty and ShipQty are not the same, push the item into differentQtyShipped
-    inoviceOrderQty.forEach((v, i) => {
+    invoiceOrderQty.forEach((v, i) => {
       if (v !== invoiceShipQty[i]) {
         differentQtyShipped.push({
           item: invoiceItems[i],
@@ -130,7 +130,7 @@ module.exports = async (date) => {
       backorderedItems,
       differentQtyShipped,
       priceChangedItems,
-      inoviceTotalShipped,
+      invoiceTotalShipped,
       invoiceTotalAmount,
     };
   } catch (e) {
