@@ -13,10 +13,12 @@ const packageSchema = new Schema({
   ndc: {
     type: String,
     unique: true,
+    required: true,
   },
   ndc11: {
     type: String,
     unique: true,
+    required: true,
     minLength: 13,
     maxLength: 13,
   },
@@ -24,6 +26,7 @@ const packageSchema = new Schema({
     type: String,
     uppercase: true,
   },
+  product_type: String,
   size: [Number],
   repSize: Number,
   unit: [{ type: String, uppercase: true }],

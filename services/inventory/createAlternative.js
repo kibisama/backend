@@ -1,14 +1,24 @@
 const Package = require("../../schemas/inventory/package");
 const Alternative = require("../../schemas/inventory/alternative");
+const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 const createDrug = require("./createDrug");
 
 module.exports = async (ndcDir, package_id) => {
   try {
-    const { rxcui } = ndcDir.openfda;
-    if (!rxcui) {
+    if (!ndcDir) {
       return;
     }
-    const { active_ingredients, generic_name } = ndcDir;
+    const { active_ingredients, generic_name, product_ndc } = ndcDir;
+    let { rxcui } = ndcDir.openfda;
+    if (!rxcui) {
+      const reference = await ProductLabeling.findOne({
+        openfda: { original_packager_product_ndc: product_ndc },
+      });
+      if (!reference || reference.openfda.rxcui) {
+        return;
+      }
+      rxcui = reference.openfda.rxcui;
+    }
     const strength = [];
     let name = generic_name;
     if (active_ingredients instanceof Array) {

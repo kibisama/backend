@@ -1,9 +1,13 @@
+const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
 const NdcDir = require("../../schemas/openFDA/ndcDir");
 const { ndc } = require("../../api/openFda");
+const updateLocalProductLabeling = require("./updateLocalProductLabeling");
 
 module.exports = async (arg, type) => {
   try {
-    let query, result;
+    let query = "";
     if (type) {
       let frag = [];
       switch (true) {
@@ -18,22 +22,27 @@ module.exports = async (arg, type) => {
       }
       query = `"${frag[0]}-${frag[1] + frag[2]}-${frag[3] + frag[4]}"+"${
         frag[0] + frag[1]
-      }-${frag[2] + frag[3]}+${frag[4]}"+"${frag[0] + frag[1]}-${frag[2]}-${
+      }-${frag[2] + frag[3]}-${frag[4]}"+"${frag[0] + frag[1]}-${frag[2]}-${
         frag[3] + frag[4]
       }"`;
-      result = await ndc.searchOneByPackageDescription(query);
     }
-    if (!result) {
-      return new Error("Open FDA error");
-    } else if (result.data.meta?.results?.total > 1) {
+    const result = await ndc.searchOneByPackageDescription(query);
+    if (result instanceof Error) {
+      if (result.status === 404) {
+        await updateLocalProductLabeling(arg, type);
+      }
+      return result;
+    } else if (result.data?.meta?.results?.total > 1) {
       return new Error("Multiple results found");
     }
-
     const data = result.data.results[0];
+    if (!data.openfda?.rxcui || data.openfda.rxcui.length === 0) {
+      await updateLocalProductLabeling(arg, type);
+    }
     return await NdcDir.findOneAndUpdate(
       { product_ndc: data.product_ndc },
       {
-        last_updated: result.data.meta.last_updated,
+        last_updated: dayjs(result.data.meta.last_updated, "YYYY-MM-DD"),
         ...data,
       },
       { new: true, upsert: true }

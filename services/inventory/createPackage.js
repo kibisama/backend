@@ -1,4 +1,5 @@
 const Package = require("../../schemas/inventory/package");
+const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 const updateLocalNdcDir = require("../openFDA/updateLocalNdcDir");
 const convertNdcToNdc11 = require("../functions/convertNdcToNdc11");
 const convertDescriptionToSizeAndUnit = require("../functions/convertDescriptionToSizeAndUnit");
@@ -27,12 +28,48 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       }
     }
     if (!ndcDir) {
-      ndcDir = await updateLocalNdcDir(
-        regEx.source.replace(/[^0-9]+/g, ""),
-        "ndc"
-      );
-      if (!ndcDir) {
-        return;
+      const source = regEx.source;
+      const ndc = source.replace(/[^0-9]+/g, "");
+      ndcDir = await updateLocalNdcDir(ndc, "ndc");
+      if (ndcDir instanceof Error || !ndcDir) {
+        const regex = source.substring(0, 12) + `(${source[14]}|$)`;
+        const reference = await ProductLabeling.findOne({
+          openfda: { original_packager_product_ndc: { $regex: regex } },
+        });
+        if (!reference) {
+          return;
+        }
+        const {
+          brand_name,
+          generic_name,
+          product_type,
+          substance_name,
+          rxcui,
+          original_packager_product_ndc,
+          unii,
+        } = reference.openfda;
+        let _ndc = "";
+        if (original_packager_product_ndc[0].length === 9) {
+          _ndc = original_packager_product_ndc[0] + "-" + ndc.substring(8, 10);
+        } else if (original_packager_product_ndc[0].length === 10) {
+          _ndc = original_packager_product_ndc[0] + "-" + ndc[9];
+        }
+        const query = {
+          unii,
+          ndc: _ndc,
+          ndc11: convertNdcToNdc11(_ndc),
+          ingredients: substance_name,
+          name: `${_ndc}${
+            brand_name
+              ? " | " + brand_name[0]
+              : generic_name
+              ? " | " + generic_name[0]
+              : ""
+          }`,
+          product_type,
+          rxcui,
+        };
+        return await Package.create(query);
       }
     }
     if (ndcDir.packaging?.length < 1) {
@@ -45,6 +82,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       brand_name_base,
       generic_name,
       labeler_name,
+      product_type,
       active_ingredients,
       dosage_form,
     } = ndcDir;
@@ -107,7 +145,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       : labeler_name;
     let mfrName;
     const match = _manufacturer_name.match(/([^\s,]+)/);
-    if (match && match[0].length > 2) {
+    if (match && match[0].length > 3) {
       mfrName = match[0];
     }
     let desc = "";
@@ -128,6 +166,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       ndc,
       ndc11,
       manufacturer_name: _manufacturer_name,
+      product_type,
       size,
       repSize,
       unit,

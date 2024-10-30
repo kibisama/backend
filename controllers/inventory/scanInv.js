@@ -4,6 +4,7 @@ const NdcDir = require("../../schemas/openFDA/ndcDir");
 const createItem = require("../../services/inventory/createItem");
 const updateItem = require("../../services/inventory/updateItem");
 const updateLocalNdcDir = require("../../services/openFDA/updateLocalNdcDir");
+const updateLocalProductLabeling = require("../../services/openFDA/updateLocalProductLabeling");
 const createPackage = require("../../services/inventory/createPackage");
 const createAlternative = require("../../services/inventory/createAlternative");
 const addToSetInventory = require("../../services/inventory/addToSetInventory");
@@ -49,7 +50,9 @@ module.exports = async (req, res, next) => {
     });
     if (!ndcDir) {
       ndcDir = await updateLocalNdcDir(gtin, "gtin");
-      if (ndcDir instanceof Error || !ndcDir) {
+      if (ndcDir instanceof Error && ndcDir.status === 404) {
+        ndcDir = null;
+      } else if (ndcDir instanceof Error || !ndcDir) {
         return res.send({
           data,
           error:
@@ -71,7 +74,7 @@ module.exports = async (req, res, next) => {
       return res.send({
         data,
         error:
-          "Unable to create Alternative document. This usually occurs when RxCUI for the package is not defined in the OpenFDA database. You may continue scanning ignoring this.",
+          "Unable to create Alternative document. This usually occurs when RxCUI and/or packaging information is not defined in the OpenFDA database. You may continue scanning ignoring this.",
       });
     }
     return res.send({ data });
