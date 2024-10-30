@@ -14,7 +14,7 @@ module.exports = async (ndcDir, package_id) => {
       const reference = await ProductLabeling.findOne({
         openfda: { original_packager_product_ndc: product_ndc },
       });
-      if (!reference || reference.openfda.rxcui) {
+      if (!reference || !reference.openfda.rxcui) {
         return;
       }
       rxcui = reference.openfda.rxcui;
