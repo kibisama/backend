@@ -7,7 +7,7 @@ module.exports = {
   ndc: {
     url: `/drug/ndc.json${apiKey ? "?api_key=" + apiKey + "&" : ""}`,
     async searchOneByPackageDescription(_query) {
-      const query = `${this.url}?search=packaging.description:${_query}&limit=1`;
+      const query = `${this.url}search=packaging.description:${_query}&limit=1`;
       try {
         return await client.get(query);
       } catch (e) {
@@ -19,7 +19,7 @@ module.exports = {
   label: {
     url: `/drug/label.json${apiKey ? "?api_key=" + apiKey + "&" : ""}`,
     async searchOneByByOriginalPackager(_query) {
-      const query = `${this.url}?search=search=openfda.original_packager_product_ndc:${_query}&limit=1000`;
+      const query = `${this.url}search=search=openfda.original_packager_product_ndc:${_query}&limit=1000`;
       try {
         return await client.get(query);
       } catch (e) {
