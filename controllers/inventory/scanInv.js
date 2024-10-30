@@ -68,7 +68,6 @@ module.exports = async (req, res, next) => {
           "Unable to create Package document since packaging information is missing in the OpenFDA database.",
       });
     }
-
     const alt = await createAlternative(ndcDir, package._id);
     if (!alt) {
       return res.send({

@@ -28,7 +28,7 @@ module.exports = async (arg, type) => {
       );
     }
     const _result = await ProductLabeling.findOne({
-      openfda: { original_packager_product_ndc: { $regex: regEx } },
+      "openfda.original_packager_product_ndc": { $regex: regEx },
     });
     if (_result) {
       return _result;

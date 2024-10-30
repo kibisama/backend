@@ -12,11 +12,7 @@ module.exports = async (input, findResult) => {
     let arg;
     switch (mode) {
       case "Receive":
-        arg = { $set: { dateReceived: _inputDate, source } };
-        if (cost) {
-          //
-          arg.$set.cost = Number(cost);
-        }
+        arg = { $set: { dateReceived: _inputDate, source, cost } };
         break;
       case "Fill":
         if (findResult.dateFilled) {
