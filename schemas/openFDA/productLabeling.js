@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const productLabelingSchema = new Schema({
-  last_updated: Date,
+  lastRetrieved: Date,
   id: { type: String, unique: true },
-  effective_time: Date,
+  effective_time: String,
   version: Number,
   openfda: {
     application_number: [String],

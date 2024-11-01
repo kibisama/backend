@@ -2,6 +2,10 @@ const Drug = require("../../schemas/inventory/drug");
 const Alternative = require("../../schemas/inventory/alternative");
 const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 
+/*
+Creates a Drug document. 
+Returns: Drug | undefined
+*/
 module.exports = async (ndcDir, alternative_id) => {
   try {
     const { generic_name, dea_schedule, product_ndc } = ndcDir;

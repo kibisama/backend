@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const ndcDirSchema = new Schema({
-  last_updated: Date,
+  lastRetrieved: Date,
   product_ndc: String,
   generic_name: String,
   labeler_name: String,

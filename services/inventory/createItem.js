@@ -3,6 +3,10 @@ const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const Item = require("../../schemas/inventory/item");
 
+/*
+Creates an Item document.
+Returns: Item | undefined
+*/
 module.exports = async (input) => {
   try {
     const { gtin, lot, exp, sn } = input;

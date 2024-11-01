@@ -4,6 +4,10 @@ dayjs.extend(customParseFormat);
 const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 const { label } = require("../../api/openFda");
 
+/*
+Updates a partial Product Labeling document via Open FDA API.
+Returns: ProductLabeling | Error | undefined
+*/
 module.exports = async (arg, type) => {
   try {
     let query = "";
@@ -54,8 +58,8 @@ module.exports = async (arg, type) => {
         return await ProductLabeling.findOneAndUpdate(
           { id: results[i].id },
           {
-            last_updated: dayjs(result.data.meta.last_updated, "YYYY-MM-DD"),
-            effective_time: dayjs(results[i].effective_time),
+            lastRetrieved: dayjs(),
+            effective_time: results[i].effective_time,
             version: results[i].version,
             openfda: results[i].openfda,
           },

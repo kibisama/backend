@@ -1,6 +1,10 @@
 const Package = require("../../schemas/inventory/package");
 const Item = require("../../schemas/inventory/item");
 
+/*
+Adds an Item document to the inventories field of Package.
+Returns: Package | undefined
+*/
 module.exports = async (_id, ndc) => {
   try {
     if (!ndc) {

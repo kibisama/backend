@@ -15,6 +15,15 @@ module.exports = {
         return e;
       }
     },
+    async searchOneByProductNdc(_query) {
+      const query = `${this.url}search=product_ndc:${_query}&limit=1`;
+      try {
+        return await client.get(query);
+      } catch (e) {
+        console.log(e);
+        return e;
+      }
+    },
   },
   label: {
     url: `/drug/label.json${apiKey ? "?api_key=" + apiKey + "&" : ""}`,

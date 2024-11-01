@@ -4,7 +4,6 @@ const NdcDir = require("../../schemas/openFDA/ndcDir");
 const createItem = require("../../services/inventory/createItem");
 const updateItem = require("../../services/inventory/updateItem");
 const updateLocalNdcDir = require("../../services/openFDA/updateLocalNdcDir");
-const updateLocalProductLabeling = require("../../services/openFDA/updateLocalProductLabeling");
 const createPackage = require("../../services/inventory/createPackage");
 const createAlternative = require("../../services/inventory/createAlternative");
 const addToSetInventory = require("../../services/inventory/addToSetInventory");
@@ -14,9 +13,9 @@ module.exports = async (req, res, next) => {
     const { mode, gtin, lot, exp, sn, inputDate, source, cost } = req.body;
     let item = await Item.findOne({ gtin, sn });
     if (!item) {
-      item = await createItem({ gtin, lot, exp, sn, inputDate, source });
+      item = await createItem({ gtin, lot, exp, sn });
       if (!item) {
-        next(new Error("Failed to create Item document."));
+        next(new Error("Failed to create Item document. Please retry."));
       }
     }
     const data = await updateItem(
@@ -24,9 +23,8 @@ module.exports = async (req, res, next) => {
       item
     );
     if (!data) {
-      next(new Error("Failed to update Item document."));
+      next(new Error("Failed to update Item document. Please retry."));
     }
-
     const regEx = new RegExp(
       String.raw`${gtin.slice(3, 7)}-?${gtin[7]}-?${gtin.slice(8, 11)}-?${
         gtin[11]
@@ -36,7 +34,7 @@ module.exports = async (req, res, next) => {
     if (package) {
       const result = await addToSetInventory(data._id, package.ndc);
       if (!result) {
-        next(new Error("Failed to update Package document."));
+        next(new Error("Failed to update Package document. Please retry."));
       }
       return res.send({
         results: {
@@ -45,6 +43,7 @@ module.exports = async (req, res, next) => {
       });
     }
 
+    // If a Package document does not exist, following codes will be executed.
     let ndcDir = await NdcDir.findOne({
       packaging: { $elemMatch: { description: { $regex: regEx } } },
     });
@@ -64,8 +63,7 @@ module.exports = async (req, res, next) => {
     if (!package) {
       return res.send({
         data,
-        error:
-          "Unable to create Package document since packaging information is missing in the OpenFDA database.",
+        error: "Failed to create Package document.",
       });
     }
     const alt = await createAlternative(ndcDir, package._id);

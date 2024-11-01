@@ -8,7 +8,7 @@ const itemSchema = new Schema({
   exp: { type: Date, required: true, minLength: 6, maxLength: 6 },
   cost: String,
   dateReceived: Date,
-  source: { type: String, default: "unknown" },
+  source: String,
   dateFilled: Date,
   dateReversed: Date,
   dateReturned: Date,

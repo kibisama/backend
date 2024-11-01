@@ -1,6 +1,10 @@
 const dayjs = require("dayjs");
 const Item = require("../../schemas/inventory/item");
 
+/*
+Updates an Item document.
+Returns: Item | undefined
+*/
 module.exports = async (input, findResult) => {
   try {
     const { mode, gtin, sn, inputDate, source, cost } = input;

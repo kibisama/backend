@@ -1,9 +1,13 @@
 const Package = require("../../schemas/inventory/package");
 const ProductLabeling = require("../../schemas/openFDA/productLabeling");
-const updateLocalNdcDir = require("../openFDA/updateLocalNdcDir");
 const convertNdcToNdc11 = require("../functions/convertNdcToNdc11");
 const convertDescriptionToSizeAndUnit = require("../functions/convertDescriptionToSizeAndUnit");
 
+/*
+Creates a Package document based on NDC Directory.
+If a NdcDir document is not passed, it will search local db for a reference product and create a minimal document. 
+Returns: Package | undefined
+*/
 module.exports = async (ndcDir, item_id, arg, type) => {
   try {
     let regEx;
@@ -24,14 +28,12 @@ module.exports = async (ndcDir, item_id, arg, type) => {
           );
           break;
         default:
-          throw new Error("Invalid argument type");
+          return;
       }
     }
     if (!ndcDir) {
       const source = regEx.source;
       const ndc = source.replace(/[^0-9]+/g, "");
-      // ndcDir = await updateLocalNdcDir(ndc, "ndc");
-      // if (ndcDir instanceof Error || !ndcDir) {
       const regex = source.substring(0, 12) + `(${source[14]}|$)`;
       const reference = await ProductLabeling.findOne({
         "openfda.original_packager_product_ndc": { $regex: regex },
@@ -39,43 +41,36 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       if (!reference) {
         return;
       }
-      const {
-        brand_name,
-        generic_name,
-        product_type,
-        substance_name,
-        rxcui,
-        original_packager_product_ndc,
-        unii,
-      } = reference.openfda;
+      const { brand_name, generic_name, original_packager_product_ndc } =
+        reference.openfda;
       let _ndc = "";
       if (original_packager_product_ndc[0].length === 9) {
         _ndc = original_packager_product_ndc[0] + "-" + ndc.substring(8, 10);
       } else if (original_packager_product_ndc[0].length === 10) {
         _ndc = original_packager_product_ndc[0] + "-" + ndc[9];
       }
+      const ndc11 = convertNdcToNdc11(_ndc);
+      const name = `${ndc11}${
+        brand_name
+          ? " | " + brand_name[0]
+          : generic_name
+          ? " | " + generic_name[0]
+          : ""
+      }`;
       const query = {
-        unii,
+        name,
         ndc: _ndc,
-        ndc11: convertNdcToNdc11(_ndc),
-        ingredients: substance_name,
-        name: `${_ndc}${
-          brand_name
-            ? " | " + brand_name[0]
-            : generic_name
-            ? " | " + generic_name[0]
-            : ""
-        }`,
-        product_type: product_type[0],
-        rxcui,
+        ndc11,
       };
+      if (item_id) {
+        query.inventories = [item_id];
+      }
       return await Package.create(query);
     }
-    // }
+
     if (ndcDir.packaging?.length < 1) {
       return;
     }
-
     const {
       _id,
       brand_name,
@@ -83,7 +78,6 @@ module.exports = async (ndcDir, item_id, arg, type) => {
       generic_name,
       labeler_name,
       product_type,
-      active_ingredients,
       dosage_form,
     } = ndcDir;
     const { unii, rxcui, nui, manufacturer_name } = ndcDir.openfda;
@@ -93,12 +87,7 @@ module.exports = async (ndcDir, item_id, arg, type) => {
         brandName = brand_name;
       }
     }
-    let ingredients = [];
-    if (active_ingredients instanceof Array) {
-      active_ingredients.forEach((v) => {
-        ingredients.push(v.name);
-      });
-    }
+
     let ndc,
       description = "";
     for (let i = 0; i < ndcDir.packaging.length; i++) {
@@ -159,7 +148,6 @@ module.exports = async (ndcDir, item_id, arg, type) => {
     const query = {
       brand_name: brand_name_base ?? brand_name,
       unii,
-      ingredients,
       name,
       rxcui,
       nui,

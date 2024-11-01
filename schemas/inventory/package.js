@@ -5,9 +5,9 @@ const {
 } = Schema;
 
 const packageSchema = new Schema({
-  unii: [String],
-  ingredients: [{ type: String, uppercase: true }],
   name: { type: String, uppercase: true },
+  brand_name: { type: String, uppercase: true },
+  unii: [String],
   rxcui: [String],
   nui: [String],
   ndc: {

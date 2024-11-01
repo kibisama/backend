@@ -1,19 +1,43 @@
 const Package = require("../../schemas/inventory/package");
 const Alternative = require("../../schemas/inventory/alternative");
+const NdcDir = require("../../schemas/openFDA/ndcDir");
 const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 const createDrug = require("./createDrug");
 
+/*
+Creates a Alternative document and a Drug document based on NDC Directory.
+If a NdcDir document is not passed, it will search local db for a reference product. 
+Returns: Alternative | undefined
+*/
 module.exports = async (ndcDir, package_id) => {
   try {
+    if (!ndcDir) {
+      const package = await Package.findOne({ _id: package_id });
+      const ndc = package.ndc;
+      const productNdc = ndc.substring(0, ndc.indexOf("-", 6));
+      const reference = await ProductLabeling.findOne({
+        "openfda.original_packager_product_ndc": productNdc,
+      });
+      if (!reference) {
+        return;
+      }
+      ndcDir = await NdcDir.findOne({
+        product_ndc: reference.openfda.product_ndc[0],
+      });
+    }
     if (!ndcDir) {
       return;
     }
     const { active_ingredients, generic_name, product_ndc } = ndcDir;
     let { rxcui } = ndcDir.openfda;
     if (!rxcui) {
-      const reference = await ProductLabeling.findOne({
-        "openfda.original_packager_product_ndc": product_ndc,
-      });
+      const reference =
+        (await ProductLabeling.findOne({
+          "openfda.original_packager_product_ndc": product_ndc,
+        })) ??
+        (await ProductLabeling.findOne({
+          "openfda.product_ndc": product_ndc,
+        }));
       if (!reference || !reference.openfda.rxcui) {
         return;
       }

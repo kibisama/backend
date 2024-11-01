@@ -1,10 +1,13 @@
 const dayjs = require("dayjs");
-const customParseFormat = require("dayjs/plugin/customParseFormat");
-dayjs.extend(customParseFormat);
 const NdcDir = require("../../schemas/openFDA/ndcDir");
 const { ndc } = require("../../api/openFda");
 const updateLocalProductLabeling = require("./updateLocalProductLabeling");
 
+/*
+Updates a NDC Directory document via Open FDA API.
+If packaging information or RxCUI not found, it will try to lookup for a reference product.
+Returns: NdcDir | Error | undefined
+*/
 module.exports = async (arg, type) => {
   try {
     let query = "";
@@ -29,20 +32,37 @@ module.exports = async (arg, type) => {
     const result = await ndc.searchOneByPackageDescription(query);
     if (result instanceof Error) {
       if (result.status === 404) {
-        await updateLocalProductLabeling(arg, type);
+        const reference = await updateLocalProductLabeling(arg, type);
+        if (reference instanceof Error || !reference) {
+          return result;
+        }
+        const _query = `"${reference.openfda.product_ndc}"`;
+        const _result = await ndc.searchOneByProductNdc(_query);
+        if (_result instanceof Error) {
+          return _result;
+        }
+        const data = _result.data.results?.[0];
+        await NdcDir.findOneAndUpdate(
+          { product_ndc: data.product_ndc },
+          {
+            lastRetrieved: dayjs(),
+            ...data,
+          },
+          { new: true, upsert: true }
+        );
+        return result;
       }
-      return result;
     } else if (result.data?.meta?.results?.total > 1) {
       return new Error("Multiple results found");
     }
-    const data = result.data.results[0];
+    const data = result.data.results?.[0];
     if (!data.openfda?.rxcui || data.openfda.rxcui.length === 0) {
       await updateLocalProductLabeling(arg, type);
     }
     return await NdcDir.findOneAndUpdate(
       { product_ndc: data.product_ndc },
       {
-        last_updated: dayjs(result.data.meta.last_updated, "YYYY-MM-DD"),
+        lastRetrieved: dayjs(),
         ...data,
       },
       { new: true, upsert: true }

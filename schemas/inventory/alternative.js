@@ -5,15 +5,15 @@ const {
 } = Schema;
 
 const alternativeSchema = new Schema({
-  rxcui: [String],
   name: { type: String, uppercase: true },
+  rxcui: [String],
   strength: [{ type: String, uppercase: true }],
   alternatives: {
     type: [ObjectId],
     ref: "Package",
   },
-  optimalQty: Number,
-  unit: String,
+  // optimalQty: Number,
+  // unit: String,
 });
 
 module.exports = mongoose.model("Alternative", alternativeSchema);
