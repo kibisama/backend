@@ -22,7 +22,6 @@ const cardinalInvoiceSchema = new Schema({
   omitCode: [String],
   // Note: Currency stored as strings
   cost: [String],
-  confirmNumber: [String],
   totalShipped: Number,
   totalAmount: String,
   isCSOSReported: { type: Boolean, default: false },

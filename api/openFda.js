@@ -5,7 +5,7 @@ const apiKey = process.env.OPENFDA_API_KEY;
 
 module.exports = {
   ndc: {
-    url: `/drug/ndc.json${apiKey ? "?api_key=" + apiKey + "&" : ""}`,
+    url: `/drug/ndc.json${apiKey ? "?api_key=" + apiKey + "&" : "?"}`,
     async searchOneByPackageDescription(_query) {
       const query = `${this.url}search=packaging.description:${_query}&limit=1`;
       try {

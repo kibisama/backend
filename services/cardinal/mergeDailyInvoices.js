@@ -3,13 +3,19 @@ const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const CardinalInvoice = require("../../schemas/cardinal/cardinalInvoice");
 
-module.exports = async (_date, rxOnly, exceptions) => {
+module.exports = async (_date, filter, exceptions) => {
   const date = dayjs(_date, "MM-DD-YYYY");
   const dateStart = dayjs(date).startOf("date");
   const dateEnd = dayjs(date).endOf("date");
   const query = { invoiceDate: { $gte: dateStart, $lte: dateEnd } };
-  if (rxOnly) {
-    query.invoiceType = { $ne: "OTHER" };
+
+  switch (filter) {
+    case "rxOnly":
+      query.invoiceType = { $ne: "OTHER" };
+      break;
+    case "nonRxOnly":
+      query.invoiceType = { $eq: "OTHER" };
+    default:
   }
   try {
     const invoices = await CardinalInvoice.find(query);

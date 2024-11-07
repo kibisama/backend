@@ -71,6 +71,17 @@ module.exports = async (ndcDir, package_id) => {
       });
     }
 
+    const _result = await Alternative.findOne({ rxcui: { $all: rxcui } });
+    if (_result) {
+      return await Alternative.findOneAndUpdate(
+        {
+          _id: _result._id,
+        },
+        { $addToSet: { alternatives: package_id } },
+        { new: true }
+      );
+    }
+
     const results = await Alternative.find({
       rxcui: { $in: rxcui },
       strength,
@@ -78,25 +89,23 @@ module.exports = async (ndcDir, package_id) => {
     let result;
     if (results.length > 0) {
       for (let i = 0; i < results.length; i++) {
-        if (results[i].rxcui.length === rxcui.length) {
-          if (results[i].rxcui.every((v) => rxcui.includes(v))) {
-            result = results[i];
-            break;
+        const existingRxcui = results[i].rxcui;
+        let match = true;
+        if (existingRxcui.length < rxcui.length) {
+          const hashTable = {};
+          rxcui.forEach((v) => (hashTable[`${v}`] = true));
+          for (let i = 0; i < existingRxcui.length; i++) {
+            if (!hashTable[`${existingRxcui[i]}`]) {
+              match = false;
+              break;
+            }
           }
-          continue;
-        } else if (results[i].rxcui.length < rxcui.length) {
-          if (results[i].rxcui.every((v) => rxcui.includes(v))) {
+          if (match) {
             result = await Alternative.findOneAndUpdate(
               { _id: results[i]._id },
               { $set: { rxcui } },
               { new: true }
             );
-            break;
-          }
-          continue;
-        } else {
-          if (rxcui.every((v) => results[i].rxcui.includes(v))) {
-            result = results[i];
             break;
           }
         }

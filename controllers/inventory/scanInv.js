@@ -7,10 +7,11 @@ const updateLocalNdcDir = require("../../services/openFDA/updateLocalNdcDir");
 const createPackage = require("../../services/inventory/createPackage");
 const createAlternative = require("../../services/inventory/createAlternative");
 const addToSetInventory = require("../../services/inventory/addToSetInventory");
+const manageDailyOrder = require("../../services/inventory/manageDailyOrder");
 
 module.exports = async (req, res, next) => {
   try {
-    const { mode, gtin, lot, exp, sn, inputDate, source, cost } = req.body;
+    const { mode, gtin, lot, exp, sn, source, cost } = req.body;
     let item = await Item.findOne({ gtin, sn });
     if (!item) {
       item = await createItem({ gtin, lot, exp, sn });
@@ -18,13 +19,11 @@ module.exports = async (req, res, next) => {
         next(new Error("Failed to create Item document. Please retry."));
       }
     }
-    const data = await updateItem(
-      { mode, gtin, sn, inputDate, source, cost },
-      item
-    );
+    const data = await updateItem({ mode, gtin, sn, source, cost }, item);
     if (!data) {
       next(new Error("Failed to update Item document. Please retry."));
     }
+
     const regEx = new RegExp(
       String.raw`${gtin.slice(3, 7)}-?${gtin[7]}-?${gtin.slice(8, 11)}-?${
         gtin[11]
@@ -74,7 +73,12 @@ module.exports = async (req, res, next) => {
           "Unable to create Alternative document. This usually occurs when RxCUI and/or packaging information is not defined in the OpenFDA database. You may continue scanning ignoring this.",
       });
     }
-    return res.send({ data });
+
+    res.send({ data });
+    if (mode === "FILL") {
+      await manageDailyOrder(data, package);
+    }
+    return;
   } catch (e) {
     console.log(e);
     next(e);

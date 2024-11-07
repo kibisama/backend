@@ -7,30 +7,29 @@ Returns: Item | undefined
 */
 module.exports = async (input, findResult) => {
   try {
-    const { mode, gtin, sn, inputDate, source, cost } = input;
+    const { mode, gtin, sn, source, cost } = input;
     const now = dayjs();
     if (findResult == null) {
       findResult = await Item.findOne({ gtin, sn });
     }
-    const _inputDate = dayjs(inputDate);
     let arg;
     switch (mode) {
-      case "Receive":
-        arg = { $set: { dateReceived: _inputDate, source, cost } };
+      case "RECEIVE":
+        arg = { $set: { dateReceived: now, source, cost } };
         break;
-      case "Fill":
+      case "FILL":
         if (findResult.dateFilled) {
           return findResult;
         }
         arg = { $set: { dateFilled: now } };
         break;
-      case "Reverse":
+      case "REVERSE":
         arg = { $set: { dateReversed: now }, $unset: { dateFilled: 1 } };
         break;
-      case "Return":
+      case "RETURN":
         arg = { $set: { dateReturned: now } };
         break;
-      case "Delete":
+      case "DELETE":
         return await Item.deleteOne({
           gtin,
           sn,

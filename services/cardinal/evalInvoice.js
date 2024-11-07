@@ -78,53 +78,7 @@ module.exports = async (date) => {
         });
       }
     });
-    // Eval 4: If a item has a different price from the previous invoice, push the item into priceChangedItems
-    // 많은 반복문이 실행 되므로 checkInventory시 실행하고싶다.
-    // if (invoiceItems.length > 0) {
-    //   for (let i = 0; i < invoiceItems.length; i++) {
-    //     const item = invoiceItems[i];
-    //     const result = CardinalInvoice.findOne(
-    //       {
-    //         item,
-    //         invoiceDate: { $lt: dayjs(date, "MM-DD-YYYY") },
-    //       },
-    //       { _id: 0, invoiceDate: 1 }
-    //     );
-    //     if (result) {
-    //       const { invoiceItems, invoiceCosts } = await mergeDailyInvoices(
-    //         dayjs(result.invoiceDate).format("MM-DD-YYYY")
-    //       );
-    //       let prevCost;
-    //       const costs = [];
-    //       invoiceItems.forEach((v, j) => {
-    //         if (v === item) {
-    //           costs.push(invoiceCosts[j]);
-    //         }
-    //       });
-    //       if (costs.length > 1) {
-    //         const _costs = costs.map((v) =>
-    //           Number(v.replace(/[^0-9.-]+/g, ""))
-    //         );
-    //         prevCost = Math.min(..._costs).toLocaleString("en-US", {
-    //           style: "currency",
-    //           currency: "USD",
-    //         });
-    //       } else {
-    //         prevCost = costs[0];
-    //       }
-    //       const cost = invoiceCosts[i];
-    //       if (cost !== prevCost) {
-    //         priceChangedItems.push({
-    //           item,
-    //           tradeName: invoiceTradeNames[i],
-    //           cost,
-    //           prevCost,
-    //           invoiceDate: dayjs(result.invoiceDate).format("MM-DD-YYYY"),
-    //         });
-    //       }
-    //     }
-    //   }
-    // }
+
     return {
       duplicatesWithDifferentPrices,
       backorderedItems,

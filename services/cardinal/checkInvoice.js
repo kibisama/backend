@@ -29,8 +29,8 @@ module.exports = async function checkInvoice() {
     }
     const result = await puppet.cardinal.getInvoice({
       //testing
-      // date: now.format("10/24/2024"),
-      date: now.format("MM/DD/YYYY"),
+      date: now.format("10/24/2024"),
+      // date: now.format("MM/DD/YYYY"),
     });
     if (result) {
       const { invoiceDetails } = result.data.results;

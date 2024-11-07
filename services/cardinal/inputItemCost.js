@@ -9,7 +9,7 @@ module.exports = async (_date) => {
     const dateStart = date.startOf("date");
     const dateEnd = date.endOf("date");
     const { invoiceItems, invoiceCosts, invoiceShipQty, invoiceTradeNames } =
-      await mergeDailyInvoices(_date, true, { needles: true });
+      await mergeDailyInvoices(_date, "rxOnly", { needles: true });
     const duplicates = new Set(
       invoiceItems.filter((v, i) => invoiceItems.indexOf(v) !== i)
     );
@@ -48,7 +48,7 @@ module.exports = async (_date) => {
         const _ids = [];
         const items = await Item.find({
           gtin: { $regex: match },
-          source: "Cardinal",
+          source: "CARDINAL",
           dateReceived: { $gte: dateStart, $lte: dateEnd },
         });
         items.forEach((v, i) => {
@@ -112,7 +112,7 @@ module.exports = async (_date) => {
       );
       const items = await Item.find({
         gtin: { $regex: match },
-        source: "Cardinal",
+        source: "CARDINAL",
         dateReceived: { $gte: dateStart, $lte: dateEnd },
       });
 

@@ -20,7 +20,6 @@ module.exports = async (invoiceDetails) => {
       shipQty,
       omitCode,
       cost,
-      confirmNumber,
       itemClass,
     } = invoiceDetails;
     const _invoiceDate = dayjs(invoiceDate, "MM/DD/YYYY");
@@ -72,7 +71,6 @@ module.exports = async (invoiceDetails) => {
       shipQty: shipQty.map((v) => (v ? Number(v) : 0)),
       omitCode,
       cost,
-      confirmNumber,
       totalShipped,
       totalAmount,
     });

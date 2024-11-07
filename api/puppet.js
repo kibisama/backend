@@ -12,5 +12,12 @@ module.exports = {
         console.log(e);
       }
     },
+    async updateItem(ndc11) {
+      try {
+        return await client.post(`${this.url}/updateItem`, ndc11);
+      } catch (e) {
+        console.log(e);
+      }
+    },
   },
 };

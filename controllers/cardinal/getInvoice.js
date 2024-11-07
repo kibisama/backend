@@ -19,7 +19,6 @@ module.exports = async (req, res, next) => {
         duplicatesWithDifferentPrices,
         backorderedItems,
         differentQtyShipped,
-        // priceChangedItems,
         invoiceTotalShipped,
         invoiceTotalAmount,
       } = await evalInvoice(dateParam);
@@ -28,7 +27,6 @@ module.exports = async (req, res, next) => {
         duplicatesWithDifferentPrices,
         backorderedItems,
         differentQtyShipped,
-        // priceChangedItems,
         invoiceTotalShipped,
         invoiceTotalAmount,
       });

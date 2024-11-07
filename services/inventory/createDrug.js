@@ -41,14 +41,30 @@ module.exports = async (ndcDir, alternative_id) => {
     let result;
     if (results.length > 0) {
       for (let i = 0; i < results.length; i++) {
-        if (results[i].rxcui.every((v) => rxcui.includes(v))) {
-          const query = alternative_id
-            ? { $set: { rxcui }, $addToSet: { families: alternative_id } }
-            : { $set: { rxcui } };
-          result = await Drug.findOneAndUpdate({ _id: results[i]._id }, query, {
-            new: true,
-          });
-          return result;
+        const existingRxcui = results[i].rxcui;
+        let match = true;
+        if (existingRxcui.length < rxcui.length) {
+          const hashTable = {};
+          rxcui.forEach((v) => (hashTable[`${v}`] = true));
+          for (let i = 0; i < existingRxcui.length; i++) {
+            if (!hashTable[`${existingRxcui[i]}`]) {
+              match = false;
+              break;
+            }
+          }
+          if (match) {
+            const query = alternative_id
+              ? { $set: { rxcui }, $addToSet: { families: alternative_id } }
+              : { $set: { rxcui } };
+            result = await Drug.findOneAndUpdate(
+              { _id: results[i]._id },
+              query,
+              {
+                new: true,
+              }
+            );
+            return result;
+          }
         }
       }
     }
