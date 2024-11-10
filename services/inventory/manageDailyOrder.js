@@ -7,7 +7,8 @@ module.exports = async (item, package) => {
     if (!report) {
       return;
     }
-    const result = await puppet.cardinal.updateItem(package.ndc11);
+    // const result = await puppet.cardinal.updateItem(package.ndc11);
+    const result = await puppet.cardinal.updateItem("68180-0512-01");
   } catch (e) {
     console.log(e);
   }

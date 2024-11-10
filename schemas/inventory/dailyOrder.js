@@ -16,7 +16,7 @@ const dailyOrderSchema = new Schema({
   cardinalPrice: [String],
   referPrice: [String],
   //   referItem : {type: [ObjectId], ref: "Pharmsaver"}
-  status: [String],
+  status: [{ type: String, uppercase: true }],
   countRequest: [Number],
   lastRequestSent: [Date],
   reason: [String],

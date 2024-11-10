@@ -28,11 +28,9 @@ module.exports = async function checkInvoice() {
       return scheduleJob(tomorrow, checkInvoice);
     }
     const result = await puppet.cardinal.getInvoice({
-      //testing
-      date: now.format("10/24/2024"),
-      // date: now.format("MM/DD/YYYY"),
+      date: now.format("MM/DD/YYYY"),
     });
-    if (result) {
+    if (!result instanceof Error) {
       const { invoiceDetails } = result.data.results;
       if (invoiceDetails.length > 0) {
         for (const invoiceDetail of invoiceDetails) {

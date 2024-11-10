@@ -176,7 +176,6 @@ module.exports = async (req, res, next) => {
       selfCheckItems,
     });
   } catch (e) {
-    console.log(e);
     next(e);
   }
 };

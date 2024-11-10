@@ -10,13 +10,15 @@ module.exports = {
         return await client.post(`${this.url}/getInvoice`, date);
       } catch (e) {
         console.log(e);
+        return e;
       }
     },
     async updateItem(ndc11) {
       try {
-        return await client.post(`${this.url}/updateItem`, ndc11);
+        return await client.post(`${this.url}/updateItem`, { ndc11 });
       } catch (e) {
         console.log(e);
+        return e;
       }
     },
   },

@@ -8,7 +8,7 @@ module.exports = async (item) => {
     let cost;
     if (!item.cost) {
       const result = await Item.findOne(
-        { gtin, cost: { $ne: undefined } },
+        { gtin: item.gtin, cost: { $ne: undefined } },
         { cost: 1 },
         { sort: { dateReceived: -1 } }
       );
@@ -26,12 +26,13 @@ module.exports = async (item) => {
         item: [item._id],
         prevCost: [cost],
         prevSource: item.source,
+        status: ["FILLED"],
       });
     }
     return await DailyOrder.findOneAndUpdate(
       { date },
       {
-        $push: { prevCost: cost, prevSource: item.source },
+        $push: { prevCost: cost, prevSource: item.source, status: "FILLED" },
         $addToSet: { item: item._id },
       },
       { new: true, upsert: true }

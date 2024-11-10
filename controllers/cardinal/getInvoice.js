@@ -33,7 +33,6 @@ module.exports = async (req, res, next) => {
     }
     return res.sendStatus(404);
   } catch (e) {
-    console.log(e);
     next(e);
   }
 };
