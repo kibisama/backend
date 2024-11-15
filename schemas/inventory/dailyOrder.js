@@ -5,21 +5,38 @@ const {
 } = Schema;
 
 const dailyOrderSchema = new Schema({
-  // One Date One Reprot. Please follow the date format as "MM-DD-YYYY"
-  date: { type: String, required: true, unique: true },
+  lastUpdated: Date,
+  date: { type: Date, default: Date.now() },
   item: {
-    type: [ObjectId],
+    type: ObjectId,
     ref: "Item",
   },
-  prevCost: [String],
-  prevSource: [String],
-  cardinalPrice: [String],
-  referPrice: [String],
-  //   referItem : {type: [ObjectId], ref: "Pharmsaver"}
-  status: [{ type: String, uppercase: true }],
-  countRequest: [Number],
-  lastRequestSent: [Date],
-  reason: [String],
+  orderStatus: { type: String, uppercase: true },
+  package: {
+    type: ObjectId,
+    ref: "Package",
+  },
+  // ndc11: String,
+
+  cardinalCost: String,
+  cardinalAlt: {
+    cin: String,
+    ndc: String,
+    size: String,
+    cost: String,
+    uoiCost: String,
+    contract: String,
+  },
+  //
+  secondaryDetails: {
+    pkgPrice: String,
+    qtyAvl: String,
+    wholesaler: String,
+    lotExpDate: String,
+  },
+  // secondaryAlt : {type: Object}
+  // lastRequestSent: Date,
+  // reason: String,
 });
 
 module.exports = mongoose.model("Daily Order", dailyOrderSchema);

@@ -97,51 +97,52 @@ module.exports = async (req, res, next) => {
       }
     }
     const priceChangedItems = [];
-    if (invoiceItems.length > 0) {
-      for (let i = 0; i < invoiceItems.length; i++) {
-        const item = invoiceItems[i];
-        const result = CardinalInvoice.findOne(
-          {
-            item,
-            invoiceDate: { $lt: dayjs(date, "MM-DD-YYYY") },
-          },
-          { _id: 0, invoiceDate: 1 }
-        );
-        if (result) {
-          const { invoiceItems, invoiceCosts } = await mergeDailyInvoices(
-            dayjs(result.invoiceDate).format("MM-DD-YYYY")
-          );
-          let prevCost;
-          const costs = [];
-          invoiceItems.forEach((v, j) => {
-            if (v === item) {
-              costs.push(invoiceCosts[j]);
-            }
-          });
-          if (costs.length > 1) {
-            const _costs = costs.map((v) =>
-              Number(v.replace(/[^0-9.-]+/g, ""))
-            );
-            prevCost = Math.min(..._costs).toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            });
-          } else {
-            prevCost = costs[0];
-          }
-          const cost = invoiceCosts[i];
-          if (cost !== prevCost) {
-            priceChangedItems.push({
-              item,
-              tradeName: invoiceTradeNames[i],
-              cost,
-              prevCost,
-              invoiceDate: dayjs(result.invoiceDate).format("MM-DD-YYYY"),
-            });
-          }
-        }
-      }
-    }
+    // 이하 코드 확인 필요
+    // if (invoiceItems.length > 0) {
+    //   for (let i = 0; i < invoiceItems.length; i++) {
+    //     const item = invoiceItems[i];
+    //     const result = CardinalInvoice.findOne(
+    //       {
+    //         item,
+    //         invoiceDate: { $lt: dayjs(date, "MM-DD-YYYY") },
+    //       },
+    //       { _id: 0, invoiceDate: 1 }
+    //     );
+    //     if (result) {
+    //       const { invoiceItems, invoiceCosts } = await mergeDailyInvoices(
+    //         dayjs(result.invoiceDate).format("MM-DD-YYYY")
+    //       );
+    //       let prevCost;
+    //       const costs = [];
+    //       invoiceItems.forEach((v, j) => {
+    //         if (v === item) {
+    //           costs.push(invoiceCosts[j]);
+    //         }
+    //       });
+    //       if (costs.length > 1) {
+    //         const _costs = costs.map((v) =>
+    //           Number(v.replace(/[^0-9.-]+/g, ""))
+    //         );
+    //         prevCost = Math.min(..._costs).toLocaleString("en-US", {
+    //           style: "currency",
+    //           currency: "USD",
+    //         });
+    //       } else {
+    //         prevCost = costs[0];
+    //       }
+    //       const cost = invoiceCosts[i];
+    //       if (cost !== prevCost) {
+    //         priceChangedItems.push({
+    //           item,
+    //           tradeName: invoiceTradeNames[i],
+    //           cost,
+    //           prevCost,
+    //           invoiceDate: dayjs(result.invoiceDate).format("MM-DD-YYYY"),
+    //         });
+    //       }
+    //     }
+    //   }
+    // }
     let selfCheckItems = [];
     if (exceptionItems.length > 0) {
       for (let i = 0; i < expiringItems.length; i++) {

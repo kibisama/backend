@@ -31,6 +31,7 @@ const packageSchema = new Schema({
   repSize: Number,
   unit: [{ type: String, uppercase: true }],
   repUnit: { type: String, uppercase: true },
+  // strength: String,
   optimalQty: Number,
   preferred: { type: Boolean, default: false },
   inventories: {

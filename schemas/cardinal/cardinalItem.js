@@ -14,14 +14,13 @@ const cardinalItemSchema = new Schema({
   form: String,
   stockStatus: String,
   qtyAvailable: String,
-  invoiceCost: String,
-  retailPriceChanged: String,
+  estNetCost: String,
+  netUoiCost: String,
+  retailPriceChanged: Date,
   fdbMfrName: String,
-
   // Possible Number Type?
   packageQty: String,
   packageSize: String,
-
   productType: String,
   unit: String,
   deaSchedule: String,
@@ -29,28 +28,26 @@ const cardinalItemSchema = new Schema({
   returnPackaging: String,
   specialty: String,
 
-  //   altCIN: [String],
-  //   altNDC: [String],
-  //   altTradeName: [String],
-  //   altStrength: [String],
-  //   altForm: [String],
-  //   altSize: [String],
-  //   altType: [String],
-  //   altCost: [String],
-  //   altContract: [String],
-  //   cardinalHistOrderDate: [String],
-  //   cardinalHistInvoiceDate: [String],
-  //   cardinalHistOrderQty: [String],
-  //   cardinalHistShipQty: [String],
-  //   cardinalHistUnitCost: [String],
-  //   cardinalHistTotalCost: [String],
-  //   cardinalHistInvoiceNum: [String],
-  //   cardinalHistOrderMethod: [String],
-  //   cardinalWACEffectiveDate: [String],
-  //   cardinalWAC: [String],
-  //   cardinalWACPercentChange: [String],
-  //   dateLastUpdatedCardinal: Date,
-  //   lastDateCardinalPriceMatched: Date,
+  altCin: [String],
+  altNdc: [String],
+  altTradeName: [String],
+  altMfr: [String],
+  altSize: [String],
+  altType: [String],
+  altNetCost: [String],
+  altNetUoiCost: [String],
+  altContract: [String],
+
+  histInvoiceDate: [Date],
+  // Negative numbers are formatted as (Number)
+  histShipQty: [String],
+  // Negative numbers are formatted as (\$Number)
+  histUnitCost: [String],
+  histContract: [String],
+  histInvoiceNumber: [String],
+  histOrderMethod: [String],
+
+  lastNegotiated: Date,
 });
 
 module.exports = mongoose.model("Cardinal Item", cardinalItemSchema);

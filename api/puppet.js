@@ -22,4 +22,15 @@ module.exports = {
       }
     },
   },
+  ps: {
+    url: "/pharmsaver",
+    async updateSearch(ndc11) {
+      try {
+        return await client.post(`${this.url}/updateSearch`, { ndc11 });
+      } catch (e) {
+        console.log(e);
+        return e;
+      }
+    },
+  },
 };
