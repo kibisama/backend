@@ -5,6 +5,7 @@ const CardinalItem = require("../../schemas/cardinal/cardinalItem");
 const PSSearch = require("../../schemas/pharmsaver/psSearch");
 const updateItem = require("../cardinal/updateItem");
 const updateSearch = require("../pharmsaver/updateSearch");
+const updateDailyOrder = require("./updateDailyOrder");
 
 module.exports = async (item, package) => {
   const now = dayjs();
@@ -35,9 +36,11 @@ module.exports = async (item, package) => {
           break;
         case !cardinalItem:
           updateItem(ndc11, dailyOrder);
+          await updateDailyOrder(dailyOrder, ndc11);
           break;
         default:
           updateSearch(ndc11, dailyOrder);
+          await updateDailyOrder(dailyOrder, ndc11);
       }
       return dailyOrder;
     } else {

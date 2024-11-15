@@ -42,6 +42,9 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
         const _ndc11 = ndc11.replaceAll("-", "");
         if (!ndc.includes(_ndc11)) {
           await createVoidSearch(ndc11);
+          if (dailyOrder) {
+            await updateDailyOrder(dailyOrder, ndc11);
+          }
           return await PSSearch.create({ ...results });
         }
         const _results = await PSSearch.find({

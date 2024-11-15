@@ -4,6 +4,7 @@ const CardinalItem = require("../../schemas/cardinal/cardinalItem");
 const PSSearch = require("../../schemas/pharmsaver/psSearch");
 
 module.exports = async (dailyOrder, ndc11) => {
+  console.log("UPDATING DAILY ORDER");
   const query = {};
   if (!ndc11) {
     const { package } = await DailyOrder.findById(dailyOrder._id).populate([
@@ -72,8 +73,8 @@ module.exports = async (dailyOrder, ndc11) => {
     if (cardinalItem && psSearch) {
       query.orderStatus = "UPDATED";
     }
+    // 검색결과없으면 schedule
     query.lastUpdated = dayjs();
-    console.log("query", query);
     return await DailyOrder.findOneAndUpdate(
       {
         _id: dailyOrder._id,

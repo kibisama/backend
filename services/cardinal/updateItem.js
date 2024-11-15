@@ -39,7 +39,7 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
         productDetails.retailPriceChanged = dayjs(
           productDetails.retailPriceChanged
         );
-        productDetails.altNetCost = productDetails.histInvoiceDate.map(
+        productDetails.altNetCost = productDetails.altNetCost.map(
           (v) => "$" + v
         );
         productDetails.histInvoiceDate = productDetails.histInvoiceDate.map(
@@ -51,6 +51,7 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
           { new: true, upsert: true }
         );
         if (dailyOrder && result) {
+          console.log("WILL UPDATE DAILYORDER BY CARDINAL UPDATE");
           await updateDailyOrder(dailyOrder, ndc11);
         }
       }
