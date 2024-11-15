@@ -8,10 +8,15 @@ module.exports = async (ndc11) => {
     if (_result) {
       return;
     } else {
-      return await PSSearch.create({
+      // return await PSSearch.create({
+      //   lastUpdated: dayjs(),
+      //   ndc: [ndc],
+      // });
+      const result = await PSSearch.create({
         lastUpdated: dayjs(),
         ndc: [ndc],
       });
+      console.log("voidsearch result", result);
     }
   } catch (e) {
     console.log(e);

@@ -58,8 +58,8 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
   }
   try {
     const result = await update();
-    if (dailyOrder) {
-      await updateDailyOrder(dailyOrder, ndc);
+    if (dailyOrder && result && !result instanceof Error) {
+      await updateDailyOrder(dailyOrder, ndc11);
     }
     return result;
   } catch (e) {
