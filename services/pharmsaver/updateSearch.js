@@ -39,6 +39,10 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
         results.lastUpdated = dayjs();
         const ndcSet = new Set(results.ndc);
         const ndc = [...ndcSet];
+        const _ndc11 = ndc11.replaceAll("-", "");
+        if (!ndc.includes(_ndc11)) {
+          await createVoidSearch(ndc11);
+        }
         const _results = await PSSearch.find({
           ndc: { $in: ndc },
         });
@@ -49,7 +53,7 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
           }
         }
         return await PSSearch.findOneAndUpdate(
-          { ndc: ndc11.replaceAll("-", "") },
+          { ndc: _ndc11 },
           { ...results },
           { new: true, upsert: true }
         );
