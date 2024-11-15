@@ -16,7 +16,7 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
           ndc11 + " " + now.format("MM/DD/YY HH:mm:ss")
         }...`
       );
-      const result = await puppet.cardinal.updateItem(ndc11);
+      let result = await puppet.cardinal.updateItem(ndc11);
       if (result instanceof Error) {
         switch (result.status) {
           // case 404:
@@ -45,11 +45,14 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
         productDetails.histInvoiceDate = productDetails.histInvoiceDate.map(
           (v) => dayjs(v)
         );
-        return await CardinalItem.findOneAndUpdate(
+        result = await CardinalItem.findOneAndUpdate(
           { ndc: ndc11 },
           { ...productDetails },
           { new: true, upsert: true }
         );
+        if (dailyOrder && result) {
+          await updateDailyOrder(dailyOrder, ndc11);
+        }
       }
       return result;
     } catch (e) {
@@ -58,9 +61,6 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
   }
   try {
     const result = await update();
-    if (dailyOrder && result && !result instanceof Error) {
-      await updateDailyOrder(dailyOrder, ndc11);
-    }
     return result;
   } catch (e) {
     return e;

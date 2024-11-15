@@ -16,7 +16,7 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
           ndc11 + " " + now.format("MM/DD/YY HH:mm:ss")
         }...`
       );
-      const result = await puppet.ps.updateSearch(ndc11);
+      let result = await puppet.ps.updateSearch(ndc11);
       if (result instanceof Error) {
         switch (result.status) {
           case 404:
@@ -53,11 +53,14 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
             await PSSearch.findByIdAndDelete(id);
           }
         }
-        return await PSSearch.findOneAndUpdate(
+        result = await PSSearch.findOneAndUpdate(
           { ndc: _ndc11 },
           { ...results },
           { new: true, upsert: true }
         );
+        if (dailyOrder && result) {
+          await updateDailyOrder(dailyOrder, ndc11);
+        }
       }
       return result;
     } catch (e) {
@@ -66,9 +69,6 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
   }
   try {
     const result = await update();
-    if (dailyOrder && result && !result instanceof Error) {
-      await updateDailyOrder(dailyOrder, ndc11);
-    }
     return result;
   } catch (e) {
     return e;
