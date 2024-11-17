@@ -56,7 +56,7 @@ module.exports = async (arg, type) => {
       return new Error("Multiple results found");
     }
     const data = result.data.results?.[0];
-    if (!data.openfda?.rxcui || data.openfda.rxcui.length === 0) {
+    if (data.openfda.rxcui?.length === 0) {
       await updateLocalProductLabeling(arg, type);
     }
     return await NdcDir.findOneAndUpdate(

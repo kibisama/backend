@@ -24,18 +24,18 @@ module.exports = async (req, res, next) => {
       return next(new Error("Failed to update Item document."));
     }
     const response = { data };
-    const regEx = new RegExp(
-      String.raw`${gtin.slice(3, 7)}-?${gtin[7]}-?${gtin.slice(8, 11)}-?${
-        gtin[11]
-      }-?${gtin[12]}`
-    );
-    let package = await Package.findOne({ ndc: { $regex: regEx } });
+    let package = await Package.findOne({ gtin });
     if (package) {
-      const result = await addToSetInventory(data._id, package.ndc);
+      const result = await addToSetInventory(data);
       if (!result) {
         next(new Error("Failed to update Package document."));
       }
     } else {
+      const regEx = new RegExp(
+        String.raw`${gtin.slice(3, 7)}-?${gtin[7]}-?${gtin.slice(8, 11)}-?${
+          gtin[11]
+        }-?${gtin[12]}`
+      );
       let ndcDir = await NdcDir.findOne({
         packaging: { $elemMatch: { description: { $regex: regEx } } },
       });
@@ -54,9 +54,9 @@ module.exports = async (req, res, next) => {
           return;
         }
       }
-      package = await createPackage(ndcDir, data._id, regEx);
+      package = await createPackage(ndcDir, data, regEx);
       if (package) {
-        const alt = await createAlternative(ndcDir, package._id);
+        const alt = await createAlternative(ndcDir, package);
         if (!alt) {
           response.error = "Failed to create Alternative document.";
         }

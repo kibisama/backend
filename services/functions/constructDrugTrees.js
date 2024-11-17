@@ -5,14 +5,14 @@ module.exports = (data) =>
       id: v._id,
       label: v.name,
       dea_schedule: v.dea_schedule,
-      children: v.families.map((w, j) => {
+      children: v.children.map((w, j) => {
         return {
           hierarchy: 1,
           id: w._id,
           label: w.name,
           // optimalQty: w.optimalQty,
           // unit: w.unit,
-          children: w.alternatives.map((x, k) => {
+          children: w.children.map((x, k) => {
             return {
               hierarchy: 2,
               id: x._id,
@@ -22,14 +22,14 @@ module.exports = (data) =>
               // size: x.size,
               // unit: x.unit,
               preferred: x.preferred,
-              count: x.inventories?.length,
+              count: x.children?.length,
               optimalQty: x.optimalQty,
               children: [
                 {
                   hierarchy: 3,
                   id: `${i.toString()}.${j.toString()}.${k.toString()}`,
                   label: "",
-                  data: x.inventories,
+                  data: x.children,
                 },
               ],
             };

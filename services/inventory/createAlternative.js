@@ -4,15 +4,19 @@ const NdcDir = require("../../schemas/openFDA/ndcDir");
 const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 const createDrug = require("./createDrug");
 
-/*
-Creates a Alternative document and a Drug document based on NDC Directory.
-If a NdcDir document is not passed, it will search local db for a reference product. 
-Returns: Alternative | undefined
-*/
-module.exports = async (ndcDir, package_id) => {
+/**
+ * Creates an Alternative document based on NDC Directory and/or Package.
+ * @param {NdcDir} ndcDir
+ * @param {Package} package
+ * @returns {Promise<Alternative|undefined>}
+ */
+module.exports = async (ndcDir, package) => {
   try {
+    /* If NDC Directory of the original item is missing from OpenFDA , it will refer NDC Directory of another product with the same original packager ndc */
     if (!ndcDir) {
-      const package = await Package.findOne({ _id: package_id });
+      if (!package) {
+        return;
+      }
       const ndc = package.ndc;
       const productNdc = ndc.substring(0, ndc.indexOf("-", 6));
       const reference = await ProductLabeling.findOne({
@@ -30,7 +34,11 @@ module.exports = async (ndcDir, package_id) => {
     }
     const { active_ingredients, generic_name, product_ndc } = ndcDir;
     let { rxcui } = ndcDir.openfda;
+    /* If NDC Directory misses RxCui, it will refer Product Labeling with the same original packager ndc */
     if (!rxcui) {
+      if (!product_ndc) {
+        return;
+      }
       const reference =
         (await ProductLabeling.findOne({
           "openfda.original_packager_product_ndc": product_ndc,
@@ -43,53 +51,36 @@ module.exports = async (ndcDir, package_id) => {
       }
       rxcui = reference.openfda.rxcui;
     }
+    /* If Strength is missing, it will straightly create a new document */
     const strength = [];
-    let name = generic_name;
-    if (active_ingredients instanceof Array) {
+    if (active_ingredients?.length > 0) {
       active_ingredients.forEach((v) => {
         strength.push(v.strength);
       });
-      if (strength.length > 0) {
-        name += " ";
-      }
-      strength.forEach((v, i, a) => {
-        let text = v;
-        const match = v.match(/(\D+)/);
-        if (match && match[0] === a[i + 1]?.match(/(\D+)/)[0]) {
-          text = v.substring(0, v.length - match[0].length - 1);
-        }
-        if (text.startsWith(".")) {
-          text = "0" + v;
-        }
-        if (i === strength.length - 1 && v.endsWith("/1")) {
-          name += text.substring(0, text.length - 2);
-        } else if (i < a.length - 1) {
-          name += text + "-";
-        } else {
-          name += text;
-        }
+      /* If Alternative already exists and its RxCui array is inclusive */
+      let _result = await Alternative.findOne({
+        rxcui: { $all: rxcui },
+        strength,
       });
-    }
-
-    const _result = await Alternative.findOne({ rxcui: { $all: rxcui } });
-    if (_result) {
-      return await Alternative.findOneAndUpdate(
-        {
-          _id: _result._id,
-        },
-        { $addToSet: { alternatives: package_id } },
-        { new: true }
-      );
-    }
-
-    const results = await Alternative.find({
-      rxcui: { $in: rxcui },
-      strength,
-    });
-    let result;
-    if (results.length > 0) {
-      for (let i = 0; i < results.length; i++) {
-        const existingRxcui = results[i].rxcui;
+      if (_result) {
+        if (package) {
+          _result = await Alternative.findOneAndUpdate(
+            {
+              _id: _result._id,
+            },
+            { $addToSet: { children: package._id } },
+            { new: true }
+          );
+        }
+        return _result;
+      }
+      /* If Alternative already exists but its RxCui array is not inclusive, it has to update Drug rxcui  */
+      const result = await Alternative.findOne({
+        rxcui: { $in: rxcui },
+        strength,
+      });
+      if (result) {
+        const existingRxcui = result.rxcui;
         let match = true;
         if (existingRxcui.length < rxcui.length) {
           const hashTable = {};
@@ -101,42 +92,52 @@ module.exports = async (ndcDir, package_id) => {
             }
           }
           if (match) {
-            result = await Alternative.findOneAndUpdate(
-              { _id: results[i]._id },
-              { $set: { rxcui } },
-              { new: true }
+            const query = package
+              ? { $set: { rxcui }, $addToSet: { children: package._id } }
+              : { $set: { rxcui } };
+            const _result = await Alternative.findOneAndUpdate(
+              { _id: result._id },
+              query,
+              {
+                new: true,
+              }
             );
-            break;
+            await createDrug(ndcDir);
+            return _result;
           }
         }
       }
     }
-    if (!result) {
-      result = await Alternative.create({
-        rxcui,
-        name,
-        strength,
-        alternatives: package_id ? [package_id] : [],
-      });
-    } else if (package_id) {
-      result = await Alternative.findOneAndUpdate(
-        {
-          _id: result._id,
-        },
-        { $addToSet: { alternatives: package_id } },
-        { new: true }
-      );
+    /* else */
+    let name = generic_name;
+    if (package?.strength) {
+      name += ` ${package.strength}`;
+    } else if (strength.length > 0) {
+      name += ` ${strength
+        .map((v, i, a) => {
+          let text = v;
+          const match = v.match(/([^\d.]+)(.+)/);
+          const match2 = a[i + 1]?.match(/([^\d.]+)(.+)/);
+          if (match && match2 && match[0] === match2[0]) {
+            text = text.substring(0, text.length - match[0].length);
+          }
+          if (text.startsWith(".")) {
+            text = "0" + text;
+          }
+          if (text.endsWith("/1")) {
+            text = text.substring(0, text.length - 2);
+          }
+          return text;
+        })
+        .join("-")}`;
     }
-    if (package_id) {
-      await Package.findOneAndUpdate(
-        {
-          _id: package_id,
-        },
-        { alternative: result._id },
-        { new: true }
-      );
-    }
-    await createDrug(ndcDir, result._id);
+    const result = await Alternative.create({
+      name,
+      rxcui,
+      strength,
+      children: package ? [package._id] : undefined,
+    });
+    await createDrug(ndcDir, result._id, rxcui);
     return result;
   } catch (e) {
     console.log(e);

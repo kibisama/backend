@@ -5,15 +5,15 @@ const {
 } = Schema;
 
 const alternativeSchema = new Schema({
-  name: { type: String, uppercase: true },
-  rxcui: [String],
-  strength: [{ type: String, uppercase: true }],
-  alternatives: {
+  name: { type: String, required: true, uppercase: true },
+  /* Required fields for classification */
+  rxcui: { type: [String], required: true },
+  strength: { type: [String], uppercase: true }, // Note: OpenFDA does not guarantee its existence nor an uniform unit for the same strength.
+  /* Relational */
+  children: {
     type: [ObjectId],
     ref: "Package",
   },
-  // optimalQty: Number,
-  // unit: String,
 });
 
 module.exports = mongoose.model("Alternative", alternativeSchema);

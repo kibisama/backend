@@ -5,40 +5,44 @@ const {
 } = Schema;
 
 const packageSchema = new Schema({
-  name: { type: String, uppercase: true },
-  brand_name: { type: String, uppercase: true },
-  unii: [String],
-  rxcui: [String],
-  nui: [String],
-  ndc: {
+  name: { type: String, required: true, uppercase: true },
+  /* Minimal */
+  gtin: {
     type: String,
     unique: true,
     required: true,
+  },
+  ndc: {
+    type: String,
+    unique: true,
   },
   ndc11: {
     type: String,
     unique: true,
-    required: true,
-    minLength: 13,
-    maxLength: 13,
   },
+  /* Package details */
+  brand_name: { type: String, uppercase: true },
+  generic_name: { type: String, uppercase: true },
+  rxcui: [String], // Note: NDC Directory might miss openfda.rxcui
   manufacturer_name: {
     type: String,
     uppercase: true,
   },
-  product_type: String,
-  size: [Number],
-  repSize: Number,
-  unit: [{ type: String, uppercase: true }],
+  product_type: { type: String, uppercase: true },
+  dosage_form: { type: String, uppercase: true },
+  active_ingredients: { type: String, uppercase: true },
+  strength: { type: String, uppercase: true },
+  route: { type: String, uppercase: true },
+  repSize: String, // prefer String type because of possible decimals
   repUnit: { type: String, uppercase: true },
-  // strength: String,
-  optimalQty: Number,
+  /* Internal data */
+  optimalQty: { type: Number, default: 0 },
   preferred: { type: Boolean, default: false },
-  inventories: {
+  /* Relational */
+  children: {
     type: [ObjectId],
     ref: "Item",
   },
-  alternative: { type: ObjectId, ref: "Alternative" },
   ndcDir: {
     type: ObjectId,
     ref: "NDC Directory",

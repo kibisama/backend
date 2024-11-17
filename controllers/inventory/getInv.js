@@ -12,12 +12,12 @@ const getInv = async (req, res, next) => {
     const drugs = await Drug.find({}, { name: 1, dea_schedule: 1 })
       .populate([
         {
-          path: "families",
+          path: "children",
           select: ["name", "strength", "optimalQty", "unit"],
           options: { sort: { name: 1 } },
           populate: [
             {
-              path: "alternatives",
+              path: "children",
               select: [
                 "ndc",
                 "ndc11",
@@ -31,7 +31,7 @@ const getInv = async (req, res, next) => {
               ],
               populate: [
                 {
-                  path: "inventories",
+                  path: "children",
                   match: {
                     $and: [
                       { dateFilled: undefined },

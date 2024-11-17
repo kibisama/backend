@@ -5,11 +5,13 @@ const {
 } = Schema;
 
 const drugSchema = new Schema({
-  name: { type: String, uppercase: true },
-  rxcui: [String],
-  generic_name: { type: String, required: true, uppercase: true },
+  name: { type: String, required: true, uppercase: true },
+  /* Required fields for classification */
+  rxcui: { type: [String], required: true },
+  /* Common fields */
   dea_schedule: String,
-  families: {
+  /* Relational */
+  children: {
     type: [ObjectId],
     ref: "Alternative",
   },
