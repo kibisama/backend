@@ -37,17 +37,19 @@ const dailyOrderSchema = new Schema({
     wholesaler: String,
     lotExpDate: String,
   },
-  psAlts: {
-    description: [String],
-    pkg: [String],
-    pkgPrice: [String],
-    ndc: [String],
-    qtyAvl: [String],
-    unitPrice: [String],
-    rxOtc: [String],
-    wholesaler: [String],
-    manufacturer: [String],
-  },
+  psAlts: [
+    {
+      description: String,
+      pkg: String,
+      pkgPrice: String,
+      ndc: String,
+      qtyAvl: String,
+      unitPrice: String,
+      rxOtc: String,
+      wholesaler: String,
+      manufacturer: String,
+    },
+  ],
 });
 
 module.exports = mongoose.model("Daily Order", dailyOrderSchema);

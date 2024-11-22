@@ -35,17 +35,7 @@ module.exports = async (dailyOrder, ndc11) => {
         wholesaler,
         manufacturer,
       } = psSearch;
-      const psAlts = {
-        description: [],
-        pkg: [],
-        pkgPrice: [],
-        ndc: [],
-        qtyAvl: [],
-        unitPrice: [],
-        rxOtc: [],
-        wholesaler: [],
-        manufacturer: [],
-      };
+      const psAlts = [];
       /* if PS Search is void */
       if (ndc.length === 0) {
         query.psDetails = {
@@ -57,9 +47,17 @@ module.exports = async (dailyOrder, ndc11) => {
           wholesaler: "NOT AVAILABLE",
           lotExpDate: "NOT AVAILABLE",
         };
-        Object.keys(psAlts).forEach((v) => {
-          psAlts[v].push("NOT AVAILABLE");
-        });
+        psAlts[0] = {
+          description: "NOT AVAILABLE",
+          pkg: "NOT AVAILABLE",
+          pkgPrice: "NOT AVAILABLE",
+          ndc: "NOT AVAILABLE",
+          qtyAvl: "NOT AVAILABLE",
+          unitPrice: "NOT AVAILABLE",
+          rxOtc: "NOT AVAILABLE",
+          wholesaler: "NOT AVAILABLE",
+          manufacturer: "NOT AVAILABLE",
+        };
         query.psAlts = psAlts;
       } else {
         const searchResults = [];
@@ -102,26 +100,13 @@ module.exports = async (dailyOrder, ndc11) => {
             const sortedSameDescResults = searchResults // 0 index the cheapest
               .filter((v) => (v.description = v))
               .sort(sortFn);
-            psAlts.description.push(v);
-            psAlts.pkg.push(sortedSameDescResults[0].pkg);
-            psAlts.pkgPrice.push(sortedSameDescResults[0].pkgPrice);
-            psAlts.ndc.push(sortedSameDescResults[0].ndc);
-            psAlts.qtyAvl.push(sortedSameDescResults[0].qtyAvl);
-            psAlts.unitPrice.push(sortedSameDescResults[0].unitPrice);
-            psAlts.rxOtc.push(sortedSameDescResults[0].rxOtc);
-            psAlts.wholesaler.push(sortedSameDescResults[0].wholesaler);
-            psAlts.manufacturer.push(sortedSameDescResults[0].manufacturer);
+            psAlts.push(sortedSameDescResults[0]);
           });
         } else {
           /* else one with the lowest unitPrice and the same pkg and/or the overall lowest unitPrice will be suggested */
           query.psDetails = {
             lastUpdated,
-            description: sortedSameNdcResults[0].description,
-            pkgPrice: sortedSameNdcResults[0].pkgPrice,
-            qtyAvl: sortedSameNdcResults[0].qtyAvl,
-            unitPrice: sortedSameNdcResults[0].unitPrice,
-            wholesaler: sortedSameNdcResults[0].wholesaler,
-            lotExpDate: sortedSameNdcResults[0].lotExpDate,
+            ...sortedSameNdcResults[0],
           };
           const _sameNdcDescriptions = [];
           sortedSameNdcResults.forEach((v) => {
@@ -131,10 +116,18 @@ module.exports = async (dailyOrder, ndc11) => {
           const sortedSameDescResults = searchResults
             .filter((v) => sameNdcDescriptions.includes(v.description))
             .sort(sortFn);
-          if (sortedSameDescResults.length === 0) {
-            Object.keys(psAlts).forEach((v) => {
-              psAlts[v].push("NOT AVAILABLE");
-            });
+          if (sortedSameDescResults.length === 1) {
+            psAlts[0] = {
+              description: "NOT AVAILABLE",
+              pkg: "NOT AVAILABLE",
+              pkgPrice: "NOT AVAILABLE",
+              ndc: "NOT AVAILABLE",
+              qtyAvl: "NOT AVAILABLE",
+              unitPrice: "NOT AVAILABLE",
+              rxOtc: "NOT AVAILABLE",
+              wholesaler: "NOT AVAILABLE",
+              manufacturer: "NOT AVAILABLE",
+            };
           } else {
             const pkg = sortedSameNdcResults[0].pkg;
             const sortedSamePkgAndDescResults = sortedSameDescResults.filter(
@@ -149,19 +142,7 @@ module.exports = async (dailyOrder, ndc11) => {
               ) <
               Number(sortedSameNdcResults[0].unitPrice.replace(/[^0-9.]+/g, ""))
             ) {
-              psAlts.description.push(
-                sortedSamePkgAndDescResults[0].description
-              );
-              psAlts.pkg.push(sortedSamePkgAndDescResults[0].pkg);
-              psAlts.pkgPrice.push(sortedSamePkgAndDescResults[0].pkgPrice);
-              psAlts.ndc.push(sortedSamePkgAndDescResults[0].ndc);
-              psAlts.qtyAvl.push(sortedSamePkgAndDescResults[0].qtyAvl);
-              psAlts.unitPrice.push(sortedSamePkgAndDescResults[0].unitPrice);
-              psAlts.rxOtc.push(sortedSamePkgAndDescResults[0].rxOtc);
-              psAlts.wholesaler.push(sortedSamePkgAndDescResults[0].wholesaler);
-              psAlts.manufacturer.push(
-                sortedSamePkgAndDescResults[0].manufacturer
-              );
+              psAlts.push(sortedSamePkgAndDescResults[0]);
             }
             if (
               Number(
@@ -180,15 +161,7 @@ module.exports = async (dailyOrder, ndc11) => {
                     )
               )
             ) {
-              psAlts.description.push(sortedSameDescResults[0].description);
-              psAlts.pkg.push(sortedSameDescResults[0].pkg);
-              psAlts.pkgPrice.push(sortedSameDescResults[0].pkgPrice);
-              psAlts.ndc.push(sortedSameDescResults[0].ndc);
-              psAlts.qtyAvl.push(sortedSameDescResults[0].qtyAvl);
-              psAlts.unitPrice.push(sortedSameDescResults[0].unitPrice);
-              psAlts.rxOtc.push(sortedSameDescResults[0].rxOtc);
-              psAlts.wholesaler.push(sortedSameDescResults[0].wholesaler);
-              psAlts.manufacturer.push(sortedSameDescResults[0].manufacturer);
+              psAlts.push(sortedSameDescResults[0]);
             }
             query.psAlts = psAlts;
           }
