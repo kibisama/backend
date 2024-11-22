@@ -40,25 +40,27 @@ module.exports = async (ndcDir, alternative_id, _rxcui) => {
       return _result;
     }
     /* If Drug already exists but its RxCui array is not inclusive  */
-    const result = await Drug.findOne({ rxcui: { $in: rxcui } });
-    if (result) {
-      const existingRxcui = result.rxcui;
-      let match = true;
-      const hashTable = {};
-      rxcui.forEach((v) => (hashTable[`${v}`] = true));
-      for (let i = 0; i < existingRxcui.length; i++) {
-        if (!hashTable[`${existingRxcui[i]}`]) {
-          match = false;
-          break;
+    const results = await Drug.find({ rxcui: { $in: rxcui } });
+    if (results.length > 0) {
+      for (let i = 0; i < results.length; i++) {
+        const existingRxcui = results[i].rxcui;
+        let match = true;
+        const hashTable = {};
+        rxcui.forEach((v) => (hashTable[`${v}`] = true));
+        for (let j = 0; j < existingRxcui.length; j++) {
+          if (!hashTable[`${existingRxcui[j]}`]) {
+            match = false;
+            break;
+          }
         }
-      }
-      if (match) {
-        const query = alternative_id
-          ? { $set: { rxcui }, $addToSet: { children: alternative_id } }
-          : { $set: { rxcui } };
-        return await Drug.findOneAndUpdate({ _id: result._id }, query, {
-          new: true,
-        });
+        if (match) {
+          const query = alternative_id
+            ? { $set: { rxcui }, $addToSet: { children: alternative_id } }
+            : { $set: { rxcui } };
+          return await Drug.findOneAndUpdate({ _id: results[i]._id }, query, {
+            new: true,
+          });
+        }
       }
     }
     /* else */

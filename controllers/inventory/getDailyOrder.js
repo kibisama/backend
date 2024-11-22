@@ -11,7 +11,22 @@ const getDailyOrder = async (req, res, next) => {
       date: { $gte: startOfDay, $lte: endOfDay },
     }).populate([
       { path: "item", select: ["cost", "dateReceived", "source"] },
-      { path: "package", select: ["brand_name", "ndc11", "manufacturer_name"] },
+      {
+        path: "package",
+        select: [
+          "ndc11",
+          "brand_name",
+          "generic_name",
+          "manufacturer_name",
+          "product_type",
+          "dosage_form",
+          "active_ingredients",
+          "strength",
+          "route",
+          "repSize",
+          "repUnit",
+        ],
+      },
     ]);
     return res.send({ results });
   } catch (e) {

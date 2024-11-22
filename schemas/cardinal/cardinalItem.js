@@ -47,6 +47,7 @@ const cardinalItemSchema = new Schema({
   histInvoiceNumber: [String],
   histOrderMethod: [String],
 
+  // STRAIGHTFOWARD ORDERING BOOKMARK BOOLEAN
   lastNegotiated: Date,
 });
 

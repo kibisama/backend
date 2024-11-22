@@ -6,7 +6,7 @@ const { label } = require("../../api/openFda");
 
 /*
 Updates a partial Product Labeling document via Open FDA API.
-Returns: ProductLabeling | Error | undefined
+Returns: Promise<ProductLabeling|Error|undefined>
 */
 module.exports = async (arg, type) => {
   try {

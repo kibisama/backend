@@ -19,30 +19,32 @@ module.exports = async (item, package) => {
         { _id: dailyOrder._id },
         { package: package._id }
       );
-      const cardinalItem = await CardinalItem.findOne({
-        ndc: ndc11,
-        lastUpdated: { $gte: todayStart, $lte: todayEnd },
-      });
+      // const cardinalItem = await CardinalItem.findOne({
+      //   ndc: ndc11,
+      //   lastUpdated: { $gte: todayStart, $lte: todayEnd },
+      // });
       const psSearch = await PSSearch.findOne({
-        ndc: ndc11.replaceAll("-", ""),
+        query: ndc11.replaceAll("-", ""),
         lastUpdated: { $gte: todayStart, $lte: todayEnd },
       });
       switch (true) {
-        case !cardinalItem && !psSearch:
-          Promise.all([
-            updateItem(ndc11, dailyOrder),
-            updateSearch(ndc11, dailyOrder),
-          ]);
-          break;
-        case !cardinalItem:
-          updateItem(ndc11, dailyOrder);
-          await updateDailyOrder(dailyOrder, ndc11);
+        // case !cardinalItem && !psSearch:
+        //   Promise.all([
+        // updateItem(ndc11, dailyOrder),
+        //   updateSearch(ndc11, dailyOrder),
+        // ]);
+        // break;
+        // case !cardinalItem:
+        // updateItem(ndc11, dailyOrder);
+        // await updateDailyOrder(dailyOrder, ndc11);
+        // break;
+        case !psSearch:
+          updateSearch(ndc11, dailyOrder);
           break;
         default:
-          updateSearch(ndc11, dailyOrder);
           await updateDailyOrder(dailyOrder, ndc11);
       }
-      return dailyOrder;
+      // return
     } else {
       // updateItem with GTIN from Cardinal and await getting ndc11 from cardinal
     }

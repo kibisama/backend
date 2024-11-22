@@ -6,7 +6,7 @@ const updateLocalProductLabeling = require("./updateLocalProductLabeling");
 /*
 Updates a NDC Directory document via Open FDA API.
 If packaging information or RxCUI not found, it will try to lookup for a reference product.
-Returns: NdcDir | Error | undefined
+Returns: Promise<NdcDir|Error|undefined>
 */
 module.exports = async (arg, type) => {
   try {

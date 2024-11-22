@@ -16,27 +16,38 @@ const dailyOrderSchema = new Schema({
     type: ObjectId,
     ref: "Package",
   },
-  // ndc11: String,
-
-  cardinalCost: String,
-  cardinalAlt: {
-    cin: String,
-    ndc: String,
-    size: String,
-    cost: String,
-    uoiCost: String,
-    contract: String,
-  },
-  //
-  secondaryDetails: {
+  // cardinalItem: {
+  //   type: ObjectId,
+  //   ref: "Cardinal Item",
+  // },
+  // cardinalAlt: {
+  //   cin: String,
+  //   ndc: String,
+  //   size: String,
+  //   cost: String,
+  //   uoiCost: String,
+  //   contract: String,
+  // },
+  psDetails: {
+    lastUpdated: Date,
+    description: String,
     pkgPrice: String,
     qtyAvl: String,
+    unitPrice: String,
     wholesaler: String,
     lotExpDate: String,
   },
-  // secondaryAlt : {type: Object}
-  // lastRequestSent: Date,
-  // reason: String,
+  psAlts: {
+    description: [String],
+    pkg: [String],
+    pkgPrice: [String],
+    ndc: [String],
+    qtyAvl: [String],
+    unitPrice: [String],
+    rxOtc: [String],
+    wholesaler: [String],
+    manufacturer: [String],
+  },
 });
 
 module.exports = mongoose.model("Daily Order", dailyOrderSchema);

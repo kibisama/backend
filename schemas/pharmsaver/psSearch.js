@@ -2,7 +2,9 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const psSearchSchema = new Schema({
+  /* ndc11 strings must be without hyphens */
   lastUpdated: Date,
+  query: [String],
   description: [String],
   str: [String],
   pkg: [String],

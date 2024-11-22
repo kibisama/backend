@@ -75,35 +75,37 @@ module.exports = async (ndcDir, package) => {
         return _result;
       }
       /* If Alternative already exists but its RxCui array is not inclusive, it has to update Drug rxcui  */
-      const result = await Alternative.findOne({
+      const results = await Alternative.find({
         rxcui: { $in: rxcui },
         strength,
       });
-      if (result) {
-        const existingRxcui = result.rxcui;
-        let match = true;
-        if (existingRxcui.length < rxcui.length) {
-          const hashTable = {};
-          rxcui.forEach((v) => (hashTable[`${v}`] = true));
-          for (let i = 0; i < existingRxcui.length; i++) {
-            if (!hashTable[`${existingRxcui[i]}`]) {
-              match = false;
-              break;
-            }
-          }
-          if (match) {
-            const query = package
-              ? { $set: { rxcui }, $addToSet: { children: package._id } }
-              : { $set: { rxcui } };
-            const _result = await Alternative.findOneAndUpdate(
-              { _id: result._id },
-              query,
-              {
-                new: true,
+      if (results.length > 0) {
+        for (let i = 0; i < results.length; i++) {
+          const existingRxcui = results[i].rxcui;
+          let match = true;
+          if (existingRxcui.length < rxcui.length) {
+            const hashTable = {};
+            rxcui.forEach((v) => (hashTable[`${v}`] = true));
+            for (let j = 0; j < existingRxcui.length; j++) {
+              if (!hashTable[`${existingRxcui[j]}`]) {
+                match = false;
+                break;
               }
-            );
-            await createDrug(ndcDir);
-            return _result;
+            }
+            if (match) {
+              const query = package
+                ? { $set: { rxcui }, $addToSet: { children: package._id } }
+                : { $set: { rxcui } };
+              const _result = await Alternative.findOneAndUpdate(
+                { _id: results[i]._id },
+                query,
+                {
+                  new: true,
+                }
+              );
+              await createDrug(ndcDir);
+              return _result;
+            }
           }
         }
       }

@@ -8,15 +8,20 @@ const updateDailyOrder = require("../inventory/updateDailyOrder");
 module.exports = async function updateItem(ndc11, dailyOrder) {
   let count = 0;
   const maxCount = 4;
+  /**
+   * Inner function that requests Puppeteer server to update PSSearch.
+   * @returns {Promise<PSSearch|Error>}
+   */
   async function update() {
     try {
       const now = dayjs();
       console.log(
-        `Updating PharmSaver Search ${
+        `Requesting Puppeteer server to update PSSearch ${
           ndc11 + " " + now.format("MM/DD/YY HH:mm:ss")
         }...`
       );
       let result = await puppet.ps.updateSearch(ndc11);
+      /* If Puppeteer server fails to scrap search results */
       if (result instanceof Error) {
         switch (result.status) {
           case 404:
@@ -29,43 +34,54 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
             scheduleJob(now.add(30, "minute").toDate(), update);
             break;
           case 503:
-            // need schedule limitation according to the closing time of the store
             scheduleJob(now.add(3, "minute").toDate(), update);
             break;
           default:
         }
+        return result;
       } else {
         const results = result.data.results;
-        results.lastUpdated = dayjs();
-        const ndcSet = new Set(results.ndc);
-        const ndc = [...ndcSet];
+        let _result;
         const _ndc11 = ndc11.replaceAll("-", "");
-        if (!ndc.includes(_ndc11)) {
-          await createVoidSearch(ndc11);
-          if (dailyOrder) {
-            await updateDailyOrder(dailyOrder, ndc11);
-          }
-          return await PSSearch.create({ ...results });
-        }
+        results.lastUpdated = dayjs();
+        const querySet = new Set(results.ndc.concat(_ndc11)); // Pharmsaver search can result in the results without the querying ndc
+        const _query = [...querySet];
         const _results = await PSSearch.find({
-          ndc: { $in: ndc },
+          query: { $in: _query },
         });
-        if (_results.length > 1) {
-          for (const _result of _results) {
-            const id = _result._id;
-            await PSSearch.findByIdAndDelete(id);
+        /* If previous PSSearch document(s) exist, merge their query field & keep only one document */
+        if (_results.length > 0) {
+          for (let i = 0; i < _results.length; i++) {
+            _results[i].query.forEach((v) => {
+              querySet.add(v);
+            });
           }
+          results.query = [...querySet];
+          const _id = _results[0]._id;
+          if (_results.length > 1) {
+            for (let i = _results.length - 1; i > 0; i--) {
+              await PSSearch.findByIdAndDelete(results[i]._id);
+            }
+          }
+          _result = await PSSearch.findOneAndUpdate(
+            {
+              _id,
+            },
+            results,
+            {
+              new: true,
+              upsert: true,
+            }
+          );
+        } else {
+          results.query = _query;
+          _result = await PSSearch.create(results);
         }
-        result = await PSSearch.findOneAndUpdate(
-          { ndc: _ndc11 },
-          { ...results },
-          { new: true, upsert: true }
-        );
-        if (dailyOrder && result) {
+        if (dailyOrder && _result) {
           await updateDailyOrder(dailyOrder, ndc11);
         }
+        return _result;
       }
-      return result;
     } catch (e) {
       return e;
     }
