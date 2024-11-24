@@ -11,16 +11,16 @@ const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 module.exports = async (ndcDir, alternative_id, _rxcui) => {
   try {
     const { generic_name, dea_schedule, product_ndc } = ndcDir;
-    let rxcui = ndcDir.openfda.rxcui ?? _rxcui;
+    let rxcui = _rxcui ?? ndcDir.openfda.rxcui;
     /* If NDC Directory misses RxCui nor passed as an argument, it will refer Product Labeling with the same original packager ndc */
-    if (!rxcui) {
+    if (!rxcui || rxcui.length === 0) {
       if (!product_ndc) {
         return;
       }
       const reference = await ProductLabeling.findOne({
         "openfda.original_packager_product_ndc": product_ndc,
       });
-      if (!reference || !reference.openfda?.rxcui) {
+      if (!reference || reference.openfda.rxcui.length === 0) {
         return;
       }
       rxcui = reference.openfda.rxcui;
@@ -66,7 +66,7 @@ module.exports = async (ndcDir, alternative_id, _rxcui) => {
     /* else */
     return await Drug.create({
       rxcui,
-      name: generic_name ?? "MISSING GENERIC NAME",
+      name: generic_name ?? "UNKNOWN GENERIC NAME",
       dea_schedule,
       children: alternative_id ? [alternative_id] : [],
     });

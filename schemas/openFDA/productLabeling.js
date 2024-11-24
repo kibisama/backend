@@ -3,25 +3,33 @@ const { Schema } = mongoose;
 
 const productLabelingSchema = new Schema({
   lastRetrieved: Date,
-  id: { type: String, unique: true },
+  /* Selected Searchable Fields */
+  id: String,
   effective_time: String,
-  version: Number,
+  set_id: String,
+  version: String,
   openfda: {
     application_number: [String],
-    brand_name: [{ type: String, uppercase: true }],
-    generic_name: [{ type: String, uppercase: true }],
-    manufacturer_name: [{ type: String, uppercase: true }],
+    brand_name: [String],
+    generic_name: [String],
+    manufacturer_name: [String],
+    nui: [String],
+    package_ndc: [String],
+    pharm_class_cs: [String],
+    pharm_class_epc: [String],
+    pharm_class_moa: [String],
+    pharm_class_pe: [String],
     product_ndc: [String],
     product_type: [String],
     route: [String],
-    substance_name: [{ type: String, uppercase: true }],
     rxcui: [String],
     spl_id: [String],
     spl_set_id: [String],
-    package_ndc: [String],
-    original_packager_product_ndc: [String],
-    upc: [String],
+    substance_name: [String],
     unii: [String],
+    upc: [String],
+    /* Not listed in the official Searchable Fields document */
+    original_packager_product_ndc: [String],
   },
 });
 

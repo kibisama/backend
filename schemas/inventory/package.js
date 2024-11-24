@@ -33,8 +33,10 @@ const packageSchema = new Schema({
   active_ingredients: { type: String, uppercase: true },
   strength: { type: String, uppercase: true },
   route: { type: String, uppercase: true },
-  repSize: String, // prefer String type because of possible decimals
-  repUnit: { type: String, uppercase: true },
+  size: String, // prefer String type because of possible decimals
+  sizes: [String],
+  unit: { type: String, uppercase: true },
+  units: [{ type: String, uppercase: true }],
   /* Internal data */
   optimalQty: { type: Number, default: 0 },
   preferred: { type: Boolean, default: false },

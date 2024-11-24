@@ -8,6 +8,7 @@ const convertDescriptionToSizeAndUnit = require("../functions/convertDescription
  * Creates a Package document based on NDC Directory.
  * @param {NdcDir} ndcDir
  * @param {Item} item
+ * @param {RegExp} _regEx optional
  * @returns {Promise<Package|undefined>}
  */
 module.exports = async (ndcDir, item, _regEx) => {
@@ -59,13 +60,13 @@ module.exports = async (ndcDir, item, _regEx) => {
         name,
         ndc,
         ndc11,
+        brand_name: brand_name ? brand_name[0] : undefined,
         generic_name: generic_name ? generic_name[0] : undefined,
       });
     } else {
       const {
         packaging,
         brand_name,
-        brand_name_base,
         generic_name,
         labeler_name,
         product_type,
@@ -76,56 +77,73 @@ module.exports = async (ndcDir, item, _regEx) => {
       let ndc,
         description = "";
       for (let i = 0; i < packaging.length; i++) {
+        /* Trim if descriptions are divided by the character * */
         const target = packaging[i].description;
+        const _regEx = new RegExp(String.raw`[^*]+\(${regEx.source}\)?[^*]+`);
+        const match = target.match(_regEx);
+        if (!match) {
+          continue;
+        }
         const target2 = packaging[i].package_ndc;
-        const match = target.match(regEx);
         const match2 = target2.match(regEx);
         if (match && match2) {
-          description = target;
+          description = match[0].trim();
           ndc = target2;
           break;
         } else if (match) {
-          const newRegEx = new RegExp(
-            String.raw`([^\/]+)\(${regEx.source}\).*`
-          );
+          const newRegEx = new RegExp(String.raw`[^\/]+\(${regEx.source}\).*`);
           const newMatch = target.match(newRegEx);
           if (newMatch) {
             description = newMatch[0].trim();
-            ndc = match[0];
-            break;
           }
+          ndc = target.match(regEx)[0];
+          break;
         }
       }
       const ndc11 = convertNdcToNdc11(ndc);
-      const [size, unit] = convertDescriptionToSizeAndUnit(description);
-      let repUnit;
-      let repSize = 1;
-      if (size.length > 1 && unit.length > 1) {
-        if (unit.includes(dosage_form)) {
-          repUnit = dosage_form;
-        } else {
-          repUnit = unit[unit.length - 2];
-        }
-        const unitIndex = unit.indexOf(repUnit);
-        for (let i = 0; i < unitIndex + 2; i++) {
-          if (i % 2) {
-            repSize /= size[i];
+      const [_sizes, _units] = convertDescriptionToSizeAndUnit(description);
+      let size, unit;
+      let units,
+        sizes = [];
+      if (_sizes && _units) {
+        unit = _units[_units.length - 2];
+        units = [...new Set(_units)];
+        units.forEach((v) => {
+          const index = _units.indexOf(v);
+          if (index % 2) {
+            let _size = _sizes[1];
+            if (index > 1) {
+              for (let i = 3; i < index + 1; i = i + 2) {
+                _size *= _sizes[i];
+              }
+            }
+            sizes.push(_size.toString());
           } else {
-            repSize *= size[i];
+            let _size = 1;
+            for (let i = 0; i < index + 2; i++) {
+              if (i % 2) {
+                _size /= _sizes[i];
+              } else {
+                _size *= _sizes[i];
+              }
+            }
+            sizes.push(_size.toString());
           }
-        }
+        });
+        size = sizes[units.indexOf(unit)];
       }
-      let _manufacturer_name = manufacturer_name
-        ? manufacturer_name[0]
-        : labeler_name;
+      let _manufacturer_name =
+        manufacturer_name && manufacturer_name.length > 0
+          ? manufacturer_name[0]
+          : labeler_name;
       let mfrName;
       const match = _manufacturer_name.match(/([^\s,]+)/);
       if (match && match[0].length > 3) {
         mfrName = match[0];
       }
       let desc = "";
-      if (repSize && repUnit) {
-        desc += repSize.toString() + " " + repUnit;
+      if (size && unit) {
+        desc += size.toString() + " " + unit;
       }
       let brandName = "";
       if (brand_name && generic_name) {
@@ -140,15 +158,17 @@ module.exports = async (ndcDir, item, _regEx) => {
         name,
         ndc,
         ndc11,
-        brand_name: brand_name_base ?? brand_name,
+        brand_name,
         generic_name,
         rxcui,
         manufacturer_name: _manufacturer_name,
         product_type,
         dosage_form,
         route: route ? route.join(", ") : undefined,
-        repSize: repSize.toString(),
-        repUnit,
+        size,
+        sizes,
+        unit,
+        units,
         ndcDir: ndcDir._id,
       });
     }

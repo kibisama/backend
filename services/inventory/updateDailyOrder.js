@@ -3,6 +3,8 @@ const DailyOrder = require("../../schemas/inventory/dailyOrder");
 const CardinalItem = require("../../schemas/cardinal/cardinalItem");
 const PSSearch = require("../../schemas/pharmsaver/psSearch");
 
+// 확인된버그들 description은 대문자화해서 비교하도록하자
+// alt정보 입력시 단순히 가격비교말고 notavailable할경우 아래기술참조
 module.exports = async (dailyOrder, ndc11) => {
   try {
     const query = {};
@@ -97,6 +99,7 @@ module.exports = async (dailyOrder, ndc11) => {
           };
           const _description = [...new Set(description)];
           _description.forEach((v) => {
+            //이부분에 버그잇는듯
             const sortedSameDescResults = searchResults // 0 index the cheapest
               .filter((v) => (v.description = v))
               .sort(sortFn);

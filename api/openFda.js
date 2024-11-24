@@ -28,7 +28,7 @@ module.exports = {
   label: {
     url: `/drug/label.json${apiKey ? "?api_key=" + apiKey + "&" : ""}`,
     async searchOneByByOriginalPackager(_query) {
-      const query = `${this.url}search=search=openfda.original_packager_product_ndc:${_query}&limit=1000`;
+      const query = `${this.url}search=openfda.original_packager_product_ndc:${_query}&limit=1000`;
       try {
         return await client.get(query);
       } catch (e) {

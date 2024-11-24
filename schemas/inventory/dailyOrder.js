@@ -6,21 +6,22 @@ const {
 
 const dailyOrderSchema = new Schema({
   lastUpdated: Date,
-  date: { type: Date, default: Date.now() },
+  date: { type: Date, default: new Date() },
   item: {
     type: ObjectId,
     ref: "Item",
   },
-  orderStatus: { type: String, uppercase: true },
+  status: { type: String, uppercase: true },
   package: {
     type: ObjectId,
     ref: "Package",
   },
+
   // cardinalItem: {
   //   type: ObjectId,
   //   ref: "Cardinal Item",
   // },
-  // cardinalAlt: {
+  // cardinalAlts: {
   //   cin: String,
   //   ndc: String,
   //   size: String,
@@ -28,6 +29,7 @@ const dailyOrderSchema = new Schema({
   //   uoiCost: String,
   //   contract: String,
   // },
+
   psDetails: {
     lastUpdated: Date,
     description: String,

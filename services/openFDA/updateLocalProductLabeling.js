@@ -50,6 +50,11 @@ module.exports = async (arg, type) => {
       ndc = [...ndc, ...v.openfda.original_packager_product_ndc];
     });
     const set = new Set(ndc);
+
+    console.log("_results", _results);
+    console.log("results", results);
+    console.log("set", set);
+    //셋사이즈가 다수인경우가 실제로있다. 해결방안을찾아보자 00781-1077-10 버전은 넘버타입아니고 스트링으로변경
     if (set.size > 1) {
       return new Error("Multiple results found");
     }

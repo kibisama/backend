@@ -3,24 +3,40 @@ const { Schema } = mongoose;
 
 const ndcDirSchema = new Schema({
   lastRetrieved: Date,
-  product_ndc: String,
-  generic_name: String,
+  /* Not listed in the official Searchable Fields document */
   labeler_name: String,
-  brand_name: String,
-  active_ingredients: [{ name: String, strength: String }],
+  /* Searchable Fields */
+  product_id: String,
+  product_ndc: String,
+  spl_id: String,
+  product_type: String,
   finished: Boolean,
+  brand_name: String,
+  brand_name_base: String,
+  brand_name_suffix: String,
+  generic_name: String,
+  dosage_form: String,
+  route: [String],
+  marketing_start_date: String,
+  marketing_end_date: String,
+  marketing_category: String,
+  application_number: String,
+  pharm_class: [String],
+  dea_schedule: String,
+  listing_expiration_date: String,
+  active_ingredients: [{ name: String, strength: String }],
   packaging: [
     {
       package_ndc: String,
       description: String,
       marketing_start_date: String,
+      marketing_end_date: String,
       sample: Boolean,
     },
   ],
-  listing_expiration_date: String,
   openfda: {
-    manufacturer_name: [String],
     is_original_packager: [Boolean],
+    manufacturer_name: [String],
     nui: [String],
     pharm_class_cs: [String],
     pharm_class_epc: [String],
@@ -31,15 +47,6 @@ const ndcDirSchema = new Schema({
     unii: [String],
     upc: [String],
   },
-  marketing_category: String,
-  dosage_form: String,
-  spl_id: String,
-  product_type: String,
-  route: [String],
-  marketing_start_date: String,
-  product_id: String,
-  application_number: String,
-  brand_name_base: String,
 });
 
 module.exports = mongoose.model("NDC Directory", ndcDirSchema);

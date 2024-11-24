@@ -6,7 +6,7 @@ const updateItem = require("../../services/inventory/updateItem");
 const updateLocalNdcDir = require("../../services/openFDA/updateLocalNdcDir");
 const createPackage = require("../../services/inventory/createPackage");
 const createAlternative = require("../../services/inventory/createAlternative");
-const addToSetInventory = require("../../services/inventory/addToSetInventory");
+const addToSetPackage = require("../../services/inventory/addToSetPackage");
 const initDailyOrder = require("../../services/inventory/initDailyOrder");
 
 module.exports = async (req, res, next) => {
@@ -26,7 +26,7 @@ module.exports = async (req, res, next) => {
     const response = { data };
     let package = await Package.findOne({ gtin });
     if (package) {
-      const result = await addToSetInventory(data);
+      const result = await addToSetPackage(data);
       if (!result) {
         next(new Error("Failed to update Package document."));
       }

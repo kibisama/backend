@@ -35,7 +35,7 @@ module.exports = async (ndcDir, package) => {
     const { active_ingredients, generic_name, product_ndc } = ndcDir;
     let { rxcui } = ndcDir.openfda;
     /* If NDC Directory misses RxCui, it will refer Product Labeling with the same original packager ndc */
-    if (!rxcui) {
+    if (rxcui.length === 0) {
       if (!product_ndc) {
         return;
       }
@@ -46,14 +46,14 @@ module.exports = async (ndcDir, package) => {
         (await ProductLabeling.findOne({
           "openfda.product_ndc": product_ndc,
         }));
-      if (!reference || !reference.openfda.rxcui) {
+      if (!reference || reference.openfda.rxcui.length === 0) {
         return;
       }
       rxcui = reference.openfda.rxcui;
     }
-    /* If Strength is missing, it will straightly create a new document */
+    /* If active_ingredients field is missing, it will straightly create a new document */
     const strength = [];
-    if (active_ingredients?.length > 0) {
+    if (active_ingredients.length > 0) {
       active_ingredients.forEach((v) => {
         strength.push(v.strength);
       });
@@ -103,7 +103,7 @@ module.exports = async (ndcDir, package) => {
                   new: true,
                 }
               );
-              await createDrug(ndcDir);
+              await createDrug(ndcDir, _result._id, rxcui);
               return _result;
             }
           }
