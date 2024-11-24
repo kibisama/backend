@@ -5,6 +5,12 @@ const puppet = require("../../api/puppet");
 const createVoidSearch = require("./createVoidSearch");
 const updateDailyOrder = require("../inventory/updateDailyOrder");
 
+/**
+ * Request the Puppeteer server to update PharmSaver Search results. It will schedule a retry depending on the Puppeteer server status.
+ * @param {string} ndc11
+ * @param {DailyOrder} dailyOrder optional
+ * @returns {Promise<PSSearch|Error>}
+ */
 module.exports = async function updateItem(ndc11, dailyOrder) {
   let count = 0;
   const maxCount = 4;

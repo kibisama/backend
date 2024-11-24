@@ -4,10 +4,12 @@ dayjs.extend(customParseFormat);
 const ProductLabeling = require("../../schemas/openFDA/productLabeling");
 const { label } = require("../../api/openFda");
 
-/*
-Updates a partial Product Labeling document via Open FDA API.
-Returns: Promise<ProductLabeling|Error|undefined>
-*/
+/**
+ * Updates a partial Product Labeling document via openFDA API.
+ * @param {string} arg
+ * @param {string} type
+ * @returns {Promise<ProductLabeling|Error|undefined>}
+ */
 module.exports = async (arg, type) => {
   try {
     let query = "";
@@ -43,30 +45,30 @@ module.exports = async (arg, type) => {
     }
     const _results = result.data.results;
     const results = _results
-      .filter((v) => v.openfda?.original_packager_product_ndc?.length > 0)
-      .sort((a, b) => dayjs(b.effective_time) - dayjs(a.effective_time));
-    let ndc = [];
-    results.forEach((v) => {
-      ndc = [...ndc, ...v.openfda.original_packager_product_ndc];
-    });
-    const set = new Set(ndc);
-
-    console.log("_results", _results);
-    console.log("results", results);
-    console.log("set", set);
-    //셋사이즈가 다수인경우가 실제로있다. 해결방안을찾아보자 00781-1077-10 버전은 넘버타입아니고 스트링으로변경
-    if (set.size > 1) {
-      return new Error("Multiple results found");
-    }
+      .sort((a, b) => dayjs(b.effective_time) - dayjs(a.effective_time))
+      .sort(
+        (a, b) =>
+          a.openfda?.original_packager_product_ndc?.length ??
+          1000 - b.openfda?.original_packager_product_ndc?.length ??
+          1000
+      )
+      .sort(
+        (a, b) =>
+          a.openfda.rxcui?.length ?? 1000 - b.openfda.rxcui?.length ?? 1000
+      );
     for (let i = 0; i < results.length; i++) {
-      if (results[i].openfda.rxcui?.length > 0 || i === results.length - 1) {
+      if (
+        (results[i].openfda.rxcui?.length > 0 &&
+          results[i].openfda.original_packager_product_ndc?.some((v) =>
+            v.match(regEx)
+          )) ||
+        i === results.length - 1
+      ) {
         return await ProductLabeling.findOneAndUpdate(
           { id: results[i].id },
           {
-            lastRetrieved: dayjs(),
-            effective_time: results[i].effective_time,
-            version: results[i].version,
-            openfda: results[i].openfda,
+            lastRetrieved: new Date(),
+            ...results[i],
           },
           { new: true, upsert: true }
         );

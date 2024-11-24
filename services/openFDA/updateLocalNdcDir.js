@@ -1,13 +1,13 @@
-const dayjs = require("dayjs");
 const NdcDir = require("../../schemas/openFDA/ndcDir");
 const { ndc } = require("../../api/openFda");
 const updateLocalProductLabeling = require("./updateLocalProductLabeling");
 
-/*
-Updates a NDC Directory document via Open FDA API.
-If packaging information or RxCUI not found, it will try to lookup for a reference product.
-Returns: Promise<NdcDir|Error|undefined>
-*/
+/**
+ * Updates a NDC Directory document via openFDA API.
+ * If packaging information or RxCUI is missing, it will try to update the corresponding Product Labeling document.
+ * @param {Object} input
+ * @returns {Promise<NdcDir|Error|undefined>}
+ */
 module.exports = async (arg, type) => {
   try {
     let query = "";
@@ -45,7 +45,7 @@ module.exports = async (arg, type) => {
         await NdcDir.findOneAndUpdate(
           { product_ndc: data.product_ndc },
           {
-            lastRetrieved: dayjs(),
+            lastRetrieved: new Date(),
             ...data,
           },
           { new: true, upsert: true }
@@ -62,7 +62,7 @@ module.exports = async (arg, type) => {
     return await NdcDir.findOneAndUpdate(
       { product_ndc: data.product_ndc },
       {
-        lastRetrieved: dayjs(),
+        lastRetrieved: new Date(),
         ...data,
       },
       { new: true, upsert: true }

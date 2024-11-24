@@ -161,7 +161,7 @@ module.exports = async (dailyOrder, ndc11) => {
     // if (cardinalItem && psSearch) {
     //   query.status = "UPDATED";
     // }
-    // 검색결과없으면 schedule
+    // 검색결과없으면 schedule?
     query.lastUpdated = dayjs();
     return await DailyOrder.findOneAndUpdate(
       {

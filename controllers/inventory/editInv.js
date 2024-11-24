@@ -1,3 +1,4 @@
+//////////////////////////////// under working
 const Drug = require("../../schemas/inventory/drug");
 const Alternative = require("../../schemas/inventory/alternative");
 const Package = require("../../schemas/inventory/package");
