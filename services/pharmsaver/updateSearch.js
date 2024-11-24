@@ -25,10 +25,16 @@ module.exports = async function updateItem(ndc11, dailyOrder) {
       if (result instanceof Error) {
         switch (result.status) {
           case 404:
-            return await createVoidSearch(ndc11);
+            await createVoidSearch(ndc11);
+            if (dailyOrder) {
+              await updateDailyOrder(dailyOrder, ndc11);
+            }
           case 500:
             if (count > maxCount) {
-              return await createVoidSearch(ndc11);
+              await createVoidSearch(ndc11);
+              if (dailyOrder) {
+                await updateDailyOrder(dailyOrder, ndc11);
+              }
             }
             count++;
             scheduleJob(now.add(30, "minute").toDate(), update);

@@ -1,4 +1,3 @@
-const dayjs = require("dayjs");
 const Item = require("../../schemas/inventory/item");
 
 /**
@@ -10,7 +9,7 @@ const Item = require("../../schemas/inventory/item");
 module.exports = async (input, findResult) => {
   try {
     const { mode, gtin, sn, source, cost } = input;
-    const now = dayjs();
+    const now = new Date();
     if (findResult == null) {
       findResult = await Item.findOne({ gtin, sn });
     }

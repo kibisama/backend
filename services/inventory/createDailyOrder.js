@@ -7,11 +7,12 @@ const DailyOrder = require("../../schemas/inventory/dailyOrder");
  */
 module.exports = async (item) => {
   try {
+    const { gtin, _id } = item;
     const status = "FILLED";
     return await DailyOrder.create({
-      lastUpdated: new Date(),
-      item: item._id,
       status,
+      gtin,
+      item: [_id],
     });
   } catch (e) {
     console.log(e);

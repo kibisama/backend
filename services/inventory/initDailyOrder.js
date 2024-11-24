@@ -7,12 +7,28 @@ const updateItem = require("../cardinal/updateItem");
 const updateSearch = require("../pharmsaver/updateSearch");
 const updateDailyOrder = require("./updateDailyOrder");
 
+// /**
+//  * Initiate Daily Order Service for the item.
+//  * @param {Item} item
+//  * @returns
+//  */
 module.exports = async (item, package) => {
   const now = dayjs();
   const todayStart = dayjs(now).startOf("date");
   const todayEnd = dayjs(now).endOf("date");
   try {
-    const dailyOrder = await createDailyOrder(item);
+    const { gtin, _id } = item;
+    let dailyOrder = await DailyOrder.findOne({
+      gtin,
+      date: { $gte: todayStart, $lte: todayEnd },
+    });
+    if (dailyOrder) {
+      return await DailyOrder.findOneAndUpdate(
+        { _id: dailyOrder._id },
+        { $addToSet: { item: _id }, $set: { lastUpdated: now } }
+      );
+    }
+    dailyOrder = await createDailyOrder(item);
     if (package) {
       const ndc11 = package.ndc11;
       await DailyOrder.findOneAndUpdate(

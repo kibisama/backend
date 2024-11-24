@@ -5,18 +5,18 @@ const {
 } = Schema;
 
 const dailyOrderSchema = new Schema({
-  lastUpdated: Date,
+  lastUpdated: { type: Date, default: new Date() },
   date: { type: Date, default: new Date() },
+  status: { type: String, uppercase: true },
+  gtin: String,
   item: {
-    type: ObjectId,
+    type: [ObjectId],
     ref: "Item",
   },
-  status: { type: String, uppercase: true },
   package: {
     type: ObjectId,
     ref: "Package",
   },
-
   // cardinalItem: {
   //   type: ObjectId,
   //   ref: "Cardinal Item",
@@ -29,7 +29,6 @@ const dailyOrderSchema = new Schema({
   //   uoiCost: String,
   //   contract: String,
   // },
-
   psDetails: {
     lastUpdated: Date,
     description: String,

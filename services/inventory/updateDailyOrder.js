@@ -3,8 +3,6 @@ const DailyOrder = require("../../schemas/inventory/dailyOrder");
 const CardinalItem = require("../../schemas/cardinal/cardinalItem");
 const PSSearch = require("../../schemas/pharmsaver/psSearch");
 
-// 확인된버그들 description은 대문자화해서 비교하도록하자
-// alt정보 입력시 단순히 가격비교말고 notavailable할경우 아래기술참조
 module.exports = async (dailyOrder, ndc11) => {
   try {
     const query = {};
@@ -60,7 +58,6 @@ module.exports = async (dailyOrder, ndc11) => {
           wholesaler: "NOT AVAILABLE",
           manufacturer: "NOT AVAILABLE",
         };
-        query.psAlts = psAlts;
       } else {
         const searchResults = [];
         description.forEach((v, i) => {
@@ -81,8 +78,8 @@ module.exports = async (dailyOrder, ndc11) => {
           });
         });
         const sortFn = (a, b) =>
-          Number(a.unitPrice.replace(/[^0-9.]+/g, "")) -
-          Number(b.unitPrice.replace(/[^0-9.]+/g, ""));
+          Number(a.unitPrice.replaceAll(/[^0-9.]+/g, "")) -
+          Number(b.unitPrice.replaceAll(/[^0-9.]+/g, ""));
         const sortedSameNdcResults = searchResults
           .filter((v) => v.ndc === _ndc11)
           .sort(sortFn);
@@ -99,9 +96,8 @@ module.exports = async (dailyOrder, ndc11) => {
           };
           const _description = [...new Set(description)];
           _description.forEach((v) => {
-            //이부분에 버그잇는듯
-            const sortedSameDescResults = searchResults // 0 index the cheapest
-              .filter((v) => (v.description = v))
+            const sortedSameDescResults = searchResults
+              .filter((w) => w.description === v)
               .sort(sortFn);
             psAlts.push(sortedSameDescResults[0]);
           });
@@ -133,46 +129,37 @@ module.exports = async (dailyOrder, ndc11) => {
             };
           } else {
             const pkg = sortedSameNdcResults[0].pkg;
+            const numUnitPriceSameNdc = Number(
+              sortedSameNdcResults[0].unitPrice.replaceAll(/[^0-9.]+/g, "")
+            );
+            const numUnitPriceSameDesc = Number(
+              sortedSameDescResults[0].unitPrice.replaceAll(/[^0-9.]+/g, "")
+            );
             const sortedSamePkgAndDescResults = sortedSameDescResults.filter(
               (v) => v.pkg === pkg
             );
-            if (
-              Number(
-                sortedSamePkgAndDescResults[0].unitPrice.replace(
-                  /[^0-9.]+/g,
-                  ""
-                )
-              ) <
-              Number(sortedSameNdcResults[0].unitPrice.replace(/[^0-9.]+/g, ""))
-            ) {
+            const numUnitPriceSamePkgAndDesc = Number(
+              sortedSamePkgAndDescResults[0].unitPrice.replaceAll(
+                /[^0-9.]+/g,
+                ""
+              )
+            );
+            if (numUnitPriceSamePkgAndDesc < numUnitPriceSameNdc) {
               psAlts.push(sortedSamePkgAndDescResults[0]);
             }
             if (
-              Number(
-                sortedSameDescResults[0].unitPrice.replace(/[^0-9.]+/g, "")
-              ) <
-              Number(
-                sortedSameNdcResults[0].unitPrice.replace(/[^0-9.]+/g, "") &&
-                  Number(
-                    sortedSameDescResults[0].unitPrice.replace(/[^0-9.]+/g, "")
-                  ) <
-                    Number(
-                      sortedSamePkgAndDescResults[0].unitPrice.replace(
-                        /[^0-9.]+/g,
-                        ""
-                      )
-                    )
-              )
+              numUnitPriceSameDesc < numUnitPriceSameNdc &&
+              numUnitPriceSameDesc < numUnitPriceSamePkgAndDesc
             ) {
               psAlts.push(sortedSameDescResults[0]);
             }
-            query.psAlts = psAlts;
           }
         }
       }
+      query.psAlts = psAlts;
     }
     // if (cardinalItem && psSearch) {
-    //   query.orderStatus = "UPDATED";
+    //   query.status = "UPDATED";
     // }
     // 검색결과없으면 schedule
     query.lastUpdated = dayjs();
