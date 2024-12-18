@@ -1,3 +1,13 @@
+// const fs = require('fs');
+// fs.readdir('img', (err) => {
+//   if (err) {
+//     console.error(`${}`);
+//     fs.mkdir('img', (err) => {
+//       console.error(err);
+//     });
+//   }
+// });
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");

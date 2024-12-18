@@ -23,8 +23,8 @@ const getDailyOrder = async (req, res, next) => {
           "active_ingredients",
           "strength",
           "route",
-          "repSize",
-          "repUnit",
+          "size",
+          "unit",
         ],
       },
     ]);

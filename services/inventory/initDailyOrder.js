@@ -1,17 +1,18 @@
 const dayjs = require("dayjs");
 const createDailyOrder = require("./createDailyOrder");
 const DailyOrder = require("../../schemas/inventory/dailyOrder");
-const CardinalItem = require("../../schemas/cardinal/cardinalItem");
+const CardinalProduct = require("../../schemas/cardinal/cardinalProduct");
 const PSSearch = require("../../schemas/pharmsaver/psSearch");
-const updateItem = require("../cardinal/updateItem");
+const updateProduct = require("../cardinal/updateProduct");
 const updateSearch = require("../pharmsaver/updateSearch");
 const updateDailyOrder = require("./updateDailyOrder");
 
-// /**
-//  * Initiate Daily Order Service for the item.
-//  * @param {Item} item
-//  * @returns
-//  */
+/**
+ * Initiate Daily Order service for the item.
+ * @param {Item} item
+ * @param {Package} package
+ * @returns {Promise<undefined>}
+ */
 module.exports = async (item, package) => {
   const now = dayjs();
   const todayStart = dayjs(now).startOf("date");
@@ -28,41 +29,33 @@ module.exports = async (item, package) => {
         { $addToSet: { item: _id }, $set: { lastUpdated: now } }
       );
     }
-    dailyOrder = await createDailyOrder(item);
+    let ndc11;
+    let update = false;
     if (package) {
-      const ndc11 = package.ndc11;
-      await DailyOrder.findOneAndUpdate(
-        { _id: dailyOrder._id },
-        { package: package._id }
-      );
-      // const cardinalItem = await CardinalItem.findOne({
-      //   ndc: ndc11,
-      //   lastUpdated: { $gte: todayStart, $lte: todayEnd },
-      // });
+      dailyOrder = await createDailyOrder(item, package._id);
+      ndc11 = package.ndc11;
+      const cardinalProduct = await CardinalProduct.findOne({
+        ndc: ndc11,
+        lastUpdated: { $gte: todayStart, $lte: todayEnd },
+      });
+      if (!cardinalProduct) {
+        updateProduct({ query: ndc11 }, dailyOrder); // don't have to get the promise solved
+      }
       const psSearch = await PSSearch.findOne({
         query: ndc11.replaceAll("-", ""),
         lastUpdated: { $gte: todayStart, $lte: todayEnd },
       });
-      switch (true) {
-        // case !cardinalItem && !psSearch:
-        //   Promise.all([
-        // updateItem(ndc11, dailyOrder),
-        //   updateSearch(ndc11, dailyOrder),
-        // ]);
-        // break;
-        // case !cardinalItem:
-        // updateItem(ndc11, dailyOrder);
-        // await updateDailyOrder(dailyOrder, ndc11);
-        // break;
-        case !psSearch:
-          updateSearch(ndc11, dailyOrder);
-          break;
-        default:
-          await updateDailyOrder(dailyOrder, ndc11);
+      if (!psSearch) {
+        updateSearch(ndc11, dailyOrder);
       }
-      // return
+      if (cardinalProduct || psSearch) {
+        update = true;
+      }
     } else {
-      // updateItem with GTIN from Cardinal and await getting ndc11 from cardinal
+      // updateProdcut with GTIN from Cardinal and await getting ndc11 from cardinal?
+    }
+    if (update) {
+      await updateDailyOrder(dailyOrder, ndc11);
     }
   } catch (e) {
     console.log(e);

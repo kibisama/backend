@@ -5,17 +5,20 @@ client.defaults.baseURL = "http://localhost:3002";
 module.exports = {
   cardinal: {
     url: "/cardinal",
-    async getInvoice(date) {
+    // async getInvoice(date) {
+    //   try {
+    //     return await client.post(`${this.url}/getInvoice`, date);
+    //   } catch (e) {
+    //     console.log(e);
+    //     return e;
+    //   }
+    // },
+    async getProductDetails({ cin, query }) {
       try {
-        return await client.post(`${this.url}/getInvoice`, date);
-      } catch (e) {
-        console.log(e);
-        return e;
-      }
-    },
-    async updateItem(ndc11) {
-      try {
-        return await client.post(`${this.url}/updateItem`, { ndc11 });
+        return await client.post(`${this.url}/getProductDetails`, {
+          cin,
+          query,
+        });
       } catch (e) {
         console.log(e);
         return e;
@@ -24,9 +27,9 @@ module.exports = {
   },
   ps: {
     url: "/pharmsaver",
-    async updateSearch(ndc11) {
+    async getSearchResults(ndc11) {
       try {
-        return await client.post(`${this.url}/updateSearch`, { ndc11 });
+        return await client.post(`${this.url}/getSearchResults`, { ndc11 });
       } catch (e) {
         console.log(e);
         return e;
