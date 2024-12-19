@@ -27,6 +27,10 @@ const getDailyOrder = async (req, res, next) => {
           "unit",
         ],
       },
+      {
+        path: "cardinalProduct",
+        select: ["estNetCost", "netUoiCost", "purchaseHistory"],
+      },
     ]);
     return res.send({ results });
   } catch (e) {
