@@ -39,7 +39,7 @@ const dailyOrderSchema = new Schema({
   cardinalProductAnalysis: {
     lowestHistCost: String,
     lastSFDCdate: String,
-    lstSFDCcost: String,
+    lastSFDCcost: String,
     shipQty: [Number],
     maxUnitCost: [String],
   },

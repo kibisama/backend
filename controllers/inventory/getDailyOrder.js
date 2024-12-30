@@ -40,18 +40,9 @@ const getDailyOrder = async (req, res, next) => {
           "stockStatus",
           "contract",
           "stock",
-          "purchaseHistory",
         ],
       },
     ]);
-    results.forEach((v) => {
-      if (v.cardinalProduct?.purchaseHistory.length > 0) {
-        v.cardinalProduct.purchaseHistory =
-          v.cardinalProduct.purchaseHistory.filter(
-            (v) => !v.invoiceCost.startsWith("-")
-          );
-      }
-    });
     return res.send({ results });
   } catch (e) {
     console.log(e);
