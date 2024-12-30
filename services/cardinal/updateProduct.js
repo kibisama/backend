@@ -42,7 +42,7 @@ module.exports = async (body, dailyOrder) => {
         case 500:
           if (count < maxCount) {
             count++;
-            scheduleJob(now.add(30, "minute").toDate(), update);
+            scheduleJob(now.add(15, "minute").toDate(), update);
           }
           break;
         case 503:

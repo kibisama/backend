@@ -37,6 +37,72 @@ module.exports = async (dailyOrder, ndc11) => {
     });
     if (cardinalProduct && !dailyOrder.cardinalProduct) {
       query.cardinalProduct = cardinalProduct._id;
+      const purchaseHistory = cardinalProduct.purchaseHistory;
+      if (purchaseHistory.length > 0) {
+        const range = 7;
+        const dates = new Array(range);
+        const shipQty = new Array(range);
+        shipQty.fill(0);
+        const maxUnitCost = new Array(range);
+        dates.forEach((v, i) => {
+          v = now.subtract((range - 1 - i, "M"));
+        });
+        let lowestHistCost;
+        let lastSFDCdate;
+        let lastSFDCcost;
+        let loop = false;
+        for (let i = 0; i < purchaseHistory.length; i++) {
+          if (purchaseHistory[i].invoiceCost.startsWith("-")) {
+            continue;
+          }
+          if (!lowestHistCost) {
+            lowestHistCost = purchaseHistory[i].unitCost;
+          } else {
+            if (
+              Number(purchaseHistory[i].unitCost.replaceAll(/[^0-9.]+/g, "")) <
+              Number(lowestHistCost.replaceAll(/[^0-9.]+/g, ""))
+            ) {
+              lowestHistCost = purchaseHistory[i].unitCost;
+            }
+          }
+          if (!lastSFDCdate && purchaseHistory[i].orderMethod === "SFDC") {
+            lastSFDCdate = purchaseHistory[i].invoiceDate;
+            lastSFDCcost = purchaseHistory[i].unitCost;
+          }
+          if (loop) {
+            continue;
+          }
+          const invoiceDate = dayjs(purchaseHistory[i].invoiceDate);
+          if (invoiceDate.isBefore(dates[0], "month")) {
+            loop = true;
+            continue;
+          } else {
+            for (let i = 0; i < dates.length; i++) {
+              if (invoiceDate.isSame(dates[i], "month")) {
+                shipQty[i] += Number(purchaseHistory[i].shipQty);
+                if (!maxUnitCost[i]) {
+                  maxUnitCost[i] = purchaseHistory[i].unitCost;
+                } else {
+                  if (
+                    Number(
+                      purchaseHistory[i].unitCost.replaceAll(/[^0-9.]+/g, "")
+                    ) > Number(maxUnitCost[i].replaceAll(/[^0-9.]+/g, ""))
+                  ) {
+                    maxUnitCost[i] = purchaseHistory[i].unitCost;
+                  }
+                }
+              }
+            }
+          }
+        }
+        query.cardinalProductAnalysis = {
+          lowestHistCost,
+          lastSFDCdate,
+          lastSFDCcost,
+          shipQty,
+          maxUnitCost,
+        };
+      }
       const alts = cardinalProduct.alts;
       if (alts.length > 0) {
         alts.sort(
@@ -44,6 +110,9 @@ module.exports = async (dailyOrder, ndc11) => {
             Number(a.netUoiCost.replaceAll(/[^0-9.]+/g, "")) -
             Number(b.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
         );
+        let contractInStock;
+        let contract;
+        let inStock;
         for (let i = 0; i < alts.length; i++) {
           const alt = alts[i];
           if (
@@ -54,6 +123,8 @@ module.exports = async (dailyOrder, ndc11) => {
             break;
           }
         }
+      } else {
+        // ad N/A
       }
     }
     if (psSearch && dailyOrder.psAlts.length === 0) {
@@ -70,53 +141,83 @@ module.exports = async (dailyOrder, ndc11) => {
             Number(b.unitPrice.replaceAll(/[^0-9.]+/g, ""))
         );
         const shortDate = now.add(11, "month");
-        let cheapestLongSameNdcResult;
+        let cheapestSameNdcResult;
         let cheapestShortSameNdcResult;
         const descriptionTable = {}; // table for the cheapest item of each description
         const descriptionSizeTable = {}; // table for the cheapest item of each size of each description
         for (let i = 0; i < results.length; i++) {
           const v = results[i];
+          const expDate = dayjs(v.lotExpDate, "MM/YY");
+          const longDated = expDate.isAfter(shortDate);
           if (v.ndc === _ndc11) {
-            const expDate = dayjs(v.lotExpDate, "MM/YY");
-            if (expDate.isAfter(shortDate)) {
-              cheapestLongSameNdcResult = v;
+            if (longDated) {
+              cheapestSameNdcResult = v;
               break;
             } else if (!cheapestShortSameNdcResult) {
               cheapestShortSameNdcResult = v;
             }
           } else {
             if (!descriptionTable[v.description]) {
-              descriptionTable[v.description] = v;
-              descriptionSizeTable[v.description] = {};
-              descriptionSizeTable[v.description][v.pkg] = v;
-            } else {
-              if (!descriptionSizeTable[v.description][v.pkg]) {
-                descriptionSizeTable[v.description][v.pkg] = v;
+              descriptionTable[v.description] = {};
+              if (longDated) {
+                descriptionTable[v.description].long = v;
+              } else {
+                descriptionTable[v.description].short = v;
               }
+              descriptionSizeTable[v.description] = {};
+            } else if (longDated && !descriptionTable[v.description].long) {
+              descriptionTable[v.description].long = v;
+            }
+            if (!descriptionSizeTable[v.description][v.pkg]) {
+              descriptionSizeTable[v.description][v.pkg] = v;
             }
           }
         }
         /* if no original ndc found, the lowest unitPrice of each description will be suggested */
-        if (!cheapestLongSameNdcResult && !cheapestShortSameNdcResult) {
+        if (!cheapestSameNdcResult && !cheapestShortSameNdcResult) {
           query.psDetails = psNA;
           for (const key in descriptionTable) {
-            query.psAlts.push(descriptionTable[key]);
+            query.psAlts.push(
+              descriptionTable[key].long ?? descriptionTable[key].short
+            );
           }
         } else {
           /* else one with the lowest unitPrice and the same pkg and/or the overall lowest unitPrice will be suggested */
-          query.psDetails =
-            cheapestLongSameNdcResult ?? cheapestShortSameNdcResult;
-          const cheapestSameDescriptionSamePkg =
-            descriptionSizeTable[query.psDetails.description]?.[
-              query.psDetails.pkg
-            ];
-          if (cheapestSameDescriptionSamePkg) {
-            query.psAlts.push(cheapestSameDescriptionSamePkg);
-          }
-          const cheapestSameDescription =
+          query.psDetails = cheapestSameNdcResult ?? cheapestShortSameNdcResult;
+          let cheapestSameDescription;
+          const _cheapestSameDescription =
             descriptionTable[query.psDetails.description];
-          if (cheapestSameDescription !== cheapestSameDescriptionSamePkg) {
-            query.psAlts.push(cheapestSameDescription);
+          if (_cheapestSameDescription) {
+            const cheapestSameDescriptionSamePkg =
+              descriptionSizeTable[query.psDetails.description][
+                query.psDetails.pkg
+              ];
+            const long = _cheapestSameDescription.long;
+            const short = _cheapestSameDescription.short;
+            if (query.psDetails === cheapestShortSameNdcResult) {
+              if (long && short) {
+                if (
+                  Number(long.unitPrice.replaceAll(/[^0-9.]+/g, "")) >
+                  Number(short.unitPrice.replaceAll(/[^0-9.]+/g, ""))
+                ) {
+                  cheapestSameDescription = short;
+                } else {
+                  cheapestSameDescription = long;
+                }
+              }
+            }
+            if (!cheapestSameDescription) {
+              cheapestSameDescription = long ?? short;
+            }
+            if (cheapestSameDescription) {
+              query.psAlts.push(cheapestSameDescription);
+            }
+            if (
+              cheapestSameDescriptionSamePkg &&
+              cheapestSameDescription !== cheapestSameDescriptionSamePkg
+            ) {
+              query.psAlts.push(cheapestSameDescriptionSamePkg);
+            }
           }
         }
         if (query.psAlts.length === 0) {

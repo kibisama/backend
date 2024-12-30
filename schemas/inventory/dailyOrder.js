@@ -31,9 +31,17 @@ const dailyOrderSchema = new Schema({
     type: ObjectId,
     ref: "Package",
   },
+  /* Cardinal search results */
   cardinalProduct: {
     type: ObjectId,
     ref: "Cardinal Product",
+  },
+  cardinalProductAnalysis: {
+    lowestHistCost: String,
+    lastSFDCdate: String,
+    lstSFDCcost: String,
+    shipQty: [Number],
+    maxUnitCost: [String],
   },
   cardinalAlt: {
     name: String,

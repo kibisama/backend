@@ -33,6 +33,7 @@ const getDailyOrder = async (req, res, next) => {
           "lastUpdated",
           "name",
           "cin",
+          "lastOrdered",
           "estNetCost",
           "netUoiCost",
           "returnable",
