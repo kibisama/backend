@@ -32,8 +32,8 @@ const getDailyOrder = async (req, res, next) => {
         select: [
           "lastUpdated",
           "name",
+          "brandName",
           "cin",
-          "lastOrdered",
           "estNetCost",
           "netUoiCost",
           "returnable",
