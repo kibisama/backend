@@ -44,32 +44,34 @@ module.exports = async (dailyOrder, ndc11) => {
         const shipQty = new Array(range);
         shipQty.fill(0);
         const maxUnitCost = new Array(range);
-        dates.forEach((v, i) => {
-          v = now.subtract((range - 1 - i, "M"));
-        });
+        for (let i = 0; i < dates.length; i++) {
+          dates[i] = now.subtract(range - 1 - i, "M");
+        }
         let lowestHistCost;
         let lastSFDCdate;
         let lastSFDCcost;
-        let loop = false;
+        let innerLoopDone = false;
         for (let i = 0; i < purchaseHistory.length; i++) {
-          if (purchaseHistory[i].invoiceCost.startsWith("-")) {
+          const invoiceCost = purchaseHistory[i].invoiceCost;
+          const unitCost = purchaseHistory[i].unitCost;
+          if (invoiceCost.startsWith("-") || invoiceCost === "$0.00") {
             continue;
           }
           if (!lowestHistCost) {
-            lowestHistCost = purchaseHistory[i].unitCost;
+            lowestHistCost = unitCost;
           } else {
             if (
-              Number(purchaseHistory[i].unitCost.replaceAll(/[^0-9.]+/g, "")) <
+              Number(unitCost.replaceAll(/[^0-9.]+/g, "")) <
               Number(lowestHistCost.replaceAll(/[^0-9.]+/g, ""))
             ) {
-              lowestHistCost = purchaseHistory[i].unitCost;
+              lowestHistCost = unitCost;
             }
           }
           if (!lastSFDCdate && purchaseHistory[i].orderMethod === "SFDC") {
             lastSFDCdate = purchaseHistory[i].invoiceDate;
-            lastSFDCcost = purchaseHistory[i].unitCost;
+            lastSFDCcost = unitCost;
           }
-          if (loop) {
+          if (innerLoopDone) {
             continue;
           }
           const invoiceDate = dayjs(purchaseHistory[i].invoiceDate);
@@ -81,14 +83,13 @@ module.exports = async (dailyOrder, ndc11) => {
               if (invoiceDate.isSame(dates[i], "month")) {
                 shipQty[i] += Number(purchaseHistory[i].shipQty);
                 if (!maxUnitCost[i]) {
-                  maxUnitCost[i] = purchaseHistory[i].unitCost;
+                  maxUnitCost[i] = unitCost;
                 } else {
                   if (
-                    Number(
-                      purchaseHistory[i].unitCost.replaceAll(/[^0-9.]+/g, "")
-                    ) > Number(maxUnitCost[i].replaceAll(/[^0-9.]+/g, ""))
+                    Number(unitCost.replaceAll(/[^0-9.]+/g, "")) >
+                    Number(maxUnitCost[i].replaceAll(/[^0-9.]+/g, ""))
                   ) {
-                    maxUnitCost[i] = purchaseHistory[i].unitCost;
+                    maxUnitCost[i] = unitCost;
                   }
                 }
               }
