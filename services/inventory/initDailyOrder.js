@@ -22,14 +22,14 @@ module.exports = async (package, item) => {
       return dailyOrder;
     }
     if (
-      cardinalProduct.active !== false &&
-      todayStart.isAfter(dayjs(cardinalProduct.lastUpdated))
+      cardinalProduct.active === undefined ||
+      todayStart.isAfter(dayjs(cardinalProduct.lastUpdated), "day")
     ) {
       updateProduct({ query: ndc11 });
     }
     if (
-      psSearch.active !== false ||
-      todayStart.isAfter(dayjs(psSearch.lastUpdated))
+      psSearch.active === undefined ||
+      todayStart.isAfter(dayjs(psSearch.lastUpdated), "Day")
     ) {
       updateSearch(ndc11);
     }

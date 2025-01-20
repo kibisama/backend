@@ -14,6 +14,9 @@ module.exports = async (package) => {
   try {
     const query = {};
     const { ndc11, _id } = package;
+    if (!ndc11) {
+      return;
+    }
     const cardinalProduct = await CardinalProduct.find({ ndc: ndc11 });
     if (cardinalProduct.length === 0) {
       query.cardinalProduct = [(await createVoidProduct(ndc11))._id];
@@ -21,7 +24,7 @@ module.exports = async (package) => {
       query.cardinalProduct = cardinalProduct.map((v) => v._id);
     }
     const _ndc11 = ndc11.replaceAll("-", "");
-    let psSearch = PSSearch.findOne({ query: _ndc11 });
+    let psSearch = await PSSearch.findOne({ query: _ndc11 });
     if (!psSearch) {
       psSearch = await createVoidSearch(_ndc11);
     }

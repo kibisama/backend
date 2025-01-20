@@ -21,6 +21,7 @@ module.exports = async (gtin) => {
     const ndcDir = await NdcDir.findOne({
       packaging: { $elemMatch: { description: { $regex: regEx } } },
     });
+    let package;
     if (ndcDir) {
       const reference = await Package.findOne({ ndcDir: ndcDir._id });
       if (reference) {
@@ -29,17 +30,18 @@ module.exports = async (gtin) => {
       }
       Object.assign(query, definePackageFields(gtin, ndcDir));
     } else {
-      const package = await updatePackage(gtin);
-      if (package) {
-        return package;
-      }
+      package = await updatePackage(gtin);
     }
-    const result = await Package.create(query);
-    if (result.rxcui) {
-      linkPackageWithAlternative(result);
+    if (!package) {
+      package = await Package.create(query);
     }
-    await updatePackageRelations(result);
-    return result;
+    if (package.ndc11) {
+      await updatePackageRelations(package);
+    }
+    if (query.rxcui) {
+      linkPackageWithAlternative(package);
+    }
+    return package;
   } catch (e) {
     console.log(e);
   }
