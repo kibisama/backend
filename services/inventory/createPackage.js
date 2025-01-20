@@ -35,11 +35,11 @@ module.exports = async (gtin) => {
     if (!package) {
       package = await Package.create(query);
     }
-    if (package.ndc11) {
-      await updatePackageRelations(package);
-    }
     if (query.rxcui) {
       linkPackageWithAlternative(package);
+    }
+    if (package.ndc11) {
+      return await updatePackageRelations(package);
     }
     return package;
   } catch (e) {

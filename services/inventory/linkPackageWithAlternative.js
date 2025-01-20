@@ -15,7 +15,8 @@ module.exports = async function link(package) {
     }
     const alt = await Alternative.findOneAndUpdate(
       { rxcui },
-      { $addToSet: { packages: _id } }
+      { $addToSet: { packages: _id } },
+      { new: true }
     );
     if (alt) {
       await Package.findOneAndUpdate({ _id }, { alternative: alt._id });
