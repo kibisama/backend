@@ -14,7 +14,6 @@ module.exports = async (package, item) => {
     const now = dayjs();
     const todayStart = now.startOf("date");
     const { _id, ndc11, cardinalProduct, psSearch } = package;
-    console.log(package, "package");
     const dailyOrder = await DailyOrder.findOneAndUpdate(
       { package: _id, date: { $gte: todayStart } },
       { date: now, lastUpdated: now, $addToSet: { items: item._id } }

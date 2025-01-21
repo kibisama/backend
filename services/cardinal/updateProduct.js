@@ -65,8 +65,17 @@ module.exports = async (body) => {
         );
       }
       analyzeProduct(results);
+      let target = await CardinalProduct.findOne({ cin: results.cin });
+      if (!target) {
+        if (results.ndc) {
+          target = await CardinalProduct.find({
+            ndc: results.ndc,
+            active: null,
+          });
+        }
+      }
       _result = await CardinalProduct.findOneAndUpdate(
-        { cin: results.cin },
+        { _id: target._id },
         { $set: results },
         { new: true, upsert: true }
       );
