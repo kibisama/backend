@@ -21,7 +21,7 @@ module.exports = async (package) => {
     } = package;
     let form;
     if (alternative) {
-      form = (await Alternative.findOne({ _id: alternative._id })).form;
+      form = (await Alternative.findOne({ _id: alternative })).form;
     }
     let name = "";
     const _name = brand_name ?? generic_name;

@@ -43,16 +43,16 @@ module.exports = async (package, callback) => {
       }
       query = ndcProperties;
     }
-    const result = await Package.findOneAndUpdate(
+    let result = await Package.findOneAndUpdate(
       { [type]: arg },
       { $set: query },
       { new: true }
     );
     if (result) {
       if (result.rxcui) {
-        await linkPackageWithAlternative(result);
+        result = await linkPackageWithAlternative(result);
       }
-      // await setDefaultPackageName(result);
+      result = await setDefaultPackageName(result);
       if (callback instanceof Function) {
         callback(result);
       }
