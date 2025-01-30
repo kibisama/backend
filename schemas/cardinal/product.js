@@ -41,23 +41,23 @@ const productSchema = new Schema({
   avlAlertAddMsg: String,
   avlAlertExpected: String,
   /* Subs & alts */
-  alts: [
-    {
-      name: String,
-      genericName: String,
-      ndc: String,
-      cin: String,
-      upc: String,
-      mfr: String,
-      orangeBookCode: String,
-      estNetCost: String,
-      netUoiCost: String,
-      lastOrdered: String,
-      contract: String,
-      stockStatus: String,
-      stock: String,
-    },
-  ],
+  // alts: [
+  //   {
+  //     name: String,
+  //     genericName: String,
+  //     ndc: String,
+  //     cin: String,
+  //     upc: String,
+  //     mfr: String,
+  //     orangeBookCode: String,
+  //     estNetCost: String,
+  //     netUoiCost: String,
+  //     lastOrdered: String,
+  //     contract: String,
+  //     stockStatus: String,
+  //     stock: String,
+  //   },
+  // ],
   /* Purchase history */
   purchaseHistory: [
     {
@@ -81,7 +81,6 @@ const productSchema = new Schema({
     lastSFDCcost: String,
     shipQty: [Number],
     maxUnitCost: [String],
-    bestAlt: Number,
   },
 });
 

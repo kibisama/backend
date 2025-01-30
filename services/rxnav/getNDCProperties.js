@@ -1,29 +1,34 @@
-const { getNdcProperties } = require("../../api/rxnav");
-const convertPackagingDescriptionToSizeAndUnit = require("../inventory/convertPackagingDescriptionToSizeAndUnit");
-const convertNdcToNdc11 = require("../inventory/convertNdcToNdc11");
+const { getNDCProperties } = require("../../api/rxnav");
+const {
+  gtinToNDC,
+  ndc11ToNDC,
+  ndcToNDC11,
+  packagingDescriptionToSizesAndUnits,
+} = require("../convert");
 
 /**
- * Finds NDC properties by GTIN via getNdcProperties Api.
- * @param {string} gtin
+ * Gets NDC properties via getNdcProperties Api.
+ * @param {string} arg
+ * @param {string} type
  * @returns {Promise<object|Error>}
  */
-module.exports = async (gtin) => {
+module.exports = async (arg, type) => {
   try {
-    const frag = [
-      gtin.slice(3, 7),
-      gtin[7],
-      gtin.slice(8, 11),
-      gtin[11],
-      gtin[12],
-    ];
-    const candidates = [
-      `${frag[0]}-${frag[1] + frag[2]}-${frag[3] + frag[4]}`,
-      `${frag[0] + frag[1]}-${frag[2] + frag[3]}-${frag[4]}`,
-      `${frag[0] + frag[1]}-${frag[2]}-${frag[3] + frag[4]}`,
-    ];
+    let candidates;
+    switch (type) {
+      case "ndc":
+        candidates = [arg];
+        break;
+      case "gtin":
+        candidates = gtinToNDC(arg);
+        break;
+      case "ndc11":
+        candidates = ndc11ToNDC(arg);
+      default:
+    }
     const results = [];
-    for (let i = 0; i < 3; i++) {
-      const result = await getNdcProperties(candidates[i]);
+    for (let i = 0; i < candidates.length; i++) {
+      const result = await getNDCProperties(candidates[i]);
       if (result instanceof Error) {
         return result;
       } else {
@@ -47,7 +52,7 @@ module.exports = async (gtin) => {
       return new Error("Multiple results found");
     }
     const { ndc10, rxcui, packagingList, propertyConceptList } = results[0];
-    const result = { ndc: ndc10, ndc11: convertNdcToNdc11(ndc10), rxcui };
+    const result = { ndc: ndc10, ndc11: ndcToNDC11(ndc10), rxcui };
     let description, dea_schedule, manufacturer_name, product_type;
     const packaging = packagingList?.packaging;
     if (packaging && packaging.length > 0) {
@@ -61,10 +66,7 @@ module.exports = async (gtin) => {
       }
     }
     if (description) {
-      Object.assign(
-        result,
-        convertPackagingDescriptionToSizeAndUnit(description)
-      );
+      Object.assign(result, packagingDescriptionToSizesAndUnits(description));
     }
     const propertyConcept = propertyConceptList?.propertyConcept;
     if (propertyConcept && propertyConcept.length > 0) {

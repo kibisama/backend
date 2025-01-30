@@ -1,10 +1,10 @@
-const Item = require("../../schemas/inventory/item");
-const Package = require("../../schemas/inventory/package");
-const createItem = require("../../services/inventory/createItem");
-const updateItem = require("../../services/inventory/updateItem");
-const createPackage = require("../../services/inventory/createPackage");
-const updatePackageInventories = require("../../services/inventory/updatePackageInventories");
-const initDailyOrder = require("../../services/inventory/initDailyOrder");
+const { Item, Package } = require("../../schemas/inventory");
+
+const createItem = require("../../services/inventory/item/createItem");
+const updateItem = require("../../services/inventory/item/updateItem");
+const createPackage = require("../../services/inventory/package/createPackage");
+const updatePackageInventories = require("../../services/inventory/package/updatePackageInventories");
+// const initDailyOrder = require("../../services/inventory/initDailyOrder");
 
 module.exports = async (req, res, next) => {
   try {
@@ -24,16 +24,16 @@ module.exports = async (req, res, next) => {
     const response = { data };
     let package = await Package.findOne({ gtin });
     if (!package) {
-      package = await createPackage(gtin);
+      package = await createPackage(gtin, "gtin");
       if (!package) {
         return next(new Error("Failed to create Package document"));
       }
     }
     res.send(response);
     await updatePackageInventories(data, mode);
-    if (mode === "FILL" && !item.dateFilled) {
-      initDailyOrder(package, data);
-    }
+    // if (mode === "FILL" && !item.dateFilled) {
+    //   initDailyOrder(package, data);
+    // }
   } catch (e) {
     next(e);
   }

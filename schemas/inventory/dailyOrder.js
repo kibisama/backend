@@ -11,9 +11,6 @@ const dailyOrderSchema = new Schema({
   items: { type: [ObjectId], ref: "Item" },
   package: { type: ObjectId, ref: "Package" },
   orderedQty: { type: Number, default: 0 },
-  targetCost: String,
-  targetNdc: String,
-  targetVendor: String,
 });
 
 module.exports = mongoose.model("Daily Order", dailyOrderSchema);

@@ -15,14 +15,17 @@ module.exports = async (rxcui) => {
     const results = {};
     for (let i = 0; i < conceptGroup.length; i++) {
       const { tty, conceptProperties } = conceptGroup[i];
-      const properties = conceptProperties?.[0];
-      if (!properties) {
-        continue;
+      if (conceptProperties?.length > 0) {
+        for (let j = 0; j < conceptProperties.length; j++) {
+          const { rxcui, name } = conceptProperties[j];
+          if (!results[tty]) {
+            results[tty] = [];
+          }
+          results[tty][j] = {};
+          results[tty][j].rxcui = rxcui;
+          results[tty][j].name = name;
+        }
       }
-      const { rxcui, name } = properties;
-      results[tty] = {};
-      results[tty].rxcui = rxcui;
-      results[tty].name = name;
     }
     return results;
   } catch (e) {

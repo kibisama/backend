@@ -1,8 +1,8 @@
-const Item = require("../../schemas/inventory/item");
+const { Item } = require("../../../schemas/inventory");
 
 /**
  * Updates an Item document.
- * @param {Object} input
+ * @param {object} input
  * @param {Item} item
  * @returns {Promise<Item|undefined>}
  */

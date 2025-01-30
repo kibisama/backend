@@ -1,13 +1,16 @@
-const convertNdcToNdc11 = require("./convertNdcToNdc11");
-const convertPackagingDescriptionToSizeAndUnit = require("./convertPackagingDescriptionToSizeAndUnit");
+const {
+  ndcToNDC11,
+  packagingDescriptionToSizesAndUnits,
+} = require("../../convert");
 
 /**
  * Defines a Package Document fields based on NDC Directory Document.
- * @param {string} gtin
- * @param {NdcDir} ndcDir
- * @returns {Promise<object|undefined>}
+ * @param {string} arg
+ * @param {string} type
+ * @param {NDCDir} ndcDir
+ * @returns {object|undefined}
  */
-module.exports = (gtin, ndcDir) => {
+module.exports = (arg, type, ndcDir) => {
   try {
     const {
       _id,
@@ -16,14 +19,34 @@ module.exports = (gtin, ndcDir) => {
       brand_name,
       active_ingredients,
       packaging,
-      dosage_form,
     } = ndcDir;
     const { manufacturer_name } = ndcDir.openfda;
-    const regEx = new RegExp(
-      String.raw`${gtin.slice(3, 7)}-?${gtin[7]}-?${gtin.slice(8, 11)}-?${
-        gtin[11]
-      }-?${gtin[12]}`
-    );
+    let regEx;
+    switch (type) {
+      case "gtin":
+        regEx = new RegExp(
+          String.raw`${arg.slice(3, 7)}-?${arg[7]}-?${arg.slice(8, 11)}-?${
+            arg[11]
+          }-?${arg[12]}`
+        );
+        break;
+      case "ndc11":
+        regEx = new RegExp(
+          String.raw`${arg
+            .split("-")
+            .map((v) => {
+              if (v.startsWith("0")) {
+                return "0?" + v.substring(1);
+              } else {
+                return v;
+              }
+            })
+            .join("-")}`
+        );
+        break;
+      default:
+        return;
+    }
     let ndc,
       description = "";
     for (let i = 0; i < packaging.length; i++) {
@@ -50,9 +73,9 @@ module.exports = (gtin, ndcDir) => {
         break;
       }
     }
-    const ndc11 = convertNdcToNdc11(ndc);
+    const ndc11 = ndcToNDC11(ndc);
     const { unit, units, size, sizes } =
-      convertPackagingDescriptionToSizeAndUnit(description);
+      packagingDescriptionToSizesAndUnits(description);
     let strength;
     if (active_ingredients instanceof Array) {
       const strengths = active_ingredients.map((v, i, a) => {
@@ -79,7 +102,6 @@ module.exports = (gtin, ndcDir) => {
       generic_name,
       labeler_name,
       manufacturerName: manufacturer_name ? manufacturer_name[0] : undefined,
-      dosage_form,
       strength,
       size,
       sizes,

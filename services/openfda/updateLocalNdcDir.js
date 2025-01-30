@@ -1,24 +1,26 @@
-const NdcDir = require("../../schemas/openfda/ndcDir");
+const { NDCDir } = require("../../schemas/openfda");
 const { ndc } = require("../../api/openfda");
+const { gtinToNDC, ndc11ToNDC } = require("../convert");
 
 /**
- * Updates a NDC Directory document via openFDA api.
+ * Updates a NDC Directory document.
  * @param {string} arg
  * @param {string} type
- * @returns {Promise<NdcDir|Error>}
+ * @returns {Promise<NDCDir|Error>}
  */
 module.exports = async (arg, type) => {
   try {
-    let query;
-    let frag;
-    switch (true) {
-      case type === "gtin":
-        frag = [arg.slice(3, 7), arg[7], arg.slice(8, 11), arg[11], arg[12]];
-        query = `"${frag[0]}-${frag[1] + frag[2]}-${frag[3] + frag[4]}"+"${
-          frag[0] + frag[1]
-        }-${frag[2] + frag[3]}-${frag[4]}"+"${frag[0] + frag[1]}-${frag[2]}-${
-          frag[3] + frag[4]
-        }"`;
+    let query = "";
+    switch (type) {
+      case "gtin":
+        query = gtinToNDC(arg)
+          .map((v) => `"${v}"`)
+          .join("+");
+        break;
+      case "ndc11":
+        query = ndc11ToNDC(arg)
+          .map((v) => `"${v}"`)
+          .join("+");
         break;
       default:
         throw new Error("Invalid argument type");
@@ -31,11 +33,13 @@ module.exports = async (arg, type) => {
       return new Error("Multiple results found");
     }
     const data = result.data.results[0];
-    return await NdcDir.findOneAndUpdate(
+    return await NDCDir.findOneAndUpdate(
       { product_ndc: data.product_ndc },
       {
-        lastRetrieved: new Date(),
-        ...data,
+        $set: {
+          lastRetrieved: new Date(),
+          ...data,
+        },
       },
       { new: true, upsert: true }
     );

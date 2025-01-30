@@ -14,4 +14,7 @@ const itemSchema = new Schema({
   dateReturned: Date,
 });
 
-module.exports = mongoose.model("Item", itemSchema);
+module.exports = mongoose.model(
+  "Item",
+  itemSchema.index({ gtin: 1, lot: 1, sn: 1 }, { unique: true })
+);

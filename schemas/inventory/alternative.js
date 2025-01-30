@@ -5,8 +5,16 @@ const {
 } = Schema;
 
 const alternativeSchema = new Schema({
-  name: { type: String, uppercase: true },
-  rxcui: { type: [String], required: true },
+  rxcui: { type: [String], required: true, unique: true },
+
+  /* Properties */
+  _name: { type: String, uppercase: true },
+  form: { type: String, uppercase: true },
+
+  /* Internal data */
+  name: { type: String },
+
+  /* Relational */
   packages: {
     type: [ObjectId],
     ref: "Package",
@@ -14,6 +22,14 @@ const alternativeSchema = new Schema({
   family: {
     type: ObjectId,
     ref: "Family",
+  },
+  cardinalProduct: {
+    type: ObjectId,
+    ref: "Cardinal Product",
+  },
+  psSearch: {
+    type: ObjectId,
+    ref: "PharmSaver Search",
   },
 });
 

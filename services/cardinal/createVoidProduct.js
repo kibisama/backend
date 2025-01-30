@@ -1,4 +1,5 @@
 const CardinalProduct = require("../../schemas/cardinal/product");
+const Package = require("../../schemas/inventory/package");
 
 /**
  * Creates an empty Cardinal Product document with ndc11. Inactivates documents if already exist.
@@ -16,10 +17,16 @@ module.exports = async (ndc11) => {
         );
       }
     } else {
-      return await CardinalProduct.create({
+      const product = await CardinalProduct.create({
         lastUpdated: new Date(),
+        active: false,
         ndc: ndc11,
       });
+      await Package.findOneAndUpdate(
+        { ndc11 },
+        { $addToSet: { cardinalProduct: product._id } }
+      );
+      return product;
     }
   } catch (e) {
     console.log(e);

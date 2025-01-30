@@ -5,10 +5,17 @@ const {
 } = Schema;
 
 const familySchema = new Schema({
-  name: { type: String, uppercase: true },
-  rxcui: { type: [String], required: true },
+  rxcui: { type: [String], required: true, unique: true },
+
+  /* Properties */
+  _name: { type: String, uppercase: true },
   _rxcui: { type: [String], required: true },
   dea_schedule: String,
+
+  /* Internal data */
+  name: String,
+
+  /* Relational */
   alternatives: {
     type: [ObjectId],
     ref: "Alternative",

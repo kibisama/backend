@@ -17,7 +17,7 @@ const ndcDirSchema = new Schema({
   ],
   /* Searchable fields */
   product_id: String,
-  product_ndc: String,
+  product_ndc: { type: String, unique: true },
   spl_id: String,
   product_type: String,
   finished: Boolean,

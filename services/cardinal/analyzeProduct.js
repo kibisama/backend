@@ -3,12 +3,19 @@ const dayjs = require("dayjs");
 /**
  * Analyzes alts & purchase history and assigns analysis property to the result object.
  * @param {object} results
- * @returns {undefined}
+ * @returns {object|undefined}
  */
 
 module.exports = (results) => {
   const now = dayjs();
-  const { purchaseHistory, alts, orangeBookCode } = results;
+  const {
+    purchaseHistory,
+    alts,
+    orangeBookCode,
+    netUoiCost,
+    contract,
+    stockStatus,
+  } = results;
   const range = 7;
   const shipQty = new Array(range).fill(0);
   //   const returnQty = new Array(range).fill(0);
@@ -17,7 +24,6 @@ module.exports = (results) => {
   let lowestHistCost;
   let lastSFDCdate;
   let lastSFDCcost;
-  let bestAlt;
   if (purchaseHistory.length > 0) {
     const dates = new Array(range);
     for (let i = 0; i < dates.length; i++) {
@@ -76,7 +82,9 @@ module.exports = (results) => {
       }
     }
   }
+  let cin;
   if (alts.length > 0) {
+    let cheapestContractInStock;
     let cheapestContract;
     let cheapest;
     for (let i = 0; i < alts.length; i++) {
@@ -84,34 +92,59 @@ module.exports = (results) => {
       if (orangeBookCode && alt.orangeBookCode !== orangeBookCode) {
         continue;
       }
-      if (alt.stockStatus === "OUT OF STOCK") {
-        continue;
-      }
       const altUoiCost = Number(alt.netUoiCost.replaceAll(/[^0-9.]+/g, ""));
+      const inStock = alt.stockStatus !== "OUT OF STOCK";
       if (alt.contract) {
-        if (!cheapestContract) {
-          cheapestContract = i;
+        if (inStock) {
+          if (!cheapestContractInStock) {
+            cheapestContractInStock = alt;
+          } else {
+            const prevUoiCost = Number(
+              cheapestContractInStock.netUoiCost.replaceAll(/[^0-9.]+/g, "")
+            );
+            if (prevUoiCost > altUoiCost) {
+              cheapestContractInStock = alt;
+            }
+          }
+        } else if (!cheapestContract) {
+          cheapestContract = alt;
         } else {
           const prevUoiCost = Number(
-            alts[cheapestContract].netUoiCost.replaceAll(/[^0-9.]+/g, "")
+            cheapestContract.netUoiCost.replaceAll(/[^0-9.]+/g, "")
           );
           if (prevUoiCost > altUoiCost) {
-            cheapestContract = i;
+            cheapestContract = alt;
           }
+        }
+      } else if (inStock) {
+        if (!cheapest) {
+          cheapest = alt;
+        } else {
+          const prevUoiCost = Number(
+            cheapest.netUoiCost.replaceAll(/[^0-9.]+/g, "")
+          );
+          if (prevUoiCost > altUoiCost) {
+            cheapest = alt;
+          }
+        }
+      }
+    }
+    const contractAlt = cheapestContractInStock ?? cheapestContract;
+    const boolStockStatus = stockStatus !== "OUT OF STOCK";
+    const numberUoiCost = Number(netUoiCost.replaceAll(/[^0-9.]+/g, ""));
+    if (contractAlt) {
+      if (contract && boolStockStatus) {
+        if (
+          numberUoiCost >
+          Number(contractAlt.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
+        ) {
+          cin = contractAlt.cin;
         }
       } else {
-        if (!cheapest) {
-          cheapest = i;
-        } else {
-          const prevUoiCost = Number(
-            alts[cheapest].netUoiCost.replaceAll(/[^0-9.]+/g, "")
-          );
-          if (prevUoiCost > altUoiCost) {
-            cheapest = i;
-          }
-        }
+        cin = contractAlt.cin;
       }
-      bestAlt = cheapestContract ?? cheapest;
+    } else if (cheapest && !contract) {
+      cin = cheapest.cin;
     }
   }
   const analysis = {
@@ -121,7 +154,9 @@ module.exports = (results) => {
     lastSFDCcost,
     shipQty,
     maxUnitCost,
-    bestAlt,
   };
   results.analysis = analysis;
+  if (cin) {
+    return { cin };
+  }
 };

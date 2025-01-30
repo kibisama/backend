@@ -4,7 +4,7 @@ const dayjs = require("dayjs");
  * Analyzes Pharmsaver search results.
  * @param {object} results
  * @param {string} ndc11
- * @returns {undefined}
+ * @returns {object}
  */
 
 module.exports = (results, ndc11) => {
@@ -51,21 +51,15 @@ module.exports = (results, ndc11) => {
       }
     }
   }
-  const result = cheapestSameNdcResult ?? cheapestShortSameNdcResult;
-  const alts = [];
-  let index = -1;
+  const item = cheapestSameNdcResult ?? cheapestShortSameNdcResult;
+  const search = [];
   for (const prop in descriptionTable) {
-    alts.push(descriptionTable[prop]);
+    search.push(descriptionTable[prop]);
   }
-  alts.sort(
+  search.sort(
     (a, b) =>
       Number(a.unitPrice.replaceAll(/[^0-9.]+/g, "")) -
       Number(b.unitPrice.replaceAll(/[^0-9.]+/g, ""))
   );
-  alts.forEach((v, i) => {
-    if (v === result) {
-      index = i;
-    }
-  });
-  return { result, alts, index };
+  return { item, search };
 };

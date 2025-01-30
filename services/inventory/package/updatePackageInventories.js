@@ -1,4 +1,4 @@
-const Package = require("../../schemas/inventory/package");
+const { Package } = require("../../../schemas/inventory");
 
 /**
  * Adds/pulls an Item to/from the inventories field of Package.
@@ -15,7 +15,7 @@ module.exports = async (item, mode) => {
         { $pull: { inventories: _id } },
         { new: true }
       );
-    } else {
+    } else if (mode === "RECEIVE" || mode === "REVERSE") {
       return await Package.findOneAndUpdate(
         { gtin },
         { $addToSet: { inventories: _id } },
