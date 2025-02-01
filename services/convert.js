@@ -1,18 +1,30 @@
 module.exports = {
   /**
    * Returns a 11-digit ndc with hyphens.
+   * @param {string} ndc11 a 11-digit ndc without hyphens
+   * @returns {string}
+   */
+  insertHyphensToNDC11(ndc11) {
+    return (
+      ndc11.substring(0, 5) +
+      "-" +
+      ndc11.substring(5, 9) +
+      "-" +
+      ndc11.substring(9, 11)
+    );
+  },
+  /**
+   * Returns a 11-digit ndc with hyphens.
    * @param {string} ndc
    * @returns {string}
    */
   ndcToNDC11(ndc) {
-    if (ndc.length > 0) {
-      if (ndc[4] === "-") {
-        return "0" + ndc;
-      } else if (ndc[10] === "-") {
-        return ndc.slice(0, 11).concat("0", ndc[11]);
-      } else if (ndc[9] === "-") {
-        return ndc.slice(0, 6).concat("0", ndc.slice(6, 12));
-      }
+    if (ndc[4] === "-") {
+      return "0" + ndc;
+    } else if (ndc[10] === "-") {
+      return ndc.slice(0, 11).concat("0", ndc[11]);
+    } else if (ndc[9] === "-") {
+      return ndc.slice(0, 6).concat("0", ndc.slice(6, 12));
     }
   },
   /**

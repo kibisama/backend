@@ -1,14 +1,12 @@
 const { Package } = require("../../../schemas/inventory");
-const updatePackage = require("./updatePackage");
 
 /**
  * Creates a Package document.
  * @param {string} arg
  * @param {string} type
- * @param {function} callback
  * @returns {Promise<Package|undefined>}
  */
-module.exports = async (arg, type, callback) => {
+module.exports = async (arg, type) => {
   try {
     let query = {};
     switch (type) {
@@ -21,9 +19,7 @@ module.exports = async (arg, type, callback) => {
       default:
         return;
     }
-    const package = await Package.create(query);
-    updatePackage(package, callback);
-    return package;
+    return await Package.create(query);
   } catch (e) {
     console.log(e);
   }

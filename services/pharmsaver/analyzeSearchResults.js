@@ -2,18 +2,18 @@ const dayjs = require("dayjs");
 
 /**
  * Analyzes Pharmsaver search results.
- * @param {object} results
+ * @param {Array} _results
  * @param {string} ndc11
  * @returns {object}
  */
 
-module.exports = (results, ndc11) => {
-  const shortDate = dayjs().add(11, "month");
+module.exports = (_results, ndc11) => {
+  const shortDate = dayjs().add(11, "month"); // settings
   let cheapestSameNdcResult;
   let cheapestShortSameNdcResult;
   const descriptionTable = {};
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
+  for (let i = 0; i < _results.length; i++) {
+    const result = _results[i];
     const description = result.description;
     const table = descriptionTable[description];
     if (!table) {
@@ -52,14 +52,14 @@ module.exports = (results, ndc11) => {
     }
   }
   const item = cheapestSameNdcResult ?? cheapestShortSameNdcResult;
-  const search = [];
+  const results = [];
   for (const prop in descriptionTable) {
-    search.push(descriptionTable[prop]);
+    results.push(descriptionTable[prop]);
   }
-  search.sort(
+  results.sort(
     (a, b) =>
       Number(a.unitPrice.replaceAll(/[^0-9.]+/g, "")) -
       Number(b.unitPrice.replaceAll(/[^0-9.]+/g, ""))
   );
-  return { item, search };
+  return { item, results };
 };

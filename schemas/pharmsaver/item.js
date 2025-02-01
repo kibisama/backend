@@ -9,7 +9,7 @@ const psItemSchema = new Schema({
   pkg: String,
   form: String,
   pkgPrice: String,
-  ndc: String,
+  ndc: { type: String, unique: true },
   qtyAvl: String,
   unitPrice: String,
   rxOtc: String,

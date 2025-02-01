@@ -1,8 +1,13 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const {
+  Types: { ObjectId },
+} = Schema;
 
 const psSearchSchema = new Schema({
+  alternative: { type: ObjectId, required: true },
   lastUpdated: Date,
+  active: Boolean,
   results: [
     {
       description: String,
