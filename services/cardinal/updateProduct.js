@@ -87,8 +87,8 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
         if (!altProduct || dayjs(altProduct.lastUpdated).isBefore(now, "day")) {
           let package = await Package.findOne({ ndc11: ndc });
           if (!package) {
-            package = await createPackage(ndc, "ndc11");
-            await updatePackage(package);
+            const _package = await createPackage(ndc, "ndc11");
+            package = await updatePackage(_package);
           }
           updateProduct(package, { body: { cin } });
         }
