@@ -2,89 +2,74 @@ const dayjs = require("dayjs");
 const fs = require("fs");
 const axios = require("axios");
 const { scheduleJob } = require("node-schedule");
-const CardinalProduct = require("../../schemas/cardinal/product");
-const Package = require("../../schemas/inventory/package");
-const Alternative = require("../../schemas/inventory/alternative");
-const puppet = require("../../api/puppet");
-const createVoidProduct = require("./createVoidProduct");
+const { cardinal } = require("../../api/puppet");
+const { CardinalProduct } = require("../../schemas/cardinal");
+const { Package, Alternative } = require("../../schemas/inventory");
+const voidProduct = require("./voidProduct");
 const analyzeProduct = require("./analyzeProduct");
+const createPackage = require("../inventory/package/createPackage");
+const updatePackage = require("../inventory/package/updatePackage");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
 
 /**
- * Request the Puppeteer server to update Cardinal product details.
- * It will schedule a retry depending on the response.
- * @param {object} body either cin or query
- * @param {boolean} updateAlt
+ * Request the Puppeteer server to update(create) a Cardinal Product document.
+ * @param {Package} package
+ * @param {object} _option
+ * @param {function} callback
  * @returns {Promise<CardinalProduct|Error>}
  */
-module.exports = async function updateProduct(body, updateAlt = true) {
-  const { cin, query } = body;
+module.exports = async function updateProduct(package, _option = {}, callback) {
+  const option = Object.assign({ updateAlternative: true }, _option);
+  const { updateAlternative, body } = option;
+  const { _id, ndc11, alternative, cardinalProduct } = package;
+  let _body = body || { query: ndc11 };
   let count = 0;
-  const maxCount = 9;
+  const maxCount = 99;
   /**
    * Inner function that requests Puppeteer server to update Cardinal product.
    * @returns {Promise<CardinalProduct|undefined>}
    */
   async function update() {
-    const now = dayjs();
-    console.log(
-      `Requesting Puppeteer server to update Cardinal Product Details ${
-        cin ?? query + " " + now.format("MM/DD/YY HH:mm:ss")
-      }...`
-    );
-    let _result;
-    let result = await puppet.cardinal.getProductDetails(body);
+    const result = await cardinal.getProductDetails(_body);
     if (result instanceof Error) {
       switch (result.status) {
         case 404:
-          if (!cin) {
-            /* for now, query must be 11-digit numbers with hyphens */
-            const product = await CardinalProduct.findOne({ ndc: query });
-            if (!product) {
-              _result = await createVoidProduct(query);
-            }
-          } else {
-            const product = await CardinalProduct.findOne({ cin });
-            if (product) {
-              await CardinalProduct.findOneAndUpdate(
-                { cin },
-                { active: false }
-              );
-            }
-          }
-          if (updateAlt) {
-            // get all related ndcs and update alternative.cardinalProduct
+          await voidProduct(package);
+          if (updateAlternative) {
+            //
           }
           break;
         case 500:
           if (count < maxCount) {
             count++;
-            scheduleJob(now.add(15, "minute").toDate(), update);
+            scheduleJob(dayjs().add(5, "minute").toDate(), update); // settings
           }
           break;
         case 503:
-          scheduleJob(now.add(3, "minute").toDate(), update);
+          scheduleJob(dayjs().add(3, "minute").toDate(), update); // settings
           break;
         default:
       }
+      return result;
     } else {
       const now = dayjs();
       const results = result.data.results;
       results.lastUpdated = now;
-      results.active = true;
-      const altCin = analyzeProduct(results);
-      _result = await CardinalProduct.findOneAndUpdate(
+      results.active = results.stockStatus !== "INELIGIBLE";
+      const source = analyzeProduct(results);
+      const product = await CardinalProduct.findOneAndUpdate(
         { cin: results.cin },
         { $set: results },
         { new: true, upsert: true }
       );
-      const package = await Package.findOneAndUpdate(
-        { ndc11: results.ndc },
-        { $addToSet: { cardinalProduct: _result._id } }
-      );
-
+      if (!cardinalProduct) {
+        await Package.findOneAndUpdate(
+          { _id },
+          { $addToSet: { cardinalProduct: product._id } }
+        );
+      }
       const path = `img/pharma-medium/${results.cin}.jpg`;
       fs.access(path, fs.constants.F_OK, async (err) => {
         if (err) {
@@ -96,25 +81,25 @@ module.exports = async function updateProduct(body, updateAlt = true) {
           }
         }
       });
-      if (updateAlt && altCin) {
-        const altCaridnalProduct = await CardinalProduct.findOne(altCin);
-        if (
-          !altCaridnalProduct ||
-          dayjs(altCaridnalProduct.lastUpdated).isBefore(now, "day")
-        ) {
-          updateProduct(altCin);
+      if (updateAlternative && source) {
+        const { ndc, cin } = source;
+        const altProduct = await CardinalProduct.findOne({ cin });
+        if (!altProduct || dayjs(altProduct.lastUpdated).isBefore(now, "day")) {
+          let package = await Package.findOne({ ndc11: ndc });
+          if (!package) {
+            package = await createPackage(ndc, "ndc11");
+            updatePackage(package);
+          }
+          updateProdcut(package, { body: { cin } });
         }
-      } else if (results.rx === "Yes") {
-        const { alternative } = package;
-        if (alternative) {
-          await Alternative.findOneAndUpdate(
-            { _id: alternative },
-            { $set: { cardinalProduct: _result._id } }
-          );
-        }
+      } else if (!source && product.contract && alternative) {
+        await Alternative.findOneAndUpdate(
+          { _id: alternative },
+          { $set: { cardinalSource: product._id } }
+        );
       }
+      return product;
     }
-    return _result ?? result;
   }
   try {
     return await update();

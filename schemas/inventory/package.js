@@ -52,7 +52,7 @@ const packageSchema = new Schema({
     ref: "Alternative",
   },
   cardinalProduct: {
-    type: [ObjectId],
+    type: ObjectId,
     ref: "Cardinal Product",
   },
   psItem: { type: ObjectId, ref: "PharmSaver Item" },

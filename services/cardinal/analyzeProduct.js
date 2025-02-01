@@ -82,69 +82,57 @@ module.exports = (results) => {
       }
     }
   }
-  let cin;
+  let result;
   if (alts.length > 0) {
     let cheapestContractInStock;
     let cheapestContract;
-    let cheapest;
     for (let i = 0; i < alts.length; i++) {
       const alt = alts[i];
+      if (!alt.contract) {
+        continue;
+      }
       if (orangeBookCode && alt.orangeBookCode !== orangeBookCode) {
         continue;
       }
       const altUoiCost = Number(alt.netUoiCost.replaceAll(/[^0-9.]+/g, ""));
       const inStock = alt.stockStatus !== "OUT OF STOCK";
-      if (alt.contract) {
-        if (inStock) {
-          if (!cheapestContractInStock) {
-            cheapestContractInStock = alt;
-          } else {
-            const prevUoiCost = Number(
-              cheapestContractInStock.netUoiCost.replaceAll(/[^0-9.]+/g, "")
-            );
-            if (prevUoiCost > altUoiCost) {
-              cheapestContractInStock = alt;
-            }
-          }
-        } else if (!cheapestContract) {
-          cheapestContract = alt;
+      if (inStock) {
+        if (!cheapestContractInStock) {
+          cheapestContractInStock = alt;
         } else {
           const prevUoiCost = Number(
-            cheapestContract.netUoiCost.replaceAll(/[^0-9.]+/g, "")
+            cheapestContractInStock.netUoiCost.replaceAll(/[^0-9.]+/g, "")
           );
           if (prevUoiCost > altUoiCost) {
-            cheapestContract = alt;
+            cheapestContractInStock = alt;
           }
         }
-      } else if (inStock) {
-        if (!cheapest) {
-          cheapest = alt;
-        } else {
-          const prevUoiCost = Number(
-            cheapest.netUoiCost.replaceAll(/[^0-9.]+/g, "")
-          );
-          if (prevUoiCost > altUoiCost) {
-            cheapest = alt;
-          }
+      } else if (!cheapestContract) {
+        cheapestContract = alt;
+      } else {
+        const prevUoiCost = Number(
+          cheapestContract.netUoiCost.replaceAll(/[^0-9.]+/g, "")
+        );
+        if (prevUoiCost > altUoiCost) {
+          cheapestContract = alt;
         }
       }
     }
     const contractAlt = cheapestContractInStock ?? cheapestContract;
-    const boolStockStatus = stockStatus !== "OUT OF STOCK";
-    const numberUoiCost = Number(netUoiCost.replaceAll(/[^0-9.]+/g, ""));
     if (contractAlt) {
+      const boolStockStatus =
+        stockStatus !== "OUT OF STOCK" && stockStatus !== "INELIGIBLE";
+      const numberUoiCost = Number(netUoiCost.replaceAll(/[^0-9.]+/g, ""));
       if (contract && boolStockStatus) {
         if (
           numberUoiCost >
           Number(contractAlt.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
         ) {
-          cin = contractAlt.cin;
+          result = contractAlt;
         }
       } else {
-        cin = contractAlt.cin;
+        result = contractAlt;
       }
-    } else if (cheapest && !contract) {
-      cin = cheapest.cin;
     }
   }
   const analysis = {
@@ -156,7 +144,5 @@ module.exports = (results) => {
     maxUnitCost,
   };
   results.analysis = analysis;
-  if (cin) {
-    return { cin };
-  }
+  return result;
 };

@@ -10,7 +10,7 @@ const productSchema = new Schema({
   name: String,
   genericName: String,
   ndc: String, // 11-digit numbers with hyphens
-  cin: { type: String, unique: true }, // the same product can have multiple cins
+  cin: { type: String, required: true, unique: true }, // the same product can have multiple cins
   upc: String,
   gtin: String,
   brandName: String,

@@ -23,7 +23,7 @@ const alternativeSchema = new Schema({
     type: ObjectId,
     ref: "Family",
   },
-  cardinalProduct: {
+  cardinalSource: {
     type: ObjectId,
     ref: "Cardinal Product",
   },

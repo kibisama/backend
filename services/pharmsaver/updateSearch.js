@@ -10,7 +10,7 @@ const voidItem = require("./voidItem");
 const createSearch = require("./createSearch");
 
 /**
- * Request the Puppeteer server to update PharmSaver Search results. Requires a Package document.
+ * Request the Puppeteer server to update PharmSaver Search results.
  * @param {Package} package
  * @param {function} callback
  * @returns {Promise<PSSearch|Error>}
@@ -77,8 +77,8 @@ module.exports = async (package, callback) => {
         psSearch = await createSearch(results, alternative);
       }
       if (callback instanceof Function) {
-        const package = await Package.findOne({ _id });
-        callback(package);
+        // const package = await Package.findOne({ _id });
+        // callback(package);
       }
       return psSearch;
     }

@@ -1,20 +1,6 @@
 module.exports = {
   /**
    * Returns a 11-digit ndc with hyphens.
-   * @param {string} ndc11 a 11-digit ndc without hyphens
-   * @returns {string}
-   */
-  insertHyphensToNDC11(ndc11) {
-    return (
-      ndc11.substring(0, 5) +
-      "-" +
-      ndc11.substring(5, 9) +
-      "-" +
-      ndc11.substring(9, 11)
-    );
-  },
-  /**
-   * Returns a 11-digit ndc with hyphens.
    * @param {string} ndc
    * @returns {string}
    */
