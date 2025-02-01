@@ -24,10 +24,10 @@ module.exports = {
       result.push(ndc11.substring(1));
     }
     if (ndc11[6] === "0") {
-      result.push(a.slice(0, 6).concat(a.slice(7)));
+      result.push(ndc11.slice(0, 6).concat(ndc11.slice(7)));
     }
     if (ndc11[11] === "0") {
-      result.push(a.substring(0, 11) + a[12]);
+      result.push(ndc11.substring(0, 11) + ndc11[12]);
     }
     return result;
   },
