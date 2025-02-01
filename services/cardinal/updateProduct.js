@@ -88,7 +88,7 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
           let package = await Package.findOne({ ndc11: ndc });
           if (!package) {
             package = await createPackage(ndc, "ndc11");
-            updatePackage(package);
+            await updatePackage(package);
           }
           updateProduct(package, { body: { cin } });
         }
