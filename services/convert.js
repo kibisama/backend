@@ -21,12 +21,12 @@ module.exports = {
   ndc11ToNDC(ndc11) {
     const result = [];
     if (ndc11[0] === "0") {
-      result.push(arg.substring(1));
+      result.push(ndc11.substring(1));
     }
-    if (arg[6] === "0") {
+    if (ndc11[6] === "0") {
       result.push(a.slice(0, 6).concat(a.slice(7)));
     }
-    if (arg[11] === "0") {
+    if (ndc11[11] === "0") {
       result.push(a.substring(0, 11) + a[12]);
     }
     return result;

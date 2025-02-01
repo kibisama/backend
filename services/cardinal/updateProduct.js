@@ -90,7 +90,7 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
             package = await createPackage(ndc, "ndc11");
             updatePackage(package);
           }
-          updateProdcut(package, { body: { cin } });
+          updateProduct(package, { body: { cin } });
         }
       } else if (!source && product.contract && alternative) {
         await Alternative.findOneAndUpdate(
