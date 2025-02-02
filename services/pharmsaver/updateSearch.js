@@ -77,8 +77,8 @@ module.exports = async (package, callback) => {
         psSearch = await createSearch(results, alternative);
       }
       if (callback instanceof Function) {
-        // const package = await Package.findOne({ _id });
-        // callback(package);
+        const package = await Package.findOne({ _id });
+        callback(package);
       }
       return psSearch;
     }

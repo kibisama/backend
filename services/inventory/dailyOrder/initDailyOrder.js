@@ -18,15 +18,21 @@ module.exports = async (package) => {
     const items = (
       await Item.find({ gtin, dateFilled: { $gte: todayStart } })
     ).map((v) => v._id);
-    const dailyOrder = await DailyOrder.findOneAndUpdate(
+    const _dailyOrder = await DailyOrder.findOneAndUpdate(
       { package: _id, date: { $gte: todayStart } },
       { $set: { lastUpdated: now, date: now }, $addToSet: { items } },
       { new: true }
     );
-    if (dailyOrder) {
-      return dailyOrder;
+    if (_dailyOrder) {
+      return _dailyOrder;
     }
-
+    const dailyOrder = await DailyOrder.create({
+      lastUpdated: now,
+      date: now,
+      status: "FILLED",
+      items,
+      package: _id,
+    });
     let _cardinalProduct;
     if (cardinalProduct) {
       _cardinalProduct = await CardinalProduct.findOne({
@@ -48,14 +54,7 @@ module.exports = async (package) => {
         updateSearch(package);
       }
     }
-
-    // return await DailyOrder.create({
-    //   lastUpdated: now,
-    //   date: now,
-    //   status: "FILLED",
-    //   items: [item._id],
-    //   package: _id,
-    // });
+    return dailyOrder;
   } catch (e) {
     console.log(e);
   }

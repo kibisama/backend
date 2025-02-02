@@ -82,6 +82,14 @@ module.exports = (results) => {
       }
     }
   }
+  const analysis = {
+    lastCost,
+    lowestHistCost,
+    lastSFDCdate,
+    lastSFDCcost,
+    shipQty,
+    maxUnitCost,
+  };
   let result;
   if (alts.length > 0) {
     let cheapestContractInStock;
@@ -134,15 +142,11 @@ module.exports = (results) => {
         result = contractAlt;
       }
     }
+    if (result) {
+      analysis.sourceNetCost = result.estNetCost;
+      analysis.sourceUoiCost = result.netUoiCost;
+    }
   }
-  const analysis = {
-    lastCost,
-    lowestHistCost,
-    lastSFDCdate,
-    lastSFDCcost,
-    shipQty,
-    maxUnitCost,
-  };
   results.analysis = analysis;
   return result;
 };

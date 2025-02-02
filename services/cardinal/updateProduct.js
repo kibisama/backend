@@ -65,7 +65,7 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
         { new: true, upsert: true }
       );
       if (!cardinalProduct) {
-        await Package.findOneAndUpdate(
+        package = await Package.findOneAndUpdate(
           { _id },
           { $addToSet: { cardinalProduct: product._id } }
         );
@@ -90,13 +90,16 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
             const _package = await createPackage(ndc, "ndc11");
             package = await updatePackage(_package);
           }
-          updateProduct(package, { body: { cin } });
+          updateProduct(package, { body: { cin } }, callback);
         }
       } else if (!source && product.contract && alternative) {
         await Alternative.findOneAndUpdate(
           { _id: alternative },
           { $set: { cardinalSource: product._id } }
         );
+      }
+      if (callback instanceof Function) {
+        callback(package);
       }
       return product;
     }

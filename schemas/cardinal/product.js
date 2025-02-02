@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const productSchema = new Schema({
   /* Internal data */
   lastUpdated: Date,
-  active: Boolean, // undefined when first created
+  active: Boolean,
   priority: { type: Number, default: 0 },
   /* Selected fields */
   name: String,
@@ -81,6 +81,8 @@ const productSchema = new Schema({
     lastSFDCcost: String,
     shipQty: [Number],
     maxUnitCost: [String],
+    sourceNetCost: String,
+    sourceUoiCost: String,
   },
 });
 

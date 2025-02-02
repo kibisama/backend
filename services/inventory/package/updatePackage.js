@@ -48,16 +48,14 @@ module.exports = async (package, callback) => {
       { $set: query },
       { new: true }
     );
-    if (result) {
-      if (result.rxcui) {
-        result = await linkPackageWithAlternative(result);
-      }
-      result = await setDefaultPackageName(result);
-      if (callback instanceof Function) {
-        callback(result);
-      }
-      return result;
+    if (result.rxcui) {
+      result = await linkPackageWithAlternative(result);
     }
+    result = await setDefaultPackageName(result);
+    if (callback instanceof Function) {
+      callback(result);
+    }
+    return result;
   } catch (e) {
     console.log(e);
   }

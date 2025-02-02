@@ -18,17 +18,17 @@ module.exports = async (req, res, next) => {
     const response = { data };
     let package = await Package.findOne({ gtin });
     let update = false;
+    const scheduleOrder = mode === "FILL" && !item.dateFilled;
     if (!package) {
       package = await createPackage(gtin, "gtin");
       update = true;
+    } else if (scheduleOrder) {
+      initDailyOrder(package);
     }
-    res.send(response);
     await updatePackageInventories(data, mode);
+    res.send(response);
     if (update) {
-      updatePackage(
-        package,
-        mode === "FILL" && !item.dateFilled ? initDailyOrder : undefined
-      );
+      updatePackage(package, scheduleOrder ? initDailyOrder : undefined);
     }
   } catch (e) {
     next(e);
