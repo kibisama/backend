@@ -81,8 +81,21 @@ const productSchema = new Schema({
     lastSFDCcost: String,
     shipQty: [Number],
     maxUnitCost: [String],
-    sourceNetCost: String,
-    sourceUoiCost: String,
+    source: {
+      name: String,
+      genericName: String,
+      ndc: String,
+      cin: String,
+      upc: String,
+      mfr: String,
+      orangeBookCode: String,
+      estNetCost: String,
+      netUoiCost: String,
+      lastOrdered: String,
+      contract: String,
+      stockStatus: String,
+      stock: String,
+    },
   },
 });
 

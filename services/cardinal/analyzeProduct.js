@@ -82,15 +82,8 @@ module.exports = (results) => {
       }
     }
   }
-  const analysis = {
-    lastCost,
-    lowestHistCost,
-    lastSFDCdate,
-    lastSFDCcost,
-    shipQty,
-    maxUnitCost,
-  };
-  let result;
+
+  let source;
   if (alts.length > 0) {
     let cheapestContractInStock;
     let cheapestContract;
@@ -136,17 +129,23 @@ module.exports = (results) => {
           numberUoiCost >
           Number(contractAlt.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
         ) {
-          result = contractAlt;
+          source = contractAlt;
         }
       } else {
-        result = contractAlt;
+        source = contractAlt;
       }
     }
-    if (result) {
-      analysis.sourceNetCost = result.estNetCost;
-      analysis.sourceUoiCost = result.netUoiCost;
-    }
   }
+
+  const analysis = {
+    lastCost,
+    lowestHistCost,
+    lastSFDCdate,
+    lastSFDCcost,
+    shipQty,
+    maxUnitCost,
+    source,
+  };
   results.analysis = analysis;
-  return result;
+  return source;
 };
