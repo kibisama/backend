@@ -14,7 +14,7 @@ module.exports = async (package) => {
       generic_name,
       gtin,
       ndc11,
-      manufacturer_name,
+      manufacturerName,
       labeler_name,
       strength,
       size,
@@ -40,7 +40,7 @@ module.exports = async (package) => {
       name += ` (${size})`;
     }
     let mfrName;
-    const _mfrName = manufacturer_name ?? labeler_name;
+    const _mfrName = manufacturerName ?? labeler_name;
     if (_mfrName?.length > 9) {
       const match = _mfrName.match(/([^\s,]+)/g);
       if (match) {

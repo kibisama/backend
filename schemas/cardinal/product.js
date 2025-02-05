@@ -10,7 +10,7 @@ const productSchema = new Schema({
   name: String,
   genericName: String,
   ndc: String, // 11-digit numbers with hyphens
-  cin: { type: String, required: true, unique: true }, // the same product can have multiple cins
+  cin: { type: String, unique: true }, // the same product can have multiple cins
   upc: String,
   gtin: String,
   brandName: String,
@@ -21,6 +21,7 @@ const productSchema = new Schema({
   strength: String,
   orangeBookCode: String,
   lastOrdered: String, // "MM/DD/YYYY"
+  invoiceCost: String,
   estNetCost: String,
   netUoiCost: String, // 4 decimal places
   rebateEligible: String, // boolean

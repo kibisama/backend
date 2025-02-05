@@ -10,15 +10,22 @@ module.exports = async (item, mode) => {
   try {
     const { gtin, _id } = item;
     if (mode === "FILL" || mode === "RETURN") {
-      return await Package.findOneAndUpdate(
+      const package = await Package.findOneAndUpdate(
         { gtin },
         { $pull: { inventories: _id } },
         { new: true }
       );
+      if (package.inventories.length === 0) {
+        return await Package.findOneAndUpdate(
+          { _id: package._id },
+          { active: false },
+          { new: true }
+        );
+      }
     } else if (mode === "RECEIVE" || mode === "REVERSE") {
       return await Package.findOneAndUpdate(
         { gtin },
-        { $addToSet: { inventories: _id } },
+        { $addToSet: { inventories: _id }, active: true },
         { new: true }
       );
     }

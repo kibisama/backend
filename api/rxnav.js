@@ -24,4 +24,8 @@ module.exports = {
     const query = `https://rxnav.nlm.nih.gov/REST/relatedndc.json?ndc=${ndc}&relation=drug&ndcstatus=all`;
     return await get(query);
   },
+  async getNDCs(rxcui) {
+    const query = `https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/ndcs.json`;
+    return await get(query);
+  },
 };

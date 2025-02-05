@@ -1,6 +1,7 @@
 const { Package } = require("../../../schemas/inventory");
 const updateLocalNDCDir = require("../../openfda/updateLocalNDCDir");
 const getNDCProperties = require("../../rxnav/getNDCProperties");
+const findRelatedNDCs = require("../../rxnav/findRelatedNDCs");
 const definePackageFields = require("./definePackageFields");
 const linkPackageWithAlternative = require("./linkPackageWithAlternative");
 const setDefaultPackageName = require("./setDefaultPackageName");
@@ -29,19 +30,24 @@ module.exports = async (package, callback) => {
         return;
     }
     const ndcDir = await updateLocalNDCDir(arg, type);
-    let ndcProperties;
     if (!(ndcDir instanceof Error)) {
       query = definePackageFields(arg, type, ndcDir);
-      ndcProperties = await getNDCProperties(query.ndc, "ndc");
-      if (!(ndcProperties instanceof Error)) {
-        query.rxcui = ndcProperties.rxcui;
-      }
     } else {
-      ndcProperties = await getNDCProperties(arg, type);
+      const ndcProperties = await getNDCProperties(arg, type);
       if (ndcProperties instanceof Error) {
         return;
       }
       query = ndcProperties;
+    }
+    const relatedNDCs = await findRelatedNDCs(query.ndc11);
+    if (!(relatedNDCs instanceof Error)) {
+      const { rxcui, tty } = relatedNDCs;
+      query.rxcui = rxcui;
+      if (tty === "SBD") {
+        query.brand = true;
+      } else if (tty === "SCD") {
+        query.brand = false;
+      }
     }
     let result = await Package.findOneAndUpdate(
       { [type]: arg },

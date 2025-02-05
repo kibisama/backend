@@ -1,5 +1,19 @@
 module.exports = {
   /**
+   * Returns a 11-digit ndc with hyphens from a 11-digit ndc with no hyphens.
+   * @param {string} ndc11
+   * @returns {string}
+   */
+  hyphenateNDC11(ndc11) {
+    return (
+      ndc11.substring(0, 5) +
+      "-" +
+      ndc11.substring(5, 9) +
+      "-" +
+      ndc11.substring(9)
+    );
+  },
+  /**
    * Returns a 11-digit ndc with hyphens.
    * @param {string} ndc
    * @returns {string}
