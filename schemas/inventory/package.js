@@ -41,7 +41,7 @@ const packageSchema = new Schema({
   /* Internal data */
   name: String,
   mfrName: String,
-  active: Boolean,
+  active: { type: Boolean, default: false },
   optimalStock: { type: Number, default: 0 },
   preferred: { type: Boolean, default: false },
   inventories: {

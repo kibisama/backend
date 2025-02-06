@@ -2,7 +2,7 @@ const { findRelatedNDCs } = require("../../api/rxnav");
 const { hyphenateNDC11 } = require("../convert");
 
 /**
- * Finds ndcInfoList via findRelatedNDCs api.
+ * Gets related NDCs by a NDC via findRelatedNDCs api.
  * @param {string} id a 11-digit ndc
  * @returns {Promise<object|Error>}
  */

@@ -13,7 +13,7 @@ const createSearch = require("./createSearch");
  * Request the Puppeteer server to update PharmSaver Search results.
  * @param {Package} package
  * @param {function} callback
- * @returns {Promise<PSSearch|Error>}
+ * @returns {Promise<undefined>}
  */
 module.exports = async (package, callback) => {
   const { _id, ndc11, alternative, psItem } = package;
@@ -22,7 +22,7 @@ module.exports = async (package, callback) => {
   const maxCount = 99;
   /**
    * Inner function that requests Puppeteer server to update PSSearch.
-   * @returns {Promise<PSSearch|undefined>}
+   * @returns {Promise<undefined>}
    */
   async function update() {
     const result = await ps.getSearchResults(_ndc11);
@@ -43,7 +43,6 @@ module.exports = async (package, callback) => {
           break;
         default:
       }
-      return result;
     } else {
       const _results = result.data.results;
       _results.forEach((v) => {
@@ -69,24 +68,22 @@ module.exports = async (package, callback) => {
       if (!alternative) {
         return new Error();
       }
-      let psSearch = await PSSearch.findOneAndUpdate(
+      const psSearch = await PSSearch.findOneAndUpdate(
         { alternative },
         { $set: { lastUpdated: new Date(), active: true, results } }
       );
       if (!psSearch) {
-        psSearch = await createSearch(results, alternative);
+        await createSearch(results, alternative);
       }
       if (callback instanceof Function) {
         const package = await Package.findOne({ _id });
         callback(package);
       }
-      return psSearch;
     }
   }
   try {
     return await update();
   } catch (e) {
     console.log(e);
-    return e;
   }
 };

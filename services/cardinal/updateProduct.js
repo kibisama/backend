@@ -1,14 +1,13 @@
 const dayjs = require("dayjs");
 const fs = require("fs");
 const axios = require("axios");
-const { scheduleJob } = require("node-schedule");
-const { cardinal } = require("../../api/puppet");
 const { CardinalProduct } = require("../../schemas/cardinal");
 const { Package, Alternative } = require("../../schemas/inventory");
 const voidProduct = require("./voidProduct");
 const analyzeProduct = require("./analyzeProduct");
 const createPackage = require("../inventory/package/createPackage");
 const updatePackage = require("../inventory/package/updatePackage");
+const update = require("./update");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -17,45 +16,18 @@ const defaultImgUrl =
  * Request the Puppeteer server to update(create) a Cardinal Product document.
  * @param {Package} package
  * @param {object} _option
- * @param {function} callback
- * @returns {Promise<CardinalProduct|Error>}
+ * @param {function} _callback
+ * @returns {Promise<undefined>}
  */
-module.exports = async function updateProduct(package, _option = {}, callback) {
-  const option = Object.assign({ updateAlternative: true }, _option);
-  const { updateAlternative, body } = option;
-  const { _id, ndc11, alternative, cardinalProduct } = package;
-  let _body = body || { query: ndc11 };
-  let count = 0;
-  const maxCount = 99;
-  /**
-   * Inner function that requests Puppeteer server to update Cardinal product.
-   * @returns {Promise<CardinalProduct|undefined>}
-   */
-  async function update() {
-    const result = await cardinal.getProductDetails(_body);
-    if (result instanceof Error) {
-      switch (result.status) {
-        case 404:
-          await voidProduct(package);
-          if (updateAlternative) {
-            //
-          }
-          break;
-        case 500:
-          if (count < maxCount) {
-            count++;
-            scheduleJob(dayjs().add(5, "minute").toDate(), update); // settings
-          }
-          break;
-        case 503:
-          scheduleJob(dayjs().add(3, "minute").toDate(), update); // settings
-          break;
-        default:
-      }
-      return result;
-    } else {
+module.exports = async function updateProduct(package, _option, _callback) {
+  try {
+    const option = Object.assign({ updateAlternative: true }, _option ?? {});
+    const { updateAlternative, body } = option;
+    const { _id, ndc11, alternative, cardinalProduct } = package;
+    let _body = body || { query: ndc11 };
+    const callback = async (data) => {
       const now = dayjs();
-      const results = result.data.results;
+      const results = data.results;
       results.lastUpdated = now;
       results.active = results.stockStatus !== "INELIGIBLE";
       const source = analyzeProduct(results);
@@ -90,7 +62,7 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
             const _package = await createPackage(ndc, "ndc11");
             package = await updatePackage(_package);
           }
-          updateProduct(package, { body: { cin } }, callback);
+          updateProduct(package, { body: { cin } }, _callback);
         }
       } else if (!source && product.contract && alternative) {
         await Alternative.findOneAndUpdate(
@@ -98,16 +70,21 @@ module.exports = async function updateProduct(package, _option = {}, callback) {
           { $set: { cardinalSource: product._id } }
         );
       }
-      if (callback instanceof Function) {
-        callback(package);
+      if (_callback instanceof Function) {
+        _callback(package);
       }
       return product;
-    }
-  }
-  try {
-    return await update();
+    };
+    const onError = {
+      404: async function () {
+        await voidProduct(package);
+        if (updateAlternative) {
+          //
+        }
+      },
+    };
+    update("getProductDetails", _body, callback, onError);
   } catch (e) {
     console.log(e);
-    return e;
   }
 };
