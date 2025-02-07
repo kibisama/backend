@@ -96,6 +96,8 @@ const productSchema = new Schema({
       contract: String,
       stockStatus: String,
       stock: String,
+      rebateEligible: String, // boolean "done" == true "close" == false
+      returnable: String, // boolean
     },
   },
 });

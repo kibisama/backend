@@ -1,4 +1,5 @@
 const dayjs = require("dayjs");
+const selectSource = require("./selectSource");
 
 /**
  * Analyzes alts & purchase history and assigns analysis property to the result object.
@@ -83,57 +84,20 @@ module.exports = (results) => {
     }
   }
 
+  const _source = selectSource(alts, orangeBookCode);
   let source;
-  if (alts.length > 0) {
-    let cheapestContractInStock;
-    let cheapestContract;
-    for (let i = 0; i < alts.length; i++) {
-      const alt = alts[i];
-      if (!alt.contract) {
-        continue;
+  if (_source) {
+    const boolStockStatus =
+      stockStatus !== "OUT OF STOCK" && stockStatus !== "INELIGIBLE";
+    const numberUoiCost = Number(netUoiCost.replaceAll(/[^0-9.]+/g, ""));
+    if (contract && boolStockStatus) {
+      if (
+        numberUoiCost > Number(_source.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
+      ) {
+        source = _source;
       }
-      if (orangeBookCode && alt.orangeBookCode !== orangeBookCode) {
-        continue;
-      }
-      const altUoiCost = Number(alt.netUoiCost.replaceAll(/[^0-9.]+/g, ""));
-      const inStock = alt.stockStatus !== "OUT OF STOCK";
-      if (inStock) {
-        if (!cheapestContractInStock) {
-          cheapestContractInStock = alt;
-        } else {
-          const prevUoiCost = Number(
-            cheapestContractInStock.netUoiCost.replaceAll(/[^0-9.]+/g, "")
-          );
-          if (prevUoiCost > altUoiCost) {
-            cheapestContractInStock = alt;
-          }
-        }
-      } else if (!cheapestContract) {
-        cheapestContract = alt;
-      } else {
-        const prevUoiCost = Number(
-          cheapestContract.netUoiCost.replaceAll(/[^0-9.]+/g, "")
-        );
-        if (prevUoiCost > altUoiCost) {
-          cheapestContract = alt;
-        }
-      }
-    }
-    const contractAlt = cheapestContractInStock ?? cheapestContract;
-    if (contractAlt) {
-      const boolStockStatus =
-        stockStatus !== "OUT OF STOCK" && stockStatus !== "INELIGIBLE";
-      const numberUoiCost = Number(netUoiCost.replaceAll(/[^0-9.]+/g, ""));
-      if (contract && boolStockStatus) {
-        if (
-          numberUoiCost >
-          Number(contractAlt.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
-        ) {
-          source = contractAlt;
-        }
-      } else {
-        source = contractAlt;
-      }
+    } else {
+      source = _source;
     }
   }
 

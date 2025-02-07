@@ -8,6 +8,7 @@ const analyzeProduct = require("./analyzeProduct");
 const createPackage = require("../inventory/package/createPackage");
 const updatePackage = require("../inventory/package/updatePackage");
 const update = require("./update");
+const updateSource = require("./updateSource");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -27,9 +28,10 @@ module.exports = async function updateProduct(package, _option, _callback) {
     let _body = body || { query: ndc11 };
     const callback = async (data) => {
       const now = dayjs();
-      const results = data.results;
+      const { results } = data;
       results.lastUpdated = now;
-      results.active = results.stockStatus !== "INELIGIBLE";
+      const stockStatus = results.stockStatus;
+      results.active = stockStatus && stockStatus !== "INELIGIBLE";
       const source = analyzeProduct(results);
       const product = await CardinalProduct.findOneAndUpdate(
         { cin: results.cin },
@@ -79,7 +81,12 @@ module.exports = async function updateProduct(package, _option, _callback) {
       404: async function () {
         await voidProduct(package);
         if (updateAlternative) {
-          //
+          if (alternative) {
+            updateSource(
+              await Alternative.findOne({ _id: alternative }),
+              _callback
+            );
+          }
         }
       },
     };

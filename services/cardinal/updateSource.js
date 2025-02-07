@@ -1,29 +1,53 @@
-const dayjs = require("dayjs");
-const { scheduleJob } = require("node-schedule");
-const { cardinal } = require("../../api/puppet");
-// const { CardinalProduct } = require("../../schemas/cardinal");
-// const { Package, Alternative } = require("../../schemas/inventory");
+const { Package } = require("../../schemas/inventory");
+const createPackage = require("../inventory/package/createPackage");
 const getNDCs = require("../rxnav/getNDCs");
 const update = require("./update");
+const updateProduct = require("./updateProduct");
+const selectSource = require("./selectSource");
 
 /**
  * Request the Puppeteer server to update cardinalSource.
- * This create document and/or
  * @param {Alternative} alternative
- * @param {function} callback
+ * @param {function} _callback
  * @returns {Promise<CardinalProduct|Error>}
  */
-module.exports = async function updateProduct(_alternative, callback) {
-  const { rxcui } = _alternative;
-  const ndcs = [];
-  for (let i = 0; i < rxcui.length; i++) {
-    const ndc = await getNDCs(rxcui[i]);
-    if (!(ndc instanceof Error)) {
-      ndcs.push.apply(ndcs, ndc);
+module.exports = async function (alternative, _callback) {
+  try {
+    const { rxcui } = alternative;
+    const ndcs = [];
+    for (let i = 0; i < rxcui.length; i++) {
+      const ndc = await getNDCs(rxcui[i]);
+      if (!(ndc instanceof Error)) {
+        ndcs.push.apply(ndcs, ndc);
+      }
     }
+    if (ndcs.length === 0) {
+      for (let i = 0; i < rxcui.length; i++) {
+        (await Package.find({ rxcui: rxcui[i] })).forEach((v) => {
+          ndcs.push(v.ndc11);
+        });
+      }
+      if (ndcs.length === 0) {
+        return;
+      }
+    }
+    const callback = async (data) => {
+      const source = selectSource(data.results);
+      const { cin, ndc } = source;
+      let package = await Package.findOne({ ndc11: ndc });
+      if (!package) {
+        const _package = await createPackage(ndc, "ndc11");
+        package = await updatePackage(_package);
+      }
+      updateProduct(package, { body: { cin } }, _callback);
+    };
+    const onError = {
+      404: async function () {
+        //
+      },
+    };
+    update("searchProducts", { queries: ndcs }, callback, onError);
+  } catch (e) {
+    console.log(e);
   }
-  if (ndcs.length === 0) {
-    return new Error();
-  }
-  update("getProductDetails", ndcs);
 };
