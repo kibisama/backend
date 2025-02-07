@@ -2,7 +2,7 @@ const dayjs = require("dayjs");
 const { DailyOrder, Item } = require("../../../schemas/inventory");
 const { CardinalProduct } = require("../../../schemas/cardinal");
 const { PSItem } = require("../../../schemas/pharmsaver");
-const updateProduct = require("../../cardinal/updateProduct");
+const { updateProduct } = require("../../cardinal/update");
 const updateSearch = require("../../pharmsaver/updateSearch");
 
 /**
