@@ -1,4 +1,5 @@
 const { getNDCs } = require("../../api/rxnav");
+const { hyphenateNDC11 } = require("../convert");
 
 /**
  * Gets NDCs by rxcui via getNDCs api.
@@ -13,7 +14,7 @@ module.exports = async (rxcui) => {
     }
     const { ndcList } = result.data.ndcGroup;
     if (ndcList.ndc?.length > 0) {
-      return ndcList.ndc;
+      return ndcList.ndc.map((v) => hyphenateNDC11(v));
     }
     return new Error("Not found");
   } catch (e) {

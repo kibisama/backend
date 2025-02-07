@@ -42,7 +42,7 @@ module.exports = async function (method, arg, callback, onError = {}) {
       }
     } else {
       if (callback instanceof Function) {
-        return callback(result.data);
+        callback(result.data);
       }
     }
   }

@@ -11,7 +11,7 @@ const selectSource = require("./selectSource");
  * Request the Puppeteer server to update cardinalSource.
  * @param {Alternative} alternative
  * @param {function} _callback
- * @returns {Promise<CardinalProduct|Error>}
+ * @returns {Promise<undefined>}
  */
 module.exports = async function (alternative, _callback) {
   try {
@@ -21,7 +21,7 @@ module.exports = async function (alternative, _callback) {
       const product = await CardinalProduct.findOne({ _id: cardinalSource });
       const ndc = product?.ndc;
       if (ndc) {
-        ndcs.push(ndc);
+        ndcs[0] = ndc;
       }
     } else {
       for (let i = 0; i < rxcui.length; i++) {
