@@ -1,5 +1,7 @@
 const { Package } = require("../../schemas/inventory");
+const { CardinalProduct } = require("../../schemas/cardinal");
 const createPackage = require("../inventory/package/createPackage");
+const updatePackage = require("../inventory/package/updatePackage");
 const getNDCs = require("../rxnav/getNDCs");
 const update = require("./update");
 const updateProduct = require("./updateProduct");
@@ -13,12 +15,20 @@ const selectSource = require("./selectSource");
  */
 module.exports = async function (alternative, _callback) {
   try {
-    const { rxcui } = alternative;
+    const { rxcui, cardinalSource } = alternative;
     const ndcs = [];
-    for (let i = 0; i < rxcui.length; i++) {
-      const ndc = await getNDCs(rxcui[i]);
-      if (!(ndc instanceof Error)) {
-        ndcs.push.apply(ndcs, ndc);
+    if (cardinalSource) {
+      const product = await CardinalProduct.findOne({ _id: cardinalSource });
+      const ndc = product?.ndc;
+      if (ndc) {
+        ndcs.push(ndc);
+      }
+    } else {
+      for (let i = 0; i < rxcui.length; i++) {
+        const ndc = await getNDCs(rxcui[i]);
+        if (!(ndc instanceof Error)) {
+          ndcs.push.apply(ndcs, ndc);
+        }
       }
     }
     if (ndcs.length === 0) {

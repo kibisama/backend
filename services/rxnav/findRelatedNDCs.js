@@ -17,10 +17,10 @@ module.exports = async (id) => {
       const result = {};
       ndcInfo.forEach((v) => {
         const { tty, status, ndc11, rxcui } = v;
-        if (result[status]) {
+        if (!result[status]) {
           result[status] = {};
         }
-        if (result[status][tty]) {
+        if (!result[status][tty]) {
           result[status][tty] = [];
         }
         if (ndc11 === id.replaceAll("-", "")) {
