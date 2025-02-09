@@ -70,16 +70,15 @@ module.exports = {
               package = await updatePackage(_package);
             }
             module.exports.updateProduct(package, { body: { cin } }, _callback);
+            return;
           }
-        } else if (!source && product.contract && alternative) {
+        } else if (!source && alternative) {
           await Alternative.findOneAndUpdate(
             { _id: alternative },
-            { $set: { cardinalSource: product._id } }
+            { $set: { cardinalSource: product._id, sourcePackage: _id } }
           );
         }
-        if (_callback instanceof Function) {
-          _callback(package);
-        }
+        _callback();
         return product;
       }
       const onError = {
@@ -112,6 +111,10 @@ module.exports = {
       const ndcs = [];
       if (cardinalSource) {
         const product = await CardinalProduct.findOne({ _id: cardinalSource });
+        if (dayjs(product.lastUpdated).isSame(dayjs(), "day")) {
+          _callback();
+          return;
+        }
         const ndc = product?.ndc;
         if (ndc) {
           ndcs[0] = ndc;

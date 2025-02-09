@@ -1,3 +1,5 @@
+const { usdToNumber } = require("../convert");
+
 /**
  * Selects a source product.
  * @param {Array} alts
@@ -18,15 +20,13 @@ module.exports = (alts, orangeBookCode) => {
       if (orangeBookCode && alt.orangeBookCode !== orangeBookCode) {
         continue;
       }
-      const altUoiCost = Number(alt.netUoiCost.replaceAll(/[^0-9.]+/g, ""));
+      const altUoiCost = usdToNumber(alt.netUoiCost);
       const inStock = alt.stockStatus !== "OUT OF STOCK";
       if (inStock) {
         if (!cheapestContractInStock) {
           cheapestContractInStock = alt;
         } else {
-          const prevUoiCost = Number(
-            cheapestContractInStock.netUoiCost.replaceAll(/[^0-9.]+/g, "")
-          );
+          const prevUoiCost = usdToNumber(cheapestContractInStock.netUoiCost);
           if (prevUoiCost > altUoiCost) {
             cheapestContractInStock = alt;
           }
@@ -34,10 +34,7 @@ module.exports = (alts, orangeBookCode) => {
       } else if (!cheapestContract) {
         cheapestContract = alt;
       } else {
-        const prevUoiCost = Number(
-          cheapestContract.netUoiCost.replaceAll(/[^0-9.]+/g, "")
-        );
-        if (prevUoiCost > altUoiCost) {
+        if (usdToNumber(cheapestContract.netUoiCost) > altUoiCost) {
           cheapestContract = alt;
         }
       }

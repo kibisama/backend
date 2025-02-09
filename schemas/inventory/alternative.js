@@ -27,6 +27,10 @@ const alternativeSchema = new Schema({
     type: ObjectId,
     ref: "Cardinal Product",
   },
+  sourcePackage: {
+    type: ObjectId,
+    ref: "Package",
+  },
   psSearch: {
     type: ObjectId,
     ref: "PharmSaver Search",

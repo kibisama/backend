@@ -1,4 +1,5 @@
 const dayjs = require("dayjs");
+const { usdToNumber } = require("../convert");
 
 /**
  * Analyzes Pharmsaver search results.
@@ -19,10 +20,7 @@ module.exports = (_results, ndc11) => {
     if (!table) {
       descriptionTable[description] = result;
     } else {
-      if (
-        Number(table.unitPrice.replaceAll(/[^0-9.]+/g, "")) >
-        Number(result.unitPrice.replaceAll(/[^0-9.]+/g, ""))
-      ) {
+      if (usdToNumber(table.unitPrice) > usdToNumber(result.unitPrice)) {
         descriptionTable[description] = result;
       }
     }
@@ -33,8 +31,8 @@ module.exports = (_results, ndc11) => {
         if (!cheapestSameNdcResult) {
           cheapestSameNdcResult = result;
         } else if (
-          Number(cheapestSameNdcResult.unitPrice.replaceAll(/[^0-9.]+/g, "")) >
-          Number(result.unitPrice.replaceAll(/[^0-9.]+/g, ""))
+          usdToNumber(cheapestSameNdcResult.unitPrice) >
+          usdToNumber(result.unitPrice)
         ) {
           cheapestSameNdcResult = result;
         }
@@ -42,9 +40,8 @@ module.exports = (_results, ndc11) => {
         if (!cheapestShortSameNdcResult) {
           cheapestShortSameNdcResult = result;
         } else if (
-          Number(
-            cheapestShortSameNdcResult.unitPrice.replaceAll(/[^0-9.]+/g, "")
-          ) > Number(result.unitPrice.replaceAll(/[^0-9.]+/g, ""))
+          usdToNumber(cheapestShortSameNdcResult.unitPrice) >
+          usdToNumber(result.unitPrice)
         ) {
           cheapestShortSameNdcResult = result;
         }
@@ -56,10 +53,6 @@ module.exports = (_results, ndc11) => {
   for (const prop in descriptionTable) {
     results.push(descriptionTable[prop]);
   }
-  results.sort(
-    (a, b) =>
-      Number(a.unitPrice.replaceAll(/[^0-9.]+/g, "")) -
-      Number(b.unitPrice.replaceAll(/[^0-9.]+/g, ""))
-  );
+  results.sort((a, b) => usdToNumber(a.unitPrice) - usdToNumber(b.unitPrice));
   return { item, results };
 };

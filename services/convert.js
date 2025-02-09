@@ -1,5 +1,13 @@
 module.exports = {
   /**
+   * Returns a number from a USD currency string.
+   * @param {string} usd
+   * @returns {number}
+   */
+  usdToNumber(usd) {
+    return Number(usd.replaceAll(/[^0-9.]+/g, ""));
+  },
+  /**
    * Returns a 11-digit ndc with hyphens from a 11-digit ndc with no hyphens.
    * @param {string} ndc11
    * @returns {string}

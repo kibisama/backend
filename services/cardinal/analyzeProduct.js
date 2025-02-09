@@ -1,5 +1,6 @@
 const dayjs = require("dayjs");
 const selectSource = require("./selectSource");
+const { usdToNumber } = require("../convert");
 
 /**
  * Analyzes alts & purchase history and assigns analysis property to the result object.
@@ -45,10 +46,7 @@ module.exports = (results) => {
       if (!lowestHistCost) {
         lowestHistCost = unitCost;
       } else {
-        if (
-          Number(unitCost.replaceAll(/[^0-9.]+/g, "")) <
-          Number(lowestHistCost.replaceAll(/[^0-9.]+/g, ""))
-        ) {
+        if (usdToNumber(unitCost) < usdToNumber(lowestHistCost)) {
           lowestHistCost = unitCost;
         }
       }
@@ -70,10 +68,7 @@ module.exports = (results) => {
             if (!maxUnitCost[j]) {
               maxUnitCost[j] = unitCost;
             } else {
-              if (
-                Number(unitCost.replaceAll(/[^0-9.]+/g, "")) >
-                Number(maxUnitCost[j].replaceAll(/[^0-9.]+/g, ""))
-              ) {
+              if (usdToNumber(unitCost) > usdToNumber(maxUnitCost[j])) {
                 maxUnitCost[j] = unitCost;
               }
             }
@@ -89,11 +84,8 @@ module.exports = (results) => {
   if (_source) {
     const boolStockStatus =
       stockStatus !== "OUT OF STOCK" && stockStatus !== "INELIGIBLE";
-    const numberUoiCost = Number(netUoiCost.replaceAll(/[^0-9.]+/g, ""));
     if (contract && boolStockStatus) {
-      if (
-        numberUoiCost > Number(_source.netUoiCost.replaceAll(/[^0-9.]+/g, ""))
-      ) {
+      if (usdToNumber(netUoiCost) > usdToNumber(_source.netUoiCost)) {
         source = _source;
       }
     } else {

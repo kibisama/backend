@@ -1,12 +1,15 @@
 const dayjs = require("dayjs");
 const { DailyOrder } = require("../../schemas/inventory");
 
-const productSel = [
+const cahPrdSel = [
   "lastUpdated",
   "active",
   "priority",
   "name",
+  "ndc",
   "cin",
+  "mfr",
+  "size",
   "lastOrdred",
   "invoiceCost",
   "estNetCost",
@@ -21,7 +24,6 @@ const productSel = [
   "avlAlertExpected",
   "analysis",
 ];
-const sourceSel = productSel.concat(["ndc", "mfr", "size"]);
 
 const getDailyOrder = async (req, res, next) => {
   try {
@@ -52,44 +54,97 @@ const getDailyOrder = async (req, res, next) => {
               path: "alternative",
               select: [],
               populate: [
-                { path: "cardinalSource", select: sourceSel },
+                { path: "packages", populate: [{ path: "psItem" }] },
+                { path: "cardinalSource", select: cahPrdSel },
                 { path: "psSearch" },
               ],
             },
-            {
-              path: "cardinalProduct",
-              select: productSel,
-            },
-            {
-              path: "psItem",
-            },
+            { path: "cardinalProduct", select: cahPrdSel },
+            { path: "psItem" },
           ],
         },
       ])
     ).map((v) => {
       console.log(v);
-      const package = v.package;
+      // 알터네이티브 광역체크해야함
+      const result = {};
       // time
-      const time = dayjs(v.date).format("hh:mm A");
+      result.time = dayjs(v.date).format("hh:mm A");
       // package
-      const name = package.name
+      const package = v.package;
+      const alternative = package.alternative;
+      result.package = {};
+      result.package.title = package.name
         ? package.name
         : package.ndc11
         ? package.ndc11
         : package.gtin;
-      const mfr = package.mfrName
+      result.package.subtitle = package.mfrName
         ? package.mfrName
         : package.manufacturerName
         ? package.manufacturerName
-        : package.labeler_name;
+        : package.labeler_name
+        ? package.labeler_name
+        : "";
       // qty
-      // const filled = v.items.length;
+      // result.qty = v.items.length;
       // const stock = package.inventories.length;
       // const optimalStock = package.optimalStock;
-      return {
-        time,
-        package: { name, mfr },
-      };
+      // cah
+      const cahPrd = package.cardinalProduct;
+      const cahSrc = alternative?.cardinalSource;
+      if (cahSrc) {
+        if (cahSrc.contract) {
+          result.cahSource = {};
+          result.cahSource.title = cahSrc.estNetCost;
+          result.cahSource.subtitle = cahSrc.netUoiCost;
+        } else {
+          result.cahSource = "NA";
+        }
+      } else {
+        result.cahSource = "PENDING";
+      }
+      if (cahPrd) {
+        if (cahPrd.active) {
+          result.cahProduct = {};
+          result.cahProduct.title = cahPrd.estNetCost;
+          result.cahProduct.subtitle = cahPrd.netUoiCost;
+          const source = cahPrd.analysis.source;
+          if (source) {
+            if (typeof result.cahSource === "string") {
+              result.cahSource = {};
+            }
+            result.cahSource.title = source.estNetCost;
+            result.cahSource.subtitle = source.netUoiCost;
+          } else {
+            const contract = cahPrd.contract;
+            if (contract) {
+              result.cahSource = contract;
+            } else {
+              result.cahSource = "NA";
+            }
+          }
+        } else {
+          result.cahProduct = "NA";
+        }
+      } else {
+        result.cahProduct = "PENDING";
+      }
+      // ps
+      const psItem = package.psItem;
+      if (psItem) {
+        result.psItem = {};
+        result.psItem.title = psItem.pkgPrice;
+        result.psItem.subtitle = psItem.unitPrice;
+        // if (typeof result.cahSource === "object") {
+        // change properties
+        // }
+        // add tooltip
+      } else {
+        result.psItem = "PENDING";
+      }
+
+      return result;
     });
     return res.send({ results });
   } catch (e) {

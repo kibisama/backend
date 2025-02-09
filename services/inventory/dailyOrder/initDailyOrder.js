@@ -1,9 +1,10 @@
 const dayjs = require("dayjs");
-const { DailyOrder, Item } = require("../../../schemas/inventory");
+const { DailyOrder, Item, Package } = require("../../../schemas/inventory");
 const { CardinalProduct } = require("../../../schemas/cardinal");
 const { PSItem } = require("../../../schemas/pharmsaver");
 const { updateProduct } = require("../../cardinal/update");
 const updateSearch = require("../../pharmsaver/updateSearch");
+const updateDailyOrder = require("./updateDailyOrder");
 
 /**
  * Initiate Daily Order for the filled item. This will update corresponding Cardinal Product document(s) and PS Search & Item documents.
@@ -44,13 +45,17 @@ module.exports = async (package) => {
       _psItem = await PSItem.findOne({ _id: psItem });
     }
     if (ndc11) {
+      const callback = async () => {
+        const package = await Package.findOne({ _id });
+        updateDailyOrder(package);
+      };
       if (
         !_cardinalProduct ||
-        todayStart.isAfter(dayjs(_cardinalProduct.lastUpdated), "day")
+        now.isAfter(dayjs(_cardinalProduct.lastUpdated), "day")
       ) {
-        updateProduct(package);
+        updateProduct(package, null, callback);
       }
-      if (!_psItem || todayStart.isAfter(dayjs(_psItem.lastUpdated), "day")) {
+      if (!_psItem || now.isAfter(dayjs(_psItem.lastUpdated), "day")) {
         updateSearch(package);
       }
     }
