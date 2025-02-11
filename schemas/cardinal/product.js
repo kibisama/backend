@@ -78,8 +78,8 @@ const productSchema = new Schema({
   analysis: {
     lastCost: String,
     lowestHistCost: String,
-    lastSFDCdate: String,
-    lastSFDCcost: String,
+    lastSFDCDate: String,
+    lastSFDCCost: String,
     shipQty: [Number],
     maxUnitCost: [String],
     source: {

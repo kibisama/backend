@@ -8,26 +8,23 @@ const { usdToNumber } = require("../convert");
  */
 
 module.exports = (alts, orangeBookCode) => {
-  if (alts.length > 0) {
-    var orangeBookCode = orangeBookCode || alts[alts.length - 1].orangeBookCode;
-    let cheapestContractInStock;
-    let cheapestContract;
-    for (let i = 0; i < alts.length; i++) {
-      const alt = alts[i];
-      if (!alt.contract) {
-        continue;
-      }
-      if (orangeBookCode && alt.orangeBookCode !== orangeBookCode) {
-        continue;
-      }
-      const altUoiCost = usdToNumber(alt.netUoiCost);
-      const inStock = alt.stockStatus !== "OUT OF STOCK";
+  var orangeBookCode = orangeBookCode || alts[alts.length - 1].orangeBookCode;
+  let cheapestContractInStock;
+  let cheapestContract;
+  let cheapestInStock;
+  for (let i = 0; i < alts.length; i++) {
+    const alt = alts[i];
+    if (orangeBookCode && alt.orangeBookCode !== orangeBookCode) {
+      continue;
+    }
+    const altUoiCost = usdToNumber(alt.netUoiCost);
+    const inStock = alt.stockStatus !== "OUT OF STOCK";
+    if (alt.contract) {
       if (inStock) {
         if (!cheapestContractInStock) {
           cheapestContractInStock = alt;
         } else {
-          const prevUoiCost = usdToNumber(cheapestContractInStock.netUoiCost);
-          if (prevUoiCost > altUoiCost) {
+          if (usdToNumber(cheapestContractInStock.netUoiCost) > altUoiCost) {
             cheapestContractInStock = alt;
           }
         }
@@ -38,7 +35,15 @@ module.exports = (alts, orangeBookCode) => {
           cheapestContract = alt;
         }
       }
+    } else if (inStock) {
+      if (!cheapestInStock) {
+        cheapestInStock = alt;
+      } else {
+        if (usdToNumber(cheapestInStock.netUoiCost) > altUoiCost) {
+          cheapestInStock = alt;
+        }
+      }
     }
-    return cheapestContractInStock ?? cheapestContract;
   }
+  return cheapestContractInStock ?? cheapestContract ?? cheapestInStock;
 };

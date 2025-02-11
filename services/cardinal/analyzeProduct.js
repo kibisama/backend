@@ -10,22 +10,15 @@ const { usdToNumber } = require("../convert");
 
 module.exports = (results) => {
   const now = dayjs();
-  const {
-    purchaseHistory,
-    alts,
-    orangeBookCode,
-    netUoiCost,
-    contract,
-    stockStatus,
-  } = results;
+  const { purchaseHistory, alts } = results;
   const range = 7;
   const shipQty = new Array(range).fill(0);
   //   const returnQty = new Array(range).fill(0);
   const maxUnitCost = new Array(range);
   let lastCost;
   let lowestHistCost;
-  let lastSFDCdate;
-  let lastSFDCcost;
+  let lastSFDCDate;
+  let lastSFDCCost;
   if (purchaseHistory.length > 0) {
     const dates = new Array(range);
     for (let i = 0; i < dates.length; i++) {
@@ -50,9 +43,9 @@ module.exports = (results) => {
           lowestHistCost = unitCost;
         }
       }
-      if (!lastSFDCdate && purchaseHistory[i].orderMethod === "SFDC") {
-        lastSFDCdate = purchaseHistory[i].invoiceDate;
-        lastSFDCcost = unitCost;
+      if (!lastSFDCDate && purchaseHistory[i].orderMethod === "SFDC") {
+        lastSFDCDate = purchaseHistory[i].invoiceDate;
+        lastSFDCCost = unitCost;
       }
       if (innerLoopDone) {
         continue;
@@ -78,17 +71,16 @@ module.exports = (results) => {
       }
     }
   }
-
-  const _source = selectSource(alts, orangeBookCode);
   let source;
-  if (_source) {
-    const boolStockStatus =
-      stockStatus !== "OUT OF STOCK" && stockStatus !== "INELIGIBLE";
-    if (contract && boolStockStatus) {
-      if (usdToNumber(netUoiCost) > usdToNumber(_source.netUoiCost)) {
-        source = _source;
-      }
-    } else {
+  if (alts.length > 0) {
+    const keys = Object.keys(alts[0]);
+    const item = {};
+    keys.forEach((v) => {
+      item[v] = results[v];
+    });
+    alts.push(item);
+    const _source = selectSource(alts);
+    if (_source.cin !== results.cin) {
       source = _source;
     }
   }
@@ -96,8 +88,8 @@ module.exports = (results) => {
   const analysis = {
     lastCost,
     lowestHistCost,
-    lastSFDCdate,
-    lastSFDCcost,
+    lastSFDCDate,
+    lastSFDCCost,
     shipQty,
     maxUnitCost,
     source,
