@@ -92,6 +92,7 @@ module.exports = (v) => {
   } else {
     result.cahSource = ENUM.PENDING;
   }
+  let _source;
   if (cahPrd) {
     if (cahPrd.active) {
       result.cahProduct = {};
@@ -102,6 +103,7 @@ module.exports = (v) => {
         if (
           !(typeof result.cahSource === "object" && source.ndc === cahSrc.ndc)
         ) {
+          _source = source;
           if (source.contract) {
             result.cahSource = {
               title: source.estNetCost,
@@ -142,11 +144,16 @@ module.exports = (v) => {
     result.cahProduct = ENUM.PENDING;
   }
   // ps
-  let psItem = package.psItem;
-  if (result.cahSource.subtitle) {
-    // const { Package } = require("../../schemas/inventory");
-    if (alternative) {
-      psItem = alternative.sourcePackage?.psItem;
+  let psItem;
+  if (_source) {
+    if (_source.ndc.replaceAll("-", "") === alternative?.sourcePackage?.ndc) {
+      psItem = alternative.sourcePackage.psItem;
+    }
+  } else {
+    if (alternative?.sourcePackage) {
+      psItem = alternative.sourcePackage.psItem;
+    } else {
+      psItem = package.psItem;
     }
   }
   if (psItem) {
@@ -170,21 +177,16 @@ module.exports = (v) => {
       let item;
       let size;
       result.psSearch = {};
-      // if cardinal is undefined item = results[0]
-      if (cahPrd || cahSrc) {
-        if (result.psItem.title) {
-          size = psItem.pkg;
-        } else if (result.cahSource.subtitle) {
-          // add convert method
-          let _size = 1;
+      if (!_source) {
+        let _size = 1;
+        if (cahSrc) {
           cahSrc.size.match(/[\d.]+/g).forEach((v) => (_size *= Number(v)));
           size = _size.toString();
-        } else if (result.cahProduct.title) {
-          let _size = 1;
+        } else if (cahPrd) {
           cahPrd.size.match(/[\d.]+/g).forEach((v) => (_size *= Number(v)));
           size = _size.toString();
         } else {
-          // check pkg size
+          //check pkg size
         }
       }
       item = psSearch.results.filter((v) => v.pkg === size)[0];
