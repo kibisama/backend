@@ -64,9 +64,9 @@ module.exports = async (arg, type) => {
           break;
         }
       }
-    }
-    if (description) {
-      Object.assign(result, packagingDescriptionToSizesAndUnits(description));
+      if (description) {
+        Object.assign(result, packagingDescriptionToSizesAndUnits(description));
+      }
     }
     const propertyConcept = propertyConceptList?.propertyConcept;
     if (propertyConcept && propertyConcept.length > 0) {
