@@ -15,15 +15,22 @@ module.exports = async (fRxcui) => {
       if (result instanceof Error) {
         return;
       }
+      let _name;
       const { SBD, SCD, SBDF, SCDF } = result;
-      if (SBDF) {
-        SBDF.forEach((v) => {
-          rxcuiTable[v.rxcui] = true;
-        });
-      }
       if (SCDF) {
         SCDF.forEach((v) => {
           rxcuiTable[v.rxcui] = true;
+          if (!_name) {
+            _name = v.name;
+          }
+        });
+      }
+      if (SBDF) {
+        SBDF.forEach((v) => {
+          rxcuiTable[v.rxcui] = true;
+          if (!_name) {
+            _name = v.name;
+          }
         });
       }
       if (SBD) {
@@ -39,11 +46,10 @@ module.exports = async (fRxcui) => {
     }
     const rxcui = Object.keys(rxcuiTable);
     const _rxcui = Object.keys(_rxcuiTable);
-
     return await Family.create({
       rxcui,
       _rxcui,
-      _name: SCDF?.[0].name ?? SBDF?.[0].name,
+      _name,
     });
   } catch (e) {
     console.log(e);
