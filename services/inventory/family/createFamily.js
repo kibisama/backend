@@ -10,12 +10,12 @@ module.exports = async (fRxcui) => {
   try {
     const rxcuiTable = {};
     const _rxcuiTable = {};
+    let _name;
     for (let i = 0; i < fRxcui.length; i++) {
       const result = await getAllRelatedInfo(fRxcui[i]);
       if (result instanceof Error) {
         return;
       }
-      let _name;
       const { SBD, SCD, SBDF, SCDF } = result;
       if (SCDF) {
         SCDF.forEach((v) => {
