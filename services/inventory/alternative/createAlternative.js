@@ -9,7 +9,11 @@ const getAllRelatedInfo = require("../../rxnav/getAllRelatedInfo");
  */
 module.exports = async (rxcui) => {
   try {
-    const { SBD, SCD, SBDF, SCDF, DF } = await getAllRelatedInfo(rxcui);
+    const result = await getAllRelatedInfo(rxcui);
+    if (result instanceof Error) {
+      return;
+    }
+    const { SBD, SCD, SBDF, SCDF } = result;
     const _rxcui = [];
     if (SBD) {
       _rxcui.push(SBD[0].rxcui);
@@ -20,7 +24,6 @@ module.exports = async (rxcui) => {
     const alt = await Alternative.create({
       rxcui: _rxcui,
       _name: SBD?.[0].name ?? SCD[0].name,
-      form: DF?.[0].name,
     });
     return await linkAlternativeWithFamily(
       alt,

@@ -10,7 +10,6 @@ const familySchema = new Schema({
   /* Properties */
   _name: { type: String, uppercase: true },
   _rxcui: { type: [String], required: true },
-  dea_schedule: String,
 
   /* Internal data */
   name: String,

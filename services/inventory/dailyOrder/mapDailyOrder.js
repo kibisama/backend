@@ -1,9 +1,13 @@
 const { hyphenateNDC11 } = require("../../convert");
 
-const cahNoData = "— —";
-const enumPending = "PENDING";
-const enumBrand = "BRAND";
-const enumNoContract = "NO CONTRACT";
+const ENUM = {
+  CAH_NO_DATA: "— —",
+  PENDING: "PENDING",
+  NA: "NA",
+  BRAND: "BRAND",
+  NO_CONTRACT: "NO CONTRACT",
+};
+
 const mapCAHTooltipData = (product) => {
   const brandName = product.brandName;
   return {
@@ -11,7 +15,8 @@ const mapCAHTooltipData = (product) => {
     brandName,
     mfr: product.mfr,
     contract:
-      product.contract ?? brandName === cahNoData ? enumNoContract : enumBrand, //
+      product.contract ??
+      (brandName === ENUM.CAH_NO_DATA ? ENUM.NO_CONTRACT : ENUM.BRAND),
     stockStatus: product.stockStatus,
     stock: product.stock,
     rebateEligible: product.rebateEligible === "done",
@@ -19,10 +24,10 @@ const mapCAHTooltipData = (product) => {
     cin: product.cin,
     ndc: product.ndc,
     lastOrdered: product.lastOrdered,
-    lastCost: product.analysis.lastCost ?? cahNoData,
-    lowestHistCost: product.analysis.lowestHistCost ?? cahNoData,
-    lastSFDCDate: product.analysis.lastSFDCDate ?? cahNoData,
-    lastSFDCCost: product.analysis.lastSFDCCost ?? cahNoData,
+    lastCost: product.analysis.lastCost ?? ENUM.CAH_NO_DATA,
+    lowestHistCost: product.analysis.lowestHistCost ?? ENUM.CAH_NO_DATA,
+    lastSFDCDate: product.analysis.lastSFDCDate ?? ENUM.CAH_NO_DATA,
+    lastSFDCCost: product.analysis.lastSFDCCost ?? ENUM.CAH_NO_DATA,
   };
 };
 const mapPsItem = (psItem) => ({
@@ -82,10 +87,10 @@ module.exports = (v) => {
       }
     }
     if (!result.cahSource) {
-      result.cahSource = "NA";
+      result.cahSource = ENUM.NA;
     }
   } else {
-    result.cahSource = enumPending;
+    result.cahSource = ENUM.PENDING;
   }
   if (cahPrd) {
     if (cahPrd.active) {
@@ -104,12 +109,12 @@ module.exports = (v) => {
               // tooltip: { data: "PENDING" },
             };
           } else {
-            if (cahPrd.brandName === cahNoData) {
+            if (cahPrd.brandName === ENUM.CAH_NO_DATA) {
               result.cahSource = { title: "NA*" };
             } else {
               // if generic availble BRAND*
               // else
-              result.cahSource = { title: enumBrand };
+              result.cahSource = { title: ENUM.BRAND };
               result.cahProduct.tooltip = {
                 lastUpdated: cahPrd.lastUpdated,
                 data: mapCAHTooltipData(cahPrd),
@@ -127,14 +132,14 @@ module.exports = (v) => {
         if (contract) {
           result.cahSource = { title: contract };
         } else {
-          result.cahSource = "NA";
+          result.cahSource = ENUM.NA;
         }
       }
     } else {
-      result.cahProduct = "NA";
+      result.cahProduct = ENUM.NA;
     }
   } else {
-    result.cahProduct = enumPending;
+    result.cahProduct = ENUM.PENDING;
   }
   // ps
   let psItem = package.psItem;
@@ -154,10 +159,10 @@ module.exports = (v) => {
         data: mapPsItem(psItem),
       };
     } else {
-      result.psItem = "NA";
+      result.psItem = ENUM.NA;
     }
   } else {
-    result.psItem = enumPending;
+    result.psItem = ENUM.PENDING;
   }
   const psSearch = alternative?.psSearch;
   if (psSearch) {
@@ -188,11 +193,15 @@ module.exports = (v) => {
       }
       result.psSearch.title = item.pkgPrice;
       result.psSearch.subtitle = item.unitPrice;
+      result.psSearch.tooltip = {
+        lastUpdated: psSearch.lastUpdated,
+        data: psSearch.results.map((v) => mapPsItem(v)),
+      };
     } else {
-      result.psSearch = "NA";
+      result.psSearch = ENUM.NA;
     }
   } else {
-    result.psSearch = enumPending;
+    result.psSearch = ENUM.PENDING;
   }
 
   return result;

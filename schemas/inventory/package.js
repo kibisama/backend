@@ -19,14 +19,8 @@ const packageSchema = new Schema({
     unique: true,
   },
 
-  /* Definition */
-  ndcDir: {
-    type: ObjectId,
-    ref: "NDC Directory",
-  },
-  rxcui: String,
-
   /* Package details */
+  rxcui: String,
   brand_name: { type: String, uppercase: true },
   generic_name: { type: String, uppercase: true },
   manufacturerName: { type: String, uppercase: true },
@@ -37,6 +31,7 @@ const packageSchema = new Schema({
   unit: { type: String, uppercase: true },
   units: [{ type: String, uppercase: true }],
   brand: Boolean,
+  product_type: String,
 
   /* Internal data */
   name: String,

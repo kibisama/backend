@@ -9,7 +9,7 @@ const alternativeSchema = new Schema({
 
   /* Properties */
   _name: { type: String, uppercase: true },
-  form: { type: String, uppercase: true },
+  dea_schedule: String,
 
   /* Internal data */
   name: { type: String },

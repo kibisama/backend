@@ -28,4 +28,8 @@ module.exports = {
     const query = `https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/ndcs.json`;
     return await get(query);
   },
+  async getAllRxTermInfo(rxcui) {
+    const query = `https://rxnav.nlm.nih.gov/REST/RxTerms/rxcui/${rxcui}/allinfo.json`;
+    return await get(query);
+  },
 };

@@ -1,8 +1,7 @@
-const { Package } = require("../../../schemas/inventory");
-const updateLocalNDCDir = require("../../openfda/updateLocalNDCDir");
+const { Package, Alternative } = require("../../../schemas/inventory");
+const searchNDCDir = require("../../openfda/searchNDCDir");
 const getNDCProperties = require("../../rxnav/getNDCProperties");
-const findRelatedNDCs = require("../../rxnav/findRelatedNDCs");
-const definePackageFields = require("./definePackageFields");
+const getAllRxTermInfo = require("../../rxnav/getAllRxTermInfo");
 const linkPackageWithAlternative = require("./linkPackageWithAlternative");
 const setDefaultPackageName = require("./setDefaultPackageName");
 
@@ -29,24 +28,61 @@ module.exports = async (package, callback) => {
       default:
         return;
     }
-    const ndcDir = await updateLocalNDCDir(arg, type);
+    const ndcDir = await searchNDCDir(arg, type);
+    const query = {};
+    let ndcProperties;
     if (!(ndcDir instanceof Error)) {
-      query = definePackageFields(arg, type, ndcDir);
+      Object.assign(query, ndcDir);
+      const _ndcProperties = await getNDCProperties(ndcDir.ndc, "ndc");
+      if (!(_ndcProperties instanceof Error)) {
+        ndcProperties = _ndcProperties;
+      }
     } else {
-      const ndcProperties = await getNDCProperties(arg, type);
-      if (ndcProperties instanceof Error) {
+      const _ndcProperties = await getNDCProperties(arg, type);
+      if (_ndcProperties instanceof Error) {
         return;
       }
-      query = ndcProperties;
+      ndcProperties = _ndcProperties;
     }
-    const relatedNDCs = await findRelatedNDCs(query.ndc11);
-    if (!(relatedNDCs instanceof Error)) {
-      const { rxcui, tty } = relatedNDCs;
-      query.rxcui = rxcui;
-      if (tty === "SBD") {
-        query.brand = true;
-      } else if (tty === "SCD") {
-        query.brand = false;
+    if (ndcProperties) {
+      for (const key in ndcProperties) {
+        if (!query[key]) {
+          query[key] = ndcProperties[key];
+        }
+      }
+      const rxTermInfo = await getAllRxTermInfo(ndcProperties.rxcui);
+      if (!(rxTermInfo instanceof Error)) {
+        const {
+          termType,
+          strength,
+          brandName,
+          rxtermsDoseForm,
+          rxnormDoseForm,
+          fullName,
+          fullGenericName,
+        } = rxTermInfo;
+        strength && (query.strength = strength);
+        if (termType === "SBD") {
+          query.brand = true;
+          if (brandName && strength && (rxtermsDoseForm || rxnormDoseForm)) {
+            query.name = `${brandName} ${strength} ${
+              rxtermsDoseForm ? rxtermsDoseForm : rxnormDoseForm
+            }${query.size ? ` (${query.size})` : ""}`.toUpperCase();
+          }
+        } else if (termType === "SCD") {
+          query.brand = false;
+          if (fullGenericName || fullName) {
+            const _name = fullGenericName ? fullGenericName : fullName;
+            if (rxtermsDoseForm || rxnormDoseForm) {
+              query.name = _name.replace(
+                rxnormDoseForm.toUpperCase(),
+                rxtermsDoseForm.toUpperCase()
+              );
+            } else {
+              query.name = _name;
+            }
+          }
+        }
       }
     }
     let result = await Package.findOneAndUpdate(
@@ -54,10 +90,18 @@ module.exports = async (package, callback) => {
       { $set: query },
       { new: true }
     );
+    if (!result.name) {
+      result = await setDefaultPackageName(result);
+    }
     if (result.rxcui) {
       result = await linkPackageWithAlternative(result);
+      if (query.dea_schedule) {
+        await Alternative.findOneAndUpdate(
+          { rxcui: result.rxcui },
+          { dea_schedule: query.dea_schedule }
+        );
+      }
     }
-    result = await setDefaultPackageName(result);
     if (callback instanceof Function) {
       callback(result);
     }

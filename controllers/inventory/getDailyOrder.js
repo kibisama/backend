@@ -7,6 +7,7 @@ const cahPrdSel = [
   "active",
   "priority",
   "name",
+  "brandName",
   "ndc",
   "cin",
   "mfr",

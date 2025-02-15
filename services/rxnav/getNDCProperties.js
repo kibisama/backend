@@ -53,9 +53,9 @@ module.exports = async (arg, type) => {
     }
     const { ndc10, rxcui, packagingList, propertyConceptList } = results[0];
     const result = { ndc: ndc10, ndc11: ndcToNDC11(ndc10), rxcui };
-    let description, dea_schedule, manufacturer_name, product_type;
     const packaging = packagingList?.packaging;
     if (packaging && packaging.length > 0) {
+      let description;
       const regEx = new RegExp(String.raw`[^\/]+\(${ndc10}\).*`);
       for (let i = 0; i < packaging.length; i++) {
         const match = packaging[i].match(regEx);
@@ -73,20 +73,28 @@ module.exports = async (arg, type) => {
       propertyConcept.forEach((v) => {
         switch (v.propName) {
           case "DCSA":
-            dea_schedule = v.propValue;
+            result.dea_schedule = v.propValue;
             break;
           case "LABELER":
-            manufacturer_name = v.propValue;
+            result.manufacturer_name = v.propValue;
             break;
           case "LABEL_TYPE":
-            product_type = v.propValue;
+            result.product_type = v.propValue;
             break;
+          case "SHAPETEXT":
+            result.shape_text = v.propValue;
+            break;
+          case "SIZE":
+            result.shape_size = v.propValue;
+            break;
+          case "COLORTEXT":
+            result.color_text = v.propValue;
+            break;
+          case "IMPRINT_CODE":
+            result.imprint_code = v.propValue;
           default:
         }
       });
-      result.dea_schedule = dea_schedule;
-      result.manufacturer_name = manufacturer_name;
-      result.product_type = product_type;
     }
     return result;
   } catch (e) {

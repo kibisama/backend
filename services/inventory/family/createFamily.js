@@ -8,7 +8,11 @@ const getAllRelatedInfo = require("../../rxnav/getAllRelatedInfo");
  */
 module.exports = async (fRxcui) => {
   try {
-    const { SBD, SCD, SBDF, SCDF } = await getAllRelatedInfo(fRxcui);
+    const result = await getAllRelatedInfo(fRxcui);
+    if (result instanceof Error) {
+      return;
+    }
+    const { SBD, SCD, SBDF, SCDF } = result;
     const rxcui = [];
     if (SBDF) {
       rxcui.push(SBDF[0].rxcui);

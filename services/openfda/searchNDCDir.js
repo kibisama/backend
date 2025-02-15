@@ -1,29 +1,26 @@
+const { ndc } = require("../../api/openfda");
 const {
+  gtinToNDC,
+  ndc11ToNDC,
   ndcToNDC11,
   packagingDescriptionToSizesAndUnits,
-} = require("../../convert");
+} = require("../convert");
 
 /**
- * Defines a Package Document fields based on NDC Directory Document.
+ * Updates a NDC Directory document.
  * @param {string} arg
  * @param {string} type
- * @param {NDCDir} ndcDir
- * @returns {object|undefined}
+ * @returns {Promise<object|Error>}
  */
-module.exports = (arg, type, ndcDir) => {
+module.exports = async (arg, type) => {
   try {
-    const {
-      _id,
-      generic_name,
-      labeler_name,
-      brand_name,
-      active_ingredients,
-      packaging,
-    } = ndcDir;
-    const { manufacturer_name } = ndcDir.openfda;
+    let query = "";
     let regEx;
     switch (type) {
       case "gtin":
+        query = gtinToNDC(arg)
+          .map((v) => `"${v}"`)
+          .join("+");
         regEx = new RegExp(
           String.raw`${arg.slice(3, 7)}-?${arg[7]}-?${arg.slice(8, 11)}-?${
             arg[11]
@@ -31,6 +28,9 @@ module.exports = (arg, type, ndcDir) => {
         );
         break;
       case "ndc11":
+        query = ndc11ToNDC(arg)
+          .map((v) => `"${v}"`)
+          .join("+");
         regEx = new RegExp(
           String.raw`${arg
             .split("-")
@@ -45,8 +45,26 @@ module.exports = (arg, type, ndcDir) => {
         );
         break;
       default:
-        return;
+        throw new Error("Invalid argument type");
     }
+    let result = await ndc.searchOneByPackageDescription(query);
+    if (result instanceof Error) {
+      return result;
+    }
+    if (result.data.meta.results.total > 1) {
+      return new Error("Multiple results found");
+    }
+    const ndcDir = result.data.results[0];
+    const {
+      generic_name,
+      labeler_name,
+      dea_schedule,
+      brand_name,
+      active_ingredients,
+      packaging,
+      product_type,
+    } = ndcDir;
+    const { manufacturer_name } = ndcDir.openfda;
     let ndc,
       description = "";
     for (let i = 0; i < packaging.length; i++) {
@@ -101,15 +119,17 @@ module.exports = (arg, type, ndcDir) => {
       brand_name,
       generic_name,
       labeler_name,
+      dea_schedule,
       manufacturerName: manufacturer_name ? manufacturer_name[0] : undefined,
       strength,
       size,
       sizes,
       unit,
       units,
-      ndcDir: _id,
+      product_type,
     };
   } catch (e) {
     console.log(e);
+    return e;
   }
 };
