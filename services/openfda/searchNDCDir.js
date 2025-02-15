@@ -65,7 +65,7 @@ module.exports = async (arg, type) => {
       product_type,
     } = ndcDir;
     const { manufacturer_name } = ndcDir.openfda;
-    let ndc,
+    let _ndc,
       description = "";
     for (let i = 0; i < packaging.length; i++) {
       /* Trim if descriptions are divided by the character * */
@@ -79,7 +79,7 @@ module.exports = async (arg, type) => {
       const match2 = target2.match(regEx);
       if (match && match2) {
         description = match[0].trim();
-        ndc = target2;
+        _ndc = target2;
         break;
       } else if (match) {
         const _regEx = new RegExp(String.raw`[^\/]+\(${regEx.source}\).*`);
@@ -87,11 +87,11 @@ module.exports = async (arg, type) => {
         if (match) {
           description = match[0].trim();
         }
-        ndc = target.match(regEx)[0];
+        _ndc = target.match(regEx)[0];
         break;
       }
     }
-    const ndc11 = ndcToNDC11(ndc);
+    const ndc11 = ndcToNDC11(_ndc);
     const { unit, units, size, sizes } =
       packagingDescriptionToSizesAndUnits(description);
     let strength;
@@ -114,7 +114,7 @@ module.exports = async (arg, type) => {
       strength = strengths.join("-");
     }
     return {
-      ndc,
+      ndc: _ndc,
       ndc11,
       brand_name,
       generic_name,
