@@ -52,40 +52,22 @@ module.exports = async (package, callback) => {
       }
       const rxTermInfo = await getAllRxTermInfo(ndcProperties.rxcui);
       if (!(rxTermInfo instanceof Error)) {
-        const {
-          termType,
-          strength,
-          brandName,
-          rxtermsDoseForm,
-          rxnormDoseForm,
-          fullName,
-          fullGenericName,
-        } = rxTermInfo;
+        const { termType, strength, brandName, fullName, fullGenericName } =
+          rxTermInfo;
         strength && (query.strength = strength);
         if (termType === "SBD") {
           query.brand = true;
-          if (brandName && strength && (rxtermsDoseForm || rxnormDoseForm)) {
-            query.name = `${brandName} ${strength} ${
-              rxtermsDoseForm ? rxtermsDoseForm : rxnormDoseForm
-            }${query.size ? ` (${query.size})` : ""}`.toUpperCase();
+          if (brandName && strength) {
+            query.name = `${brandName} ${strength}${
+              query.size ? ` (${query.size})` : ""
+            }`.toUpperCase();
           }
         } else if (termType === "SCD") {
           query.brand = false;
           if (fullGenericName || fullName) {
-            const _name = (
-              fullGenericName ? fullGenericName : fullName
-            ).toUpperCase();
-            if (rxtermsDoseForm || rxnormDoseForm) {
-              query.name = _name.replace(
-                rxnormDoseForm.toUpperCase(),
-                rxtermsDoseForm.toUpperCase()
-              );
-            } else {
-              query.name = _name;
-            }
-            if (query.size) {
-              query.name += ` (${query.size})`;
-            }
+            query.name = `${fullGenericName ? fullGenericName : fullName}${
+              query.size ? ` (${query.size})` : ""
+            }`.toUpperCase();
           }
         }
       }

@@ -146,7 +146,7 @@ module.exports = (v) => {
   if (result.cahSource.subtitle) {
     // const { Package } = require("../../schemas/inventory");
     if (alternative) {
-      psItem = alternative.sourcePackage.psItem;
+      psItem = alternative.sourcePackage?.psItem;
     }
   }
   if (psItem) {
