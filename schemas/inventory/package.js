@@ -32,6 +32,10 @@ const packageSchema = new Schema({
   units: [{ type: String, uppercase: true }],
   brand: Boolean,
   product_type: String,
+  shape_text: String,
+  shape_size: String,
+  color_text: String,
+  imprint_code: String,
 
   /* Internal data */
   name: String,

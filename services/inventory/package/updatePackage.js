@@ -83,6 +83,9 @@ module.exports = async (package, callback) => {
             } else {
               query.name = _name;
             }
+            if (query.size) {
+              query.name += ` (${query.size})`;
+            }
           }
         }
       }
