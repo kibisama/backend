@@ -5,7 +5,7 @@ const createFamily = require("../family/createFamily");
  * Links an Alternative document with a Family document.
  * Creates a Family document if rxcui passed & not exists.
  * @param {Alternative} alternative
- * @param {string} rxcui SBDF or SCDF
+ * @param {[string]} rxcui
  * @returns {Promise<Alternative|undefined>}
  */
 module.exports = async function link(alternative, rxcui) {
@@ -15,10 +15,13 @@ module.exports = async function link(alternative, rxcui) {
     if (_rxcui.length === 0) {
       return;
     }
-    const query = rxcui ? { rxcui } : { _rxcui: { $in: _rxcui } };
-    const family = await Family.findOneAndUpdate(query, {
-      $addToSet: { alternatives: _id },
-    });
+    const query = rxcui
+      ? { rxcui: { $in: rxcui }, _rxcui: { $in: _rxcui } }
+      : { _rxcui: { $in: _rxcui } };
+    const query2 = rxcui
+      ? { $addToSet: { alternatives: _id, rxcui, _rxcui } }
+      : { $addToSet: { alternatives: _id, _rxcui } };
+    const family = await Family.findOneAndUpdate(query, query2);
     if (family) {
       return await Alternative.findOneAndUpdate(
         { _id },
@@ -30,6 +33,8 @@ module.exports = async function link(alternative, rxcui) {
       if (family) {
         return await link(alternative);
       }
+    } else {
+      // create Family by _rxcui
     }
   } catch (e) {
     console.log(e);

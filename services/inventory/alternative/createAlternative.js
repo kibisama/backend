@@ -16,19 +16,35 @@ module.exports = async (rxcui) => {
     const { SBD, SCD, SBDF, SCDF } = result;
     const _rxcui = [];
     if (SBD) {
-      _rxcui.push(SBD[0].rxcui);
+      SBD.forEach((v) => _rxcui.push(v.rxcui));
     }
     if (SCD) {
-      _rxcui.push(SCD[0].rxcui);
+      SCD.forEach((v) => _rxcui.push(v.rxcui));
     }
-    const alt = await Alternative.create({
-      rxcui: _rxcui,
-      _name: SBD?.[0].name ?? SCD[0].name,
-    });
-    return await linkAlternativeWithFamily(
-      alt,
-      SBDF?.[0].rxcui ?? SCDF[0].rxcui
-    );
+    let alt;
+    const _alt = await Alternative.findOne({ rxcui: { $in: _rxcui } });
+    if (_alt) {
+      alt = await Alternative.findOneAndUpdate(
+        { _id: _alt._id },
+        {
+          $addToSet: { rxcui: _rxcui },
+        },
+        { new: true }
+      );
+    } else {
+      alt = await Alternative.create({
+        rxcui: _rxcui,
+        _name: SCD?.[0].name ?? SBD?.[0].name,
+      });
+    }
+    const fRxcui = [];
+    if (SCDF) {
+      SCDF.forEach((v) => fRxcui.push(v.rxcui));
+    }
+    if (SBDF) {
+      SBDF.forEach((v) => fRxcui.push(v.rxcui));
+    }
+    return await linkAlternativeWithFamily(alt, fRxcui);
   } catch (e) {
     console.log(e);
   }
