@@ -27,10 +27,14 @@ module.exports = async (fRxcui) => {
         });
       }
       if (SBD) {
-        _rxcuiTable[v.rxcui] = true;
+        SBD.forEach((v) => {
+          _rxcuiTable[v.rxcui] = true;
+        });
       }
       if (SCD) {
-        _rxcuiTable[v.rxcui] = true;
+        SCD.forEach((v) => {
+          _rxcuiTable[v.rxcui] = true;
+        });
       }
     }
     const rxcui = Object.keys(rxcuiTable);
