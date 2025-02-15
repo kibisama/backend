@@ -11,7 +11,11 @@ module.exports = async (rxcui) => {
     if (result instanceof Error) {
       return result;
     }
-    return result.data.rxtermsProperties;
+    const { rxtermsProperties } = result.data;
+    if (!rxtermsProperties) {
+      return new Error("Not found");
+    }
+    return rxtermsProperties;
   } catch (e) {
     console.log(e);
     return e;

@@ -51,7 +51,9 @@ module.exports = async (arg, type) => {
     if (length > 1) {
       return new Error("Multiple results found");
     }
-    const { ndc10, rxcui, packagingList, propertyConceptList } = results[0];
+
+    const { ndc10, rxcui, packagingList, propertyConceptList } =
+      results[results.length - 1];
     const result = { ndc: ndc10, ndc11: ndcToNDC11(ndc10), rxcui };
     const packaging = packagingList?.packaging;
     if (packaging && packaging.length > 0) {
