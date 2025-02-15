@@ -11,7 +11,7 @@ module.exports = async (rxcui) => {
     if (result instanceof Error) {
       return result;
     }
-    return result.rxtermsProperties;
+    return result.data.rxtermsProperties;
   } catch (e) {
     console.log(e);
     return e;
