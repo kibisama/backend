@@ -19,7 +19,12 @@ module.exports = async (arg, type) => {
       default:
         return;
     }
-    return await Package.create(query);
+    const result = await Package.findOne(query);
+    if (result) {
+      return result;
+    } else {
+      return await Package.create(query);
+    }
   } catch (e) {
     console.log(e);
   }

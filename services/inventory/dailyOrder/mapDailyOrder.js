@@ -2,6 +2,8 @@ const { hyphenateNDC11 } = require("../../convert");
 
 const ENUM = {
   CAH_NO_DATA: "— —",
+  CAH_PRODUCT_TYPE_BRAND: "Branded Drug",
+  CAH_PRODUCT_TYPE_GENERIC: "Generic Drug",
   PENDING: "PENDING",
   NA: "NA",
   BRAND: "BRAND",
@@ -111,7 +113,10 @@ module.exports = (v) => {
               // tooltip: { data: "PENDING" },
             };
           } else {
-            if (cahPrd.brandName === ENUM.CAH_NO_DATA) {
+            if (
+              cahPrd.brandName === ENUM.CAH_NO_DATA ||
+              cahPrd.productType === ENUM.CAH_PRODUCT_TYPE_GENERIC
+            ) {
               result.cahSource = { title: "NA*" };
             } else {
               // if generic availble BRAND*
@@ -124,6 +129,14 @@ module.exports = (v) => {
             }
             //add tooltip
           }
+        } else if (
+          cahPrd.brandName !== ENUM.CAH_NO_DATA ||
+          cahPrd.productType === ENUM.CAH_PRODUCT_TYPE_BRAND
+        ) {
+          result.cahProduct.tooltip = {
+            lastUpdated: cahPrd.lastUpdated,
+            data: mapCAHTooltipData(cahPrd),
+          };
         }
       } else {
         result.cahProduct.tooltip = {
