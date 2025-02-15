@@ -30,17 +30,17 @@ module.exports = async (arg, type) => {
     for (let i = 0; i < candidates.length; i++) {
       const result = await getNDCProperties(candidates[i]);
       if (result instanceof Error) {
-        return result;
+        continue;
       } else {
         const ndcPropertyList = result.data.ndcPropertyList;
         if (ndcPropertyList) {
+          const index = results.length;
+          results[index] = [];
           const ndcProperty = ndcPropertyList.ndcProperty;
           for (let j = 0; j < ndcProperty.length; j++) {
-            if (ndcProperty[j].ndc10 === candidates[i]) {
-              results.push(ndcProperty[j]);
-              break;
-            }
+            results[index].push(ndcProperty[j]);
           }
+          break;
         }
       }
     }
@@ -52,8 +52,9 @@ module.exports = async (arg, type) => {
       return new Error("Multiple results found");
     }
 
+    const _result = results[0];
     const { ndc10, rxcui, packagingList, propertyConceptList } =
-      results[results.length - 1];
+      _result[_result.length - 1];
     const result = { ndc: ndc10, ndc11: ndcToNDC11(ndc10), rxcui };
     const packaging = packagingList?.packaging;
     if (packaging && packaging.length > 0) {
