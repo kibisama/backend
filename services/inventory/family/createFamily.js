@@ -11,7 +11,7 @@ module.exports = async (fRxcui) => {
     const rxcuiTable = {};
     const _rxcuiTable = {};
     for (let i = 0; i < fRxcui.length; i++) {
-      const result = await getAllRelatedInfo(fRxcui);
+      const result = await getAllRelatedInfo(fRxcui[i]);
       if (result instanceof Error) {
         return;
       }
