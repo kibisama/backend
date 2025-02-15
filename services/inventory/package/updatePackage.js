@@ -72,7 +72,9 @@ module.exports = async (package, callback) => {
         } else if (termType === "SCD") {
           query.brand = false;
           if (fullGenericName || fullName) {
-            const _name = fullGenericName ? fullGenericName : fullName;
+            const _name = (
+              fullGenericName ? fullGenericName : fullName
+            ).toUpperCase();
             if (rxtermsDoseForm || rxnormDoseForm) {
               query.name = _name.replace(
                 rxnormDoseForm.toUpperCase(),
