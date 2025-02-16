@@ -86,10 +86,7 @@ module.exports = {
           await voidProduct(package);
           if (updateAlternative) {
             if (alternative) {
-              module.exports.updateSource(
-                await Alternative.findOne({ _id: alternative }),
-                _callback
-              );
+              module.exports.updateSource(package, _callback);
             }
           }
         },
@@ -101,13 +98,15 @@ module.exports = {
   },
   /**
    * Request the Puppeteer server to update cardinalSource.
-   * @param {Alternative} alternative
+   * @param {Package} package
    * @param {function} _callback
    * @returns {Promise<undefined>}
    */
-  async updateSource(alternative, _callback) {
+  async updateSource(package, _callback) {
     try {
-      const { rxcui, cardinalSource } = alternative;
+      const { rxcui, alternative } = package;
+      const cardinalSource = (await Alternative.findOne({ _id: alternative }))
+        ?.cardinalSource;
       const ndcs = [];
       if (cardinalSource) {
         const product = await CardinalProduct.findOne({ _id: cardinalSource });
@@ -120,19 +119,15 @@ module.exports = {
           ndcs[0] = ndc;
         }
       } else {
-        for (let i = 0; i < rxcui.length; i++) {
-          const ndc = await getNDCs(rxcui[i]);
-          if (!(ndc instanceof Error)) {
-            ndcs.push.apply(ndcs, ndc);
-          }
+        const ndc = await getNDCs(rxcui);
+        if (!(ndc instanceof Error)) {
+          ndcs.push.apply(ndcs, ndc);
         }
       }
       if (ndcs.length === 0) {
-        for (let i = 0; i < rxcui.length; i++) {
-          (await Package.find({ rxcui: rxcui[i] })).forEach((v) => {
-            ndcs.push(v.ndc11);
-          });
-        }
+        (await Package.find({ rxcui })).forEach((v) => {
+          ndcs.push(v.ndc11);
+        });
         if (ndcs.length === 0) {
           return;
         }
