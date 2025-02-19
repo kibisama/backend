@@ -69,7 +69,8 @@ module.exports = (v) => {
   result.qty.title = v.items.length;
   // const stock = package.inventories.length;
   // const optimalStock = package.optimalStock;
-  // cah
+
+  // cah: Done
   const cahPrd = package.cardinalProduct;
   const cahSrc = alternative?.cardinalSource;
   if (cahSrc) {
@@ -84,8 +85,13 @@ module.exports = (v) => {
           },
         };
       } else if (!cahPrd || cahPrd.active === false) {
-        resultcahSource = { title: "NA*" };
-        // add tooltip
+        result.cahSource = {
+          title: "NA*",
+          tooltip: {
+            lastUpdated: cahSrc.lastUpdated,
+            data: mapCAHTooltipData(cahSrc),
+          },
+        };
       }
     }
     if (!result.cahSource) {
@@ -94,6 +100,7 @@ module.exports = (v) => {
   } else {
     result.cahSource = ENUM.PENDING;
   }
+
   let _source;
   if (cahPrd) {
     if (cahPrd.active) {
@@ -119,15 +126,17 @@ module.exports = (v) => {
             ) {
               result.cahSource = { title: "NA*" };
             } else {
-              // if generic availble BRAND*
-              // else
-              result.cahSource = { title: ENUM.BRAND };
-              result.cahProduct.tooltip = {
-                lastUpdated: cahPrd.lastUpdated,
-                data: mapCAHTooltipData(cahPrd),
-              };
+              if (source.contract) {
+                result.cahSource = { title: "BRAND*" };
+                //
+              } else {
+                result.cahSource = { title: ENUM.BRAND };
+                result.cahProduct.tooltip = {
+                  lastUpdated: cahPrd.lastUpdated,
+                  data: mapCAHTooltipData(cahPrd),
+                };
+              }
             }
-            //add tooltip
           }
         } else if (
           cahPrd.brandName !== ENUM.CAH_NO_DATA ||
@@ -192,10 +201,10 @@ module.exports = (v) => {
       result.psSearch = {};
       if (!_source) {
         let _size = 1;
-        if (cahSrc) {
+        if (cahSrc?.active) {
           cahSrc.size.match(/[\d.]+/g).forEach((v) => (_size *= Number(v)));
           size = _size.toString();
-        } else if (cahPrd) {
+        } else if (cahPrd?.active) {
           cahPrd.size.match(/[\d.]+/g).forEach((v) => (_size *= Number(v)));
           size = _size.toString();
         } else {
