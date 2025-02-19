@@ -9,11 +9,16 @@ const { Package } = require("../../schemas/inventory");
  */
 module.exports = async (data, package) => {
   try {
-    const psItem = await PSItem.create({
-      lastUpdated: new Date(),
-      active: true,
-      ...data,
-    });
+    const { ndc } = data;
+    const query = { lastUpdated: new Date(), active: true, ...data };
+    let psItem = await PSItem.findOneAndUpdate(
+      { ndc },
+      { $set: query },
+      { new: true }
+    );
+    if (!psItem) {
+      psItem = await PSItem.create(query);
+    }
     if (package) {
       const { _id } = package;
       await Package.findOneAndUpdate({ _id }, { psItem: psItem._id });

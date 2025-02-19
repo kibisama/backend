@@ -9,20 +9,22 @@ const { Package } = require("../../schemas/inventory");
 module.exports = async (package) => {
   try {
     const { _id, ndc11, psItem } = package;
-    if (psItem) {
-      return await PSItem.findOneAndUpdate(
-        { _id: psItem },
-        { $set: { lastUpdated: new Date(), active: false } }
-      );
-    } else {
-      const psItem = await PSItem.create({
+    const ndc = ndc11.replaceAll("-", "");
+    let query = psItem ? { _id: psItem } : { ndc };
+    let _psItem = await PSItem.findOneAndUpdate(
+      query,
+      { $set: { lastUpdated: new Date(), active: false } },
+      { new: true }
+    );
+    if (!_psItem) {
+      _psItem = await PSItem.create({
         lastUpdated: new Date(),
         active: false,
-        ndc: ndc11.replaceAll("-", ""),
+        ndc,
       });
-      await Package.findOneAndUpdate({ _id }, { psItem: psItem._id });
-      return psItem;
     }
+    await Package.findOneAndUpdate({ _id }, { psItem: psItem._id });
+    return _psItem;
   } catch (e) {
     console.log(e);
   }

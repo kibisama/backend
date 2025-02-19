@@ -53,8 +53,18 @@ module.exports = async (arg, type) => {
     }
 
     const _result = results[0];
-    const { ndc10, rxcui, packagingList, propertyConceptList } =
-      _result[_result.length - 1];
+    let index = 0;
+    if (_result.length > 1) {
+      let rxcui = Number(_result[index].rxcui);
+      for (let i = 1; i < _result.length; i++) {
+        const _rxcui = Number(_result[i].rxcui);
+        if (_rxcui > rxcui) {
+          rxcui = _rxcui;
+          index = i;
+        }
+      }
+    }
+    const { ndc10, rxcui, packagingList, propertyConceptList } = _result[index];
     const result = { ndc: ndc10, ndc11: ndcToNDC11(ndc10), rxcui };
     const packaging = packagingList?.packaging;
     if (packaging && packaging.length > 0) {

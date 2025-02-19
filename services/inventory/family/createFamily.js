@@ -46,6 +46,14 @@ module.exports = async (fRxcui) => {
     }
     const rxcui = Object.keys(rxcuiTable);
     const _rxcui = Object.keys(_rxcuiTable);
+    const family = await Family.findOneAndUpdate(
+      { rxcui: { $in: rxcui } },
+      { $addToSet: { rxcui, _rxcui } },
+      { new: true }
+    );
+    if (family) {
+      return family;
+    }
     return await Family.create({
       rxcui,
       _rxcui,

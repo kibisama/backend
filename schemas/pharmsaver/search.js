@@ -5,7 +5,7 @@ const {
 } = Schema;
 
 const psSearchSchema = new Schema({
-  alternative: { type: ObjectId, required: true },
+  alternative: { type: ObjectId, required: true, unique: true },
   lastUpdated: Date,
   active: Boolean,
   results: [

@@ -9,12 +9,15 @@ const { Alternative } = require("../../schemas/inventory");
  */
 module.exports = async (results, alternative) => {
   try {
-    const psSearch = await PSSearch.create({
-      alternative,
-      lastUpdated: new Date(),
-      active: true,
-      results,
-    });
+    const query = { lastUpdated: new Date(), active: true, results };
+    let psSearch = await PSSearch.findOneAndUpdate(
+      { alternative },
+      { $set: query },
+      { new: true }
+    );
+    if (!psSearch) {
+      psSearch = await PSSearch.create({ alternative, ...query });
+    }
     await Alternative.findOneAndUpdate(
       { _id: alternative },
       { psSearch: psSearch._id }
