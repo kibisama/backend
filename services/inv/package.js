@@ -1,7 +1,7 @@
 const package = require("../../schemas/package");
 const item = require("./item");
 const alt = require("./alternative");
-const findRxcuiById = require("../rxnav/findRxcuiById");
+const getNDCStatus = require("../rxnav/getNDCStatus");
 
 const {
   gtinStringToNDCRegExp,
@@ -11,6 +11,7 @@ const {
 
 /**
  * @typedef {package.Package} Package
+ * @typedef {typeof package.schema.obj} Update
  * @typedef {"gtin"|"ndc"} ArgType
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
  */
@@ -106,51 +107,57 @@ const needsUpdate = (package) => {
 const updatePackage = async (pkg, callback) => {
   try {
     /** @type {Package} */
-    let currentPkg = pkg;
-    /** @type {typeof package.schema.obj} */
+    let _pkg = pkg;
+    /** @type {Update} */
     const update = {};
-    if (needsUpdate(currentPkg)[0]) {
+    const [needsOpenFDA, needsRxNav] = needsUpdate(_pkg);
+    if (needsOpenFDA) {
       //
     }
-    if (needsUpdate(currentPkg)[1]) {
-      const rxNavData = await updateViaRxNav(currentPkg);
+    if (needsRxNav) {
+      const rxNavData = await updateViaRxNav(_pkg);
       if (rxNavData) {
         Object.assign(update, rxNavData);
       }
     }
     if (Object.keys(update).length) {
-      currentPkg = await package.findOneAndUpdate({ _id: pkg._id }, update, {
+      _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
         new: true,
       });
     }
-    if (currentPkg.rxcui) {
-      const pkg = await linkWithAlternative(currentPkg);
-      if (pkg) {
-        currentPkg = pkg;
-      }
+    if (_pkg.rxcui) {
+      const pkg = await linkWithAlternative(_pkg);
+      _pkg = pkg ?? _pkg;
     }
     if (callback instanceof Function) {
-      callback(currentPkg);
+      callback(_pkg);
     }
-    return pkg;
+    return _pkg;
   } catch (e) {
     console.log(e);
   }
 };
 /**
  * @param {Package} pkg
- * @returns {Promise<|undefined>}
+ * @returns {Promise<Update|undefined>}
  */
 const updateViaRxNav = async (pkg) => {
   try {
+    /** @type {Update} */
+    const update = {};
     if (!pkg.rxcui) {
-      const updatedPackage = await updateRxcui(pkg);
-      if (!updatedPackage) {
+      const output = await updateRxcui(pkg);
+      if (!output) {
         return;
       }
-      return await updateViaRxNav(updatedPackage);
+      const { ndc, rxcui } = output;
+      update.ndc = ndc;
+      update.ndc11 = ndcToNDC11(ndc);
+      update.rxcui = rxcui;
     }
-    //
+    if (Object.keys(update).length) {
+      return update;
+    }
   } catch (e) {
     console.log(e);
   }
@@ -175,25 +182,12 @@ const selectArg = (pkg) => {
 };
 /**
  * @param {Package} pkg
- * @returns {Promise<Package|undefined>}
+ * @returns {Promise<ReturnType<getNDCStatus>>}
  */
 const updateRxcui = async (pkg) => {
   try {
     const [arg, type] = selectArg(pkg);
-    const result = await findRxcuiById(arg, type);
-    if (result) {
-      const { ndc, rxcui } = result;
-      if (type === "ndc") {
-        if (arg !== ndc) {
-          return;
-        }
-      }
-      return await package.findOneAndUpdate(
-        { _id: pkg._id },
-        { ndc, ndc11: ndcToNDC11(ndc), rxcui },
-        { new: true }
-      );
-    }
+    return await getNDCStatus(arg, type);
   } catch (e) {
     console.log(e);
   }
@@ -237,15 +231,22 @@ const linkWithAlternative = async (pkg) => {
 const pullItem = async (item) => {
   try {
     const { gtin, _id } = item;
-    const pkg = await package.findOneAndUpdate(
-      { gtin },
-      { $pull: { inventories: _id } },
-      { new: true }
-    );
-    if (pkg.inventories.length === 0) {
-      return pkg.updateOne({ active: false }, { new: true });
+    const pkg = await findPackage(gtin, "gtin");
+    if (pkg) {
+      const _pkg = await package.findOneAndUpdate(
+        { _id: pkg._id },
+        { $pull: { inventories: _id } },
+        { new: true }
+      );
+      if (_pkg.inventories.length === 0) {
+        return await package.findOneAndUpdate(
+          { _id: _pkg._id },
+          { active: false },
+          { new: true }
+        );
+      }
+      return _pkg;
     }
-    return pkg;
   } catch (e) {
     console.log(e);
   }
@@ -258,11 +259,14 @@ const pullItem = async (item) => {
 const addItem = async (item) => {
   try {
     const { gtin, _id } = item;
-    return await package.findOneAndUpdate(
-      { gtin },
-      { $addToSet: { inventories: _id }, active: true },
-      { new: true }
-    );
+    const pkg = await findPackage(gtin, "gtin");
+    if (pkg) {
+      return await package.findOneAndUpdate(
+        { _id: pkg._id },
+        { $addToSet: { inventories: _id }, active: true },
+        { new: true }
+      );
+    }
   } catch (e) {
     console.log(e);
   }

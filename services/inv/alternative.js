@@ -15,8 +15,9 @@ const findAlternative = async (rxcui) => {
     const alt = await alternative.findOne({ rxcui });
     if (!alt) {
       // find remapped
+    } else if (alt) {
+      return alt;
     }
-    return alt;
   } catch (e) {
     console.log(e);
   }
@@ -28,7 +29,7 @@ const findAlternative = async (rxcui) => {
  */
 const createAlternative = async (rxcui) => {
   try {
-    //
+    // TEST ONLY
     return await alternative.create({ rxcui });
   } catch (e) {
     console.log(e);
@@ -42,7 +43,7 @@ const createAlternative = async (rxcui) => {
 const upsertAlternative = async (rxcui) => {
   try {
     const alt = await findAlternative(rxcui);
-    if (alt === null) {
+    if (!alt) {
       return await createAlternative(rxcui);
     }
     return alt;

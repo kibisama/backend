@@ -26,9 +26,8 @@ const packageSchema = new Schema({
   },
 
   /* Package details */
-  /* Updated via  */
+  /* Updated via getNDCStatus */
   rxcui: String,
-  isGeneric: Boolean,
 
   /* Internal data */
   name: String,

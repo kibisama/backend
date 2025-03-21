@@ -7,8 +7,7 @@ module.exports = async (req, res, next) => {
     const scanReq = req.body;
     const { gtin, mode } = scanReq;
     const _item = await item.upsertItem(scanReq);
-    const isDuplicateFill = item.isDuplicateFill(_item, mode);
-    if (!isDuplicateFill) {
+    if (!item.isDuplicateFill(_item, mode)) {
       await item.updateItem(scanReq);
     }
     const pkg = await package.upsertPackage(gtin, "gtin");

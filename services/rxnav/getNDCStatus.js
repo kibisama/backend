@@ -2,10 +2,14 @@ const rxnav = require("../../api/rxnav");
 const { gtinToNDC } = require("../convert");
 
 /**
- * @typedef {import("../inventory/package").ArgType} ArgType
+ * @typedef {import("../inv/package").ArgType} ArgType
  * 
- * @typedef {object} IdGroup
- * @property {[string]} rxnormId
+ * @typedef {"ACTIVE"|"OBSOLETE"|"ALIEN"|"UNKNOWN"} Status
+ * @typedef {object} NDCStatus
+ * @property {string} ndc11
+ * @property {Status} status
+ * @property {string} rxcui
+ * @typedef {{ndc: string, rxcui: string, status: Status}} Output
 /**
  * @param {string} arg
  * @param {ArgType} type
@@ -27,26 +31,28 @@ const getQueries = (arg, type) => {
 /**
  * @param {string} arg
  * @param {ArgType} type
- * @returns {Promise<{ndc: string, rxcui: string}|undefined>}
+ * @returns {Promise<Output|undefined>}
  */
 module.exports = async (arg, type) => {
   try {
     const queries = getQueries(arg, type);
     let rxcui = "";
     let ndc = "";
+    let status = "";
     for (let i = 0; i < queries.length; i++) {
       const _ndc = queries[i];
-      const result = await rxnav("findRxcuiById", _ndc);
+      const result = await rxnav("getNDCStatus", _ndc);
       if (result instanceof Error) {
         continue;
       }
-      /** @type {IdGroup|undefined} */
-      const idGroup = result.data.idGroup;
-      const rxnormId = idGroup?.rxnormId;
-      if (rxnormId) {
+      /** @type {NDCStatus} */
+      const ndcStatus = result.data.ndcStatus;
+      const _status = ndcStatus.status;
+      if (_status !== "UNKNOWN") {
         if (!ndc) {
           ndc = _ndc;
-          rxcui = rxnormId[0];
+          rxcui = ndcStatus.rxcui;
+          status = _status;
         } else {
           return;
         }
@@ -55,7 +61,7 @@ module.exports = async (arg, type) => {
     if (!rxcui) {
       return;
     }
-    return { ndc, rxcui };
+    return { ndc, rxcui, status };
   } catch (e) {
     console.log(e);
   }
