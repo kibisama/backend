@@ -1,4 +1,5 @@
 const item = require("../../services/inv/item");
+const package = require("../../services/inv/package");
 
 module.exports = async (req, res, next) => {
   try {
@@ -10,10 +11,10 @@ module.exports = async (req, res, next) => {
     if (!isDuplicateFill) {
       await item.updateItem(scanReq);
     }
-    // const _package = await package.upsertPackage(gtin, "gtin");
-    // await package.updateInventories(_item, mode);
+    const pkg = await package.upsertPackage(gtin, "gtin");
+    await package.updateInventories(_item, mode);
     res.sendStatus(200);
-    // await package.updatePackage(_package);
+    await package.updatePackage(pkg);
     // if (item.isNewFill(_item)) {
     //   //
     // }
