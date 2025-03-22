@@ -1,6 +1,7 @@
 const alternative = require("../../schemas/alternative");
 const package = require("./package");
 const getAllHistoricalNDCs = require("../rxnav/getAllHistoricalNDCs");
+const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
 
 /**
  * @typedef {alternative.Alternative} Alternative
@@ -58,8 +59,10 @@ const findRemappedAlt = async (rxcui) => {
  */
 const createAlternative = async (rxcui) => {
   try {
-    // TEST ONLY
-    return await alternative.create({ rxcui });
+    /** @type {typeof alternative.schema.obj} */
+    const filter = { rxcui };
+    const output = await getAllRelatedInfo(rxcui);
+    return await alternative.create(filter);
   } catch (e) {
     console.log(e);
   }
@@ -80,4 +83,14 @@ const upsertAlternative = async (rxcui) => {
     console.log(e);
   }
 };
+/**
+ * Gets defaultName.
+ * @param {}
+ * @returns {string}
+ */
+const getDefaultName = () => {
+  let name = "";
+  //
+};
+
 module.exports = { upsertAlternative };

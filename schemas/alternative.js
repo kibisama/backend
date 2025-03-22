@@ -6,9 +6,8 @@ const {
 
 const alternativeSchema = new Schema({
   rxcui: {
-    type: [{ type: String, required: true, unique: true }],
-    required: true,
-    unique: true,
+    type: [String],
+    validate: (v) => v.length > 0,
   },
   sbd: { type: String, unique: true },
   scd: { type: String, unique: true },

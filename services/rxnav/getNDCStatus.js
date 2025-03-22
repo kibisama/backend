@@ -7,9 +7,9 @@ const { gtinToNDC } = require("../convert");
  * @typedef {"ACTIVE"|"OBSOLETE"|"ALIEN"|"UNKNOWN"} Status
  * @typedef {object} NdcStatus
  * @property {string} ndc11
- * @property {Status} status
+ * @property {rxnav.NdcStatus} status
  * @property {string} rxcui
- * @typedef {{ndc: string, rxcui: string, status: Status}} Output
+ * @typedef {{ndc: string, rxcui: string, status: rxnav.NdcStatus}} Output
 /**
  * @param {string} arg
  * @param {ArgType} type

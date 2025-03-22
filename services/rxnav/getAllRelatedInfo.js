@@ -1,25 +1,133 @@
 const rxnav = require("../../api/rxnav");
 
 /**
- * @typedef {object}
+ * @typedef {object} AllRelatedGroup
+ * @property {rxnav.TermType} tty
+ * @property {[ConceptProperties]} [conceptGroup]
+ * @typedef {object} ConceptProperties
+ * @property {string} rxcui
+ * @property {string} name
+ * @property {string} synonym
+ * @property {rxnav.TermType} tty
+ * @property {string} [psn]
+ * @typedef {object} Output
+ * @property {ConceptProperties} sbd
+ * @property {ConceptProperties} scd
+ * @property {ConceptProperties} sbdf
+ * @property {ConceptProperties} scdf
  */
 
+/** @type {{sbd: number, scd: number, sbdf: number, scdf: number}} */
+let termIndex;
+/** @returns {undefined} */
+const getTermType = async () => {
+  const termTypeList = await rxnav("getTermTypes");
+  if (!(termTypeList instanceof Error)) {
+    /** @type {[rxnav.TermType]} */
+    const termType = termTypeList.termTypeList?.termType;
+    if (termType) {
+      const _termIndex = {};
+      termType.forEach((v, i) => {
+        switch (v) {
+          case "SBD":
+            _termIndex.sbd = i;
+            break;
+          case "SCD":
+            _termIndex.scd = i;
+            break;
+          case "SBDF":
+            _termIndex.sbdf = i;
+            break;
+          case "SCDF":
+            _termIndex.scdf = i;
+            break;
+          default:
+        }
+      });
+      if (
+        _termIndex.sbd &&
+        _termIndex.scd &&
+        _termIndex.sbdf &&
+        _termIndex.scdf
+      ) {
+        termIndex = _termIndex;
+      }
+    }
+  }
+};
+getTermType();
+
 /**
- * @param {string} arg
- * @param {ArgType} type
- * @returns {Promise<HistoricalNdcConcept|undefined>}
+ * O(N)
+ * @param {[ConceptProperties]} conceptGroup
+ * @returns {Output}
+ */
+const mapOutput = (conceptGroup) => {
+  /** @type {Output} */
+  const output = {};
+  conceptGroup.forEach((v) => {
+    switch (v.tty) {
+      case "SBD":
+        output.sbd = v;
+        break;
+      case "SCD":
+        output.scd = v;
+        break;
+      case "SBDF":
+        output.sbdf = v;
+        break;
+      case "SCDF":
+        output.scdf = v;
+        break;
+      default:
+    }
+  });
+  return output;
+};
+/**
+ * O(1)
+ * @param {[ConceptProperties]} conceptGroup
+ * @returns {Output|undefined}
+ */
+const quickMapOutput = (conceptGroup) => {
+  const sbd = conceptGroup[termIndex.sbd];
+  const scd = conceptGroup[termIndex.scd];
+  const sbdf = conceptGroup[termIndex.sbdf];
+  const scdf = conceptGroup[termIndex.scdf];
+  if (
+    sbd.tty !== "SBD" ||
+    scd.tty !== "SCD" ||
+    sbdf.tty !== "SBDF" ||
+    scdf.tty !== "SCDF"
+  ) {
+    getTermType();
+    return;
+  }
+  return { sbd, scd, sbdf, scdf };
+};
+
+/**
+ * @param {string} rxcui
+ * @returns {Promise<Output|undefined>}
  */
 module.exports = async (rxcui) => {
   try {
-    //   const result = await rxnav("getAllHistoricalNDCs", rxcui);
-    //   if (result instanceof Error) {
-    //     return;
-    //   }
-    //   /** @type {HistoricalNdcConcept} */
-    //   const historicalNdcConcept = result.data.historicalNdcConcept;
-    //   if (historicalNdcConcept) {
-    //     return historicalNdcConcept;
-    //   }
+    const result = await rxnav("getAllRelatedInfo", rxcui);
+    if (result instanceof Error) {
+      return;
+    }
+    let output;
+    /** @type {[ConceptProperties]} */
+    const conceptGroup = result.data.allRelatedGroup.conceptGroup;
+    if (termIndex) {
+      output = quickMapOutput(conceptGroup);
+    }
+    if (!output) {
+      output = mapOutput(conceptGroup);
+    }
+    if (Object.keys(output).length > 0) {
+      return output;
+    }
   } catch (e) {
     console.log(e);
   }
