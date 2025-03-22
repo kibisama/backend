@@ -5,7 +5,7 @@ const { gtinToNDC } = require("../convert");
  * @typedef {import("../inv/package").ArgType} ArgType
  * 
  * @typedef {"ACTIVE"|"OBSOLETE"|"ALIEN"|"UNKNOWN"} Status
- * @typedef {object} NDCStatus
+ * @typedef {object} NdcStatus
  * @property {string} ndc11
  * @property {Status} status
  * @property {string} rxcui
@@ -45,7 +45,7 @@ module.exports = async (arg, type) => {
       if (result instanceof Error) {
         continue;
       }
-      /** @type {NDCStatus} */
+      /** @type {NdcStatus} */
       const ndcStatus = result.data.ndcStatus;
       const _status = ndcStatus.status;
       if (_status !== "UNKNOWN") {

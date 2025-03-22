@@ -155,6 +155,7 @@ const updateViaRxNav = async (pkg) => {
       update.ndc11 = ndcToNDC11(ndc);
       update.rxcui = rxcui;
     }
+    //
     if (Object.keys(update).length) {
       return update;
     }

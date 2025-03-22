@@ -3,7 +3,7 @@ const client = axios.create();
 client.defaults.baseURL = "https://rxnav.nlm.nih.gov/REST";
 
 /**
- * @param {"getNDCStatus"|"getNDCProperties|"getRxcuiHistoryStatus"} method
+ * @param {"getNDCStatus"|"getNDCProperties"|"getAllHistoricalNDCs"} method
  * @param {string} query
  * @returns {Promise<any|Error>}
  */
@@ -17,8 +17,11 @@ module.exports = async (method, query) => {
       case "getNDCProperties":
         _query = `ndcproperties.json?id=${query}`;
         break;
-      case "getRxcuiHistoryStatus":
-        _query = `rxcui/${query}/historystatus.json`;
+      case "getAllHistoricalNDCs":
+        _query = `rxcui/${query}/allhistoricalndcs.json`;
+        break;
+      case "getAllRelatedInfo":
+        _query = `rxcui/${query}/allrelated.json?expand=psn`;
         break;
       default:
     }
