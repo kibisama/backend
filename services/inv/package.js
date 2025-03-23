@@ -20,7 +20,7 @@ const {
  * @param {ArgType} type
  * @return {Filter}
  */
-const createBaseFilter = (arg, type) => {
+const createBase = (arg, type) => {
   return { [type]: arg };
 };
 /**
@@ -28,7 +28,7 @@ const createBaseFilter = (arg, type) => {
  * @return {[Filter]}
  */
 const createFilters = (arg, type) => {
-  const filters = [createBaseFilter(arg, type)];
+  const filters = [createBase(arg, type)];
   switch (type) {
     case "gtin":
       filters.push({ ndc: { $regex: gtinStringToNDCRegExp(arg) } });
@@ -61,7 +61,7 @@ const findPackage = async (arg, type) => {
  */
 const createPackage = async (arg, type) => {
   try {
-    return await package.create(createBaseFilter(arg, type));
+    return await package.create(createBase(arg, type));
   } catch (e) {
     console.log(e);
   }
@@ -70,14 +70,16 @@ const createPackage = async (arg, type) => {
  * Upserts a Package document.
  * @param {string} arg
  * @param {ArgType} type
+ * @param {UpdateOption} option
  * @returns {Promise<Package|undefined>}
  */
-const upsertPackage = async (arg, type) => {
+const upsertPackage = async (arg, type, option) => {
   try {
-    const pkg = await findPackage(arg, type);
+    let pkg = await findPackage(arg, type);
     if (pkg === null) {
-      return await createPackage(arg, type);
+      pkg = await createPackage(arg, type);
     }
+    updatePackage(pkg, option);
     return pkg;
   } catch (e) {
     console.log(e);
@@ -85,40 +87,53 @@ const upsertPackage = async (arg, type) => {
 };
 
 /**
+ * @typedef {object} UpdateOption
+ * @property {boolean} force
+ * @property {Function} callback
+ */
+
+/**
  * Determines if the Package document needs an update.
  * @param {Package} package
- * @returns {[boolean, boolean]} openFDA data, RxNav data
+ * @returns {{rxNav: boolean, openFDA: boolean}}
  */
 const needsUpdate = (package) => {
-  let openFda = false;
   let rxNav = false;
+  let openFDA = false;
   //
   if (!package.rxcui) {
     rxNav = true;
   }
-  return [openFda, rxNav];
+  return { rxNav, openFDA };
 };
 /**
  * Updates a Package document.
  * @param {Package} pkg
- * @param {Function} callback
- * @returns {Promise<Package>}
+ * @param {UpdateOption} option
+ * @returns {Promise<Package|undefined>}
  */
-const updatePackage = async (pkg, callback) => {
+const updatePackage = async (pkg, option) => {
   try {
+    /** @type {UpdateOption} */
+    const defaultOption = { force: false };
+    const { force, callback } = option
+      ? Object.assign(defaultOption, option)
+      : defaultOption;
     /** @type {Package} */
     let _pkg = pkg;
     /** @type {Update} */
     const update = {};
-    const [needsOpenFDA, needsRxNav] = needsUpdate(_pkg);
-    if (needsOpenFDA) {
-      //
-    }
-    if (needsRxNav) {
+    const { rxNav, openFDA } = force
+      ? { rxNav: true, openFDA: true }
+      : needsUpdate(_pkg);
+    if (rxNav) {
       const rxNavData = await updateViaRxNav(_pkg);
       if (rxNavData) {
         Object.assign(update, rxNavData);
       }
+    }
+    if (openFDA) {
+      //
     }
     if (Object.keys(update).length) {
       _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
@@ -144,21 +159,21 @@ const updatePackage = async (pkg, callback) => {
 const updateViaRxNav = async (pkg) => {
   try {
     /** @type {Update} */
-    const update = {};
-    if (!pkg.rxcui) {
-      const output = await updateRxcui(pkg);
-      if (!output) {
-        return;
-      }
-      const { ndc, rxcui } = output;
+    let update = {};
+    const ndcStatus = await updateRxcui(pkg);
+    if (ndcStatus) {
+      const { ndc, rxcui, status } = ndcStatus;
       update.ndc = ndc;
       update.ndc11 = ndcToNDC11(ndc);
       update.rxcui = rxcui;
+      if (status !== "ACTIVE") {
+        return update;
+      }
+    } else {
+      return;
     }
     //
-    if (Object.keys(update).length) {
-      return update;
-    }
+    return update;
   } catch (e) {
     console.log(e);
   }

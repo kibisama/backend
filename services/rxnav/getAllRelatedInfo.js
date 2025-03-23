@@ -1,9 +1,11 @@
 const rxnav = require("../../api/rxnav");
 
 /**
- * @typedef {object} AllRelatedGroup
+ * @typedef {object} allRelatedGroup
+ * @property {[ConceptGroup]} conceptGroup
+ * @typedef {object} ConceptGroup
  * @property {rxnav.TermType} tty
- * @property {[ConceptProperties]} [conceptGroup]
+ * @property {[ConceptProperties]} [conceptProperties]
  * @typedef {object} ConceptProperties
  * @property {string} rxcui
  * @property {string} name
@@ -11,10 +13,10 @@ const rxnav = require("../../api/rxnav");
  * @property {rxnav.TermType} tty
  * @property {string} [psn]
  * @typedef {object} Output
- * @property {ConceptProperties} sbd
- * @property {ConceptProperties} scd
- * @property {ConceptProperties} sbdf
- * @property {ConceptProperties} scdf
+ * @property {[ConceptProperties]} sbd
+ * @property {[ConceptProperties]} scd
+ * @property {[ConceptProperties]} sbdf
+ * @property {[ConceptProperties]} scdf
  */
 
 /** @type {{sbd: number, scd: number, sbdf: number, scdf: number}} */
@@ -59,7 +61,7 @@ getTermType();
 
 /**
  * O(N)
- * @param {[ConceptProperties]} conceptGroup
+ * @param {[ConceptGroup]} conceptGroup
  * @returns {Output}
  */
 const mapOutput = (conceptGroup) => {
@@ -86,19 +88,23 @@ const mapOutput = (conceptGroup) => {
 };
 /**
  * O(1)
- * @param {[ConceptProperties]} conceptGroup
+ * @param {[ConceptGroup]} conceptGroup
  * @returns {Output|undefined}
  */
 const quickMapOutput = (conceptGroup) => {
-  const sbd = conceptGroup[termIndex.sbd];
-  const scd = conceptGroup[termIndex.scd];
-  const sbdf = conceptGroup[termIndex.sbdf];
-  const scdf = conceptGroup[termIndex.scdf];
+  const _sbd = conceptGroup[termIndex.sbd];
+  const _scd = conceptGroup[termIndex.scd];
+  const _sbdf = conceptGroup[termIndex.sbdf];
+  const _scdf = conceptGroup[termIndex.scdf];
+  const sbd = _sbd.conceptProperties;
+  const scd = _scd.conceptProperties;
+  const sbdf = _sbdf.conceptProperties;
+  const scdf = _scdf.conceptProperties;
   if (
-    sbd.tty !== "SBD" ||
-    scd.tty !== "SCD" ||
-    sbdf.tty !== "SBDF" ||
-    scdf.tty !== "SCDF"
+    _sbd.tty !== "SBD" ||
+    _scd.tty !== "SCD" ||
+    _sbdf.tty !== "SBDF" ||
+    _scdf.tty !== "SCDF"
   ) {
     getTermType();
     return;
@@ -117,7 +123,7 @@ module.exports = async (rxcui) => {
       return;
     }
     let output;
-    /** @type {[ConceptProperties]} */
+    /** @type {[ConceptGroup]} */
     const conceptGroup = result.data.allRelatedGroup.conceptGroup;
     if (termIndex) {
       output = quickMapOutput(conceptGroup);

@@ -6,10 +6,11 @@ client.defaults.baseURL = "https://rxnav.nlm.nih.gov/REST";
  * https://rxnav.nlm.nih.gov/REST/termtypes.json
  * @typedef {"BN"|"BPCK"|"DF"|"DFG"|"GPCK"|"IN"|"MIN"|"PIN"|"SBD"|"SBDC"|"SBDF"|"SBDFP"|"SBDG"|"SCD"|"SCDC"|"SCDF"|"SCDFP"|"SCDG"|"SCDGP"} TermType
  * @typedef {"ACTIVE"|"OBSOLETE"|"ALIEN"|"UNKNOWN"} NdcStatus
+ * @typedef {"Active"|"Obsolete"|"Remapped"|"Quantified"|"NotCurrent"|"Unknown"} ConceptStatus
  */
 
 /**
- * @param {"getNDCStatus"|"getNDCProperties"|"getAllHistoricalNDCs"|"getAllRelatedInfo"|"getTermTypes"} method
+ * @param {"getNDCStatus"|"getNDCProperties"|"getAllHistoricalNDCs"|"getRxcuiHistoryStatus"|"getAllRelatedInfo"|"getTermTypes"} method
  * @param {string} query
  * @returns {Promise<any|Error>}
  */
@@ -25,6 +26,9 @@ module.exports = async (method, query) => {
         break;
       case "getAllHistoricalNDCs":
         _query = `rxcui/${query}/allhistoricalndcs.json`;
+        break;
+      case "getRxcuiHistoryStatus":
+        _query = `rxcui/${query}/historystatus.json`;
         break;
       case "getAllRelatedInfo":
         _query = `rxcui/${query}/allrelated.json?expand=psn`;

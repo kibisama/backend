@@ -14,17 +14,20 @@ const alternativeSchema = new Schema({
 
   /* Internal data */
   name: String,
-  defaultName: { type: String, uppercase: true },
+
+  /* Updated via getAllRelatedInfo */
+  genericName: { type: String, uppercase: true },
+  brandName: { type: String, uppercase: true },
 
   /* Relational */
   packages: {
     type: [ObjectId],
     ref: "Package",
   },
-  //   family: {
-  //     type: ObjectId,
-  //     ref: "Family",
-  //   },
+  family: {
+    type: ObjectId,
+    ref: "Family",
+  },
   //   cardinalSource: {
   //     type: ObjectId,
   //     ref: "Cardinal Product",

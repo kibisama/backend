@@ -31,7 +31,6 @@ const packageSchema = new Schema({
 
   /* Internal data */
   name: String,
-  defaultName: { type: String, uppercase: true },
   inventories: {
     type: [ObjectId],
     ref: "Item",

@@ -13,7 +13,6 @@ module.exports = async (req, res, next) => {
     const pkg = await package.upsertPackage(gtin, "gtin");
     await package.updateInventories(_item, mode);
     res.sendStatus(200);
-    await package.updatePackage(pkg);
     // if (item.isNewFill(_item)) {
     //   //
     // }
