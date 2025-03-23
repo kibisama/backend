@@ -31,6 +31,15 @@ const rxnav = require("../../api/rxnav");
  * @returns {Promise<|undefined>}
  */
 module.exports = async (rxcui) => {
+  const result = await rxnav("getRxcuiHistoryStatus", rxcui);
+  if (result instanceof Error) {
+    return;
+  }
+  /** @type {RxcuiStatusHistory} */
+  const rxcuiStatusHistory = result.data.rxcuiStatusHistory;
+  if (rxcuiStatusHistory.metaData.status === "Unknown") {
+    return
+  }
   try {
   } catch (e) {
     console.log(e);

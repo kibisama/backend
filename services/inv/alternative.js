@@ -19,7 +19,9 @@ const findAlternative = async (rxcui) => {
     if (alt) {
       return alt;
     } else {
-      return await findRemappedAlt(rxcui);
+      // rxcui: { $in: remappedRxcui }
+      // return await findRemappedAlt(rxcui);
+      // in this case the alt doc needs update
     }
   } catch (e) {
     console.log(e);
@@ -27,26 +29,20 @@ const findAlternative = async (rxcui) => {
 };
 /**
  * @param {string} rxcui
- * @returns {Promise<Alternative|undefined>}
+ * @returns {Promise<[string]|undefined>}
  */
-const findRemappedAlt = async (rxcui) => {
+const findOldRxcui = async (rxcui) => {
   try {
     const historicalNdcConcept = await getAllHistoricalNDCs(rxcui);
     if (historicalNdcConcept) {
-      const remappedRxcui = [];
+      const oldRxcui = [];
       historicalNdcConcept.historicalNdcTime.forEach((v) => {
         if (v.status === "indirect") {
-          remappedRxcui.push(v.rxcui);
+          oldRxcui.push(v.rxcui);
         }
       });
-      if (remappedRxcui.length > 0) {
-        const alt = await alternative.findOne({
-          rxcui: { $in: remappedRxcui },
-        });
-        if (alt) {
-          updateAlternative(alt, true);
-          return alt;
-        }
+      if (oldRxcui.length > 0) {
+        return oldRxcui
       }
     }
   } catch (e) {
