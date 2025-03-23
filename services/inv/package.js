@@ -2,6 +2,7 @@ const package = require("../../schemas/package");
 const item = require("./item");
 const alt = require("./alternative");
 const getNDCStatus = require("../rxnav/getNDCStatus");
+const { setOptionParameters } = require("../common");
 
 const {
   gtinStringToNDCRegExp,
@@ -11,7 +12,7 @@ const {
 
 /**
  * @typedef {package.Package} Package
- * @typedef {typeof package.schema.obj} Update
+ * @typedef {Parameters<package["findOneAndUpdate"]>["1"]} Update
  * @typedef {"gtin"|"ndc"} ArgType
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
  */
@@ -116,33 +117,31 @@ const updatePackage = async (pkg, option) => {
   try {
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
-    const { force, callback } = option
-      ? Object.assign(defaultOption, option)
-      : defaultOption;
+    const { force, callback } = setOptionParameters(defaultOption, option);
     /** @type {Package} */
     let _pkg = pkg;
     /** @type {Update} */
-    const update = {};
+    const update = { $set: {} };
+
     const { rxNav, openFDA } = force
       ? { rxNav: true, openFDA: true }
       : needsUpdate(_pkg);
     if (rxNav) {
       const rxNavData = await updateViaRxNav(_pkg);
       if (rxNavData) {
-        Object.assign(update, rxNavData);
+        Object.assign(update.$set, rxNavData);
       }
     }
     if (openFDA) {
       //
     }
-    if (Object.keys(update).length) {
+    if (Object.keys(update.$set).length) {
       _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
         new: true,
       });
     }
     if (_pkg.rxcui) {
-      const pkg = await linkWithAlternative(_pkg);
-      _pkg = pkg ?? _pkg;
+      _pkg = (await linkWithAlternative(_pkg)) || _pkg;
     }
     if (callback instanceof Function) {
       callback(_pkg);
@@ -154,13 +153,14 @@ const updatePackage = async (pkg, option) => {
 };
 /**
  * @param {Package} pkg
- * @returns {Promise<Update|undefined>}
+ * @returns {Promise<typeof package.schema.obj|undefined>}
  */
 const updateViaRxNav = async (pkg) => {
   try {
-    /** @type {Update} */
+    /** @type {typeof package.schema.obj} */
     let update = {};
-    const ndcStatus = await updateRxcui(pkg);
+    const [arg, type] = selectArg(pkg);
+    const ndcStatus = await getNDCStatus(arg, type);
     if (ndcStatus) {
       const { ndc, rxcui, status } = ndcStatus;
       update.ndc = ndc;
@@ -195,18 +195,6 @@ const selectArg = (pkg) => {
     default:
   }
   return result;
-};
-/**
- * @param {Package} pkg
- * @returns {Promise<ReturnType<getNDCStatus>>}
- */
-const updateRxcui = async (pkg) => {
-  try {
-    const [arg, type] = selectArg(pkg);
-    return await getNDCStatus(arg, type);
-  } catch (e) {
-    console.log(e);
-  }
 };
 /**
  * @param {Package} pkg

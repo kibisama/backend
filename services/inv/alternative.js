@@ -1,17 +1,19 @@
 const alternative = require("../../schemas/alternative");
 const package = require("./package");
 const getAllHistoricalNDCs = require("../rxnav/getAllHistoricalNDCs");
+const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
+const { setOptionParameters } = require("../common");
 
 /**
  * @typedef {alternative.Alternative} Alternative
- * @typedef {typeof package.schema.obj} Update
+ * @typedef {Parameters<alternative["findOneAndUpdate"]>["1"]} Update
  * @typedef {package.Package} Package
  */
 /**
  * Finds an Alternative document.
  * @param {string} rxcui
- * @returns {Promise<Alternative|undefined>}
+ * @returns {Promise<Alternative|Error|undefined>}
  */
 const findAlternative = async (rxcui) => {
   try {
@@ -19,9 +21,23 @@ const findAlternative = async (rxcui) => {
     if (alt) {
       return alt;
     } else {
-      // rxcui: { $in: remappedRxcui }
-      // return await findRemappedAlt(rxcui);
-      // in this case the alt doc needs update
+      const rxcui = [];
+      const oldRxcui = await findOldRxcui(rxcui);
+      if (oldRxcui) {
+        oldRxcui.forEach((v) => rxcui.push(v));
+      }
+      // const newRxcui = await findNewRxcui(rxcui);
+      // if (newRxcui) {
+      //   newRxcui.forEach((v) => rxcui.push(v));
+      // }
+      if (rxcui.length === 0) {
+        return new Error();
+      }
+      const alt = await alternative.findOneAndUpdate(
+        { rxcui: { $in: rxcui } },
+        { $addToSet: { rxcui } },
+        { new: true }
+      );
     }
   } catch (e) {
     console.log(e);
@@ -37,19 +53,40 @@ const findOldRxcui = async (rxcui) => {
     if (historicalNdcConcept) {
       const oldRxcui = [];
       historicalNdcConcept.historicalNdcTime.forEach((v) => {
-        if (v.status === "indirect") {
-          oldRxcui.push(v.rxcui);
-        }
+        oldRxcui.push(v.rxcui);
       });
-      if (oldRxcui.length > 0) {
-        return oldRxcui
-      }
+      return oldRxcui;
     }
   } catch (e) {
     console.log(e);
   }
 };
-
+/**
+ * @param {string} rxcui
+ * @returns {Promise<[string]|undefined>}
+ */
+const findNewRxcui = async (rxcui) => {
+  try {
+    const output = await getRxcuiHistoryStatus(rxcui);
+    if (output && Object.keys(output).length > 2) {
+      const newRxcui = [];
+      const { quantifiedConcept, remappedConcept, scdConcept, qdFreeConcept } =
+        output;
+      if (quantifiedConcept) {
+        quantifiedConcept.forEach((v) => newRxcui.push(v.quantifiedRxcui));
+      }
+      if (remappedConcept?.length === 1) {
+        newRxcui.push(remappedConcept[0].remappedRxCui);
+      }
+      if (scdConcept) {
+        newRxcui.push(scdConcept.scdConceptRxcui);
+      }
+      return newRxcui;
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
 /**
  * Creates an Alternative document.
  * @param {string} rxcui
@@ -72,6 +109,9 @@ const createAlternative = async (rxcui) => {
 const upsertAlternative = async (rxcui, option) => {
   try {
     let alt = await findAlternative(rxcui);
+    if (alt instanceof Error) {
+      return;
+    }
     if (!alt) {
       alt = await createAlternative(rxcui);
     }
@@ -85,7 +125,6 @@ const upsertAlternative = async (rxcui, option) => {
 /**
  * @typedef {object} UpdateOption
  * @property {boolean} force
- * @property {Function} callback
  */
 
 /**
@@ -108,54 +147,52 @@ const needsUpdate = (alt) => {
  */
 const updateAlternative = async (alt, option) => {
   try {
-    let rxcui = alt.rxcui[0];
-    if (alt.rxcui.length > 1) {
-      //
-    }
+    let _alt = alt;
+    const rxcui = selectRxcui(_alt);
+    /** @type {UpdateOption} */
+    const defaultOption = { force: false };
+    const { force } = setOptionParameters(defaultOption, option);
     /** @type {Update} */
-    const update = {};
-    const { rxNav } = needsUpdate(alt);
+    const update = { $set: {} };
+    const { rxNav } = force ? { rxNav: true } : needsUpdate(_alt);
     if (rxNav) {
       const rxNavData = await updateViaRxNav(rxcui);
-      // if (rxNavData) {
-      //   Object.assign(update, rxNavData);
-      // }
+      if (rxNavData) {
+        Object.assign(update.$set, rxNavData);
+      }
     }
-    // if (Object.keys(update).length) {
-    //   _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
-    //     new: true,
-    //   });
-    // }
-    // if (_pkg.rxcui) {
-    //   const pkg = await linkWithAlternative(_pkg);
-    //   _pkg = pkg ?? _pkg;
-    // }
-    // return _pkg;
+    if (Object.keys(update.$set).length) {
+      _alt = await alternative.findOneAndUpdate({ _id: _alt._id }, update, {
+        new: true,
+      });
+    }
+    // return (await linkWithFamily(_alt)) || _alt;
   } catch (e) {
     console.log(e);
   }
 };
-// /**
-//  * @param {Alternative} alt
-//  * @returns {Promise<>}
-//  */
-// const selectRxcui = async (alt) => {
-//   try {
-//     /** @type {Update} */
-//     const obj = {};
-//     // const output = await getAllRelatedInfo(rxcui);
-//     return obj;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * @param {Alternative} alt
+ * @returns {string}
+ */
+const selectRxcui = (alt) => {
+  const rxcui = alt.rxcui;
+  let _rxcui = 0;
+  for (let i = 0; i < rxcui.length; i++) {
+    const number = Number(rxcui[i]);
+    if (number > _rxcui) {
+      _rxcui = number;
+    }
+  }
+  return _rxcui.toString();
+};
 /**
  * @param {string} rxcui
  * @returns {Promise<Update|undefined>}
  */
 const updateViaRxNav = async (rxcui) => {
   try {
-    /** @type {Update} */
+    /** @type {typeof package.schema.obj} */
     const obj = {};
     const output = await getAllRelatedInfo(rxcui);
     return obj;
