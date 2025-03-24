@@ -24,7 +24,7 @@ module.exports = async (rxcui) => {
     if (result instanceof Error) {
       return;
     }
-    /** @type {HistoricalNdcConcept} */
+    /** @type {HistoricalNdcConcept|undefined} */
     const historicalNdcConcept = result.data.historicalNdcConcept;
     if (historicalNdcConcept) {
       return historicalNdcConcept;

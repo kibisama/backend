@@ -13,10 +13,10 @@ const rxnav = require("../../api/rxnav");
  * @property {rxnav.TermType} tty
  * @property {string} [psn]
  * @typedef {object} Output
- * @property {[ConceptProperties]} sbd
- * @property {[ConceptProperties]} scd
- * @property {[ConceptProperties]} sbdf
- * @property {[ConceptProperties]} scdf
+ * @property {[ConceptProperties]} [sbd]
+ * @property {[ConceptProperties]} [scd]
+ * @property {[ConceptProperties]} [sbdf]
+ * @property {[ConceptProperties]} [scdf]
  */
 
 /** @type {{sbd: number, scd: number, sbdf: number, scdf: number}} */

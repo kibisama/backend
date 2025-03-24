@@ -28,9 +28,17 @@ const packageSchema = new Schema({
   /* Package details */
   /* Updated via getNDCStatus */
   rxcui: String,
+  /* Updated via getNDCProperties */
+  mfr: String,
+  schedule: String,
+  shape: String,
+  shapeSize: String,
+  color: String,
+  imprint: String,
 
   /* Internal data */
   name: String,
+  mfrName: String,
   inventories: {
     type: [ObjectId],
     ref: "Item",

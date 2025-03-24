@@ -12,11 +12,11 @@ const familySchema = new Schema({
 
   /* Internal data */
   name: String,
+  _rxcui: [String],
 
   /* Updated via getAllRelatedInfo */
   genericName: { type: String, uppercase: true },
   brandName: { type: String, uppercase: true },
-  _rxcui: [String],
 
   // deaSchedule
 

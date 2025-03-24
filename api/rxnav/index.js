@@ -7,6 +7,7 @@ client.defaults.baseURL = "https://rxnav.nlm.nih.gov/REST";
  * @typedef {"BN"|"BPCK"|"DF"|"DFG"|"GPCK"|"IN"|"MIN"|"PIN"|"SBD"|"SBDC"|"SBDF"|"SBDFP"|"SBDG"|"SCD"|"SCDC"|"SCDF"|"SCDFP"|"SCDG"|"SCDGP"} TermType
  * @typedef {"ACTIVE"|"OBSOLETE"|"ALIEN"|"UNKNOWN"} NdcStatus
  * @typedef {"Active"|"Obsolete"|"Remapped"|"Quantified"|"NotCurrent"|"Unknown"} ConceptStatus
+ * @typedef {"DCSA"|"LABELER"|"LABEL_TYPE"|"MARKETING_EFFECTIVE_TIME_HIGH"|"MARKETING_EFFECTIVE_TIME_LOW"|"MARKETING_STATUS"|"SHAPETEXT"|"SIZE"|"COLORTEXT"|"IMPRINT_CODE"} PropertyName
  */
 
 /**
@@ -22,7 +23,7 @@ module.exports = async (method, query) => {
         _query = `ndcstatus.json?ndc=${query}`;
         break;
       case "getNDCProperties":
-        _query = `ndcproperties.json?id=${query}`;
+        _query = `ndcproperties.json?id=${query}&ndcstatus=ALL`;
         break;
       case "getAllHistoricalNDCs":
         _query = `rxcui/${query}/allhistoricalndcs.json`;

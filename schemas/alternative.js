@@ -14,11 +14,11 @@ const alternativeSchema = new Schema({
 
   /* Internal data */
   name: String,
+  active: { type: Boolean, default: true },
 
   /* Updated via getAllRelatedInfo */
   genericName: { type: String, uppercase: true },
   brandName: { type: String, uppercase: true },
-
   /* Relational */
   packages: {
     type: [ObjectId],

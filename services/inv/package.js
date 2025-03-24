@@ -2,6 +2,7 @@ const package = require("../../schemas/package");
 const item = require("./item");
 const alt = require("./alternative");
 const getNDCStatus = require("../rxnav/getNDCStatus");
+const getNDCProperties = require("../rxnav/getNDCProperties");
 const { setOptionParameters } = require("../common");
 
 const {
@@ -12,7 +13,7 @@ const {
 
 /**
  * @typedef {package.Package} Package
- * @typedef {Parameters<package["findOneAndUpdate"]>["1"]} Update
+ * @typedef {typeof package.schema.obj} UpdateObj
  * @typedef {"gtin"|"ndc"} ArgType
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
  */
@@ -116,11 +117,10 @@ const needsUpdate = (package) => {
 const updatePackage = async (pkg, option) => {
   try {
     /** @type {UpdateOption} */
+    let _pkg = pkg;
     const defaultOption = { force: false };
     const { force, callback } = setOptionParameters(defaultOption, option);
-    /** @type {Package} */
-    let _pkg = pkg;
-    /** @type {Update} */
+    /** @type {Parameters<package["findOneAndUpdate"]>["1"]} */
     const update = { $set: {} };
 
     const { rxNav, openFDA } = force
@@ -140,9 +140,9 @@ const updatePackage = async (pkg, option) => {
         new: true,
       });
     }
-    if (_pkg.rxcui) {
-      _pkg = (await linkWithAlternative(_pkg)) || _pkg;
-    }
+    // if (_pkg.rxcui) {
+    //   _pkg = (await linkWithAlternative(_pkg)) || _pkg;
+    // }
     if (callback instanceof Function) {
       callback(_pkg);
     }
@@ -153,26 +153,22 @@ const updatePackage = async (pkg, option) => {
 };
 /**
  * @param {Package} pkg
- * @returns {Promise<typeof package.schema.obj|undefined>}
+ * @returns {Promise<UpdateObj|undefined>}
  */
 const updateViaRxNav = async (pkg) => {
   try {
-    /** @type {typeof package.schema.obj} */
-    let update = {};
     const [arg, type] = selectArg(pkg);
     const ndcStatus = await getNDCStatus(arg, type);
-    if (ndcStatus) {
-      const { ndc, rxcui, status } = ndcStatus;
-      update.ndc = ndc;
-      update.ndc11 = ndcToNDC11(ndc);
-      update.rxcui = rxcui;
-      if (status !== "ACTIVE") {
-        return update;
-      }
-    } else {
+    if (!ndcStatus) {
       return;
     }
-    //
+    const { ndc, rxcui } = ndcStatus;
+    /** @type {UpdateObj} */
+    let update = { ndc, ndc11: ndcToNDC11(ndc), rxcui };
+    const output = await getNDCProperties(ndc, rxcui);
+    if (output) {
+      update = Object.assign(output, update);
+    }
     return update;
   } catch (e) {
     console.log(e);
@@ -198,7 +194,7 @@ const selectArg = (pkg) => {
 };
 /**
  * @param {Package} pkg
- * @returns {Promise<>}
+ * @returns {Promise<|undefined>}
  */
 const updateViaOpenFDA = async (pkg) => {
   try {
