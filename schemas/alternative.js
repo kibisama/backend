@@ -6,19 +6,18 @@ const {
 
 const alternativeSchema = new Schema({
   rxcui: {
-    type: [String],
-    validate: (v) => v.length > 0,
+    type: String,
+    required: true,
+    unique: true,
   },
-  sbd: { type: String, unique: true },
-  scd: { type: String, unique: true },
 
   /* Internal data */
   name: String,
   active: { type: Boolean, default: true },
 
   /* Updated via getAllRelatedInfo */
-  genericName: { type: String, uppercase: true },
-  brandName: { type: String, uppercase: true },
+  defaultName: { type: String, uppercase: true },
+
   /* Relational */
   packages: {
     type: [ObjectId],

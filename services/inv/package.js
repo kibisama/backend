@@ -140,9 +140,9 @@ const updatePackage = async (pkg, option) => {
         new: true,
       });
     }
-    // if (_pkg.rxcui) {
-    //   _pkg = (await linkWithAlternative(_pkg)) || _pkg;
-    // }
+    if (_pkg.rxcui) {
+      _pkg = (await linkWithAlternative(_pkg)) || _pkg;
+    }
     if (callback instanceof Function) {
       callback(_pkg);
     }
