@@ -22,74 +22,6 @@ const findAlternative = async (rxcui) => {
     console.log(e);
   }
 };
-// /**
-//  * Finds related Alternative documents.
-//  * @param {string} rxcui
-//  * @returns {Promise<Alternative|Error|undefined>}
-//  */
-// const findRelatedAlts = async (rxcui) => {
-//   try {
-//     const rxcui = [];
-//     const oldRxcui = await findOldRxcui(rxcui);
-//     if (oldRxcui) {
-//       oldRxcui.forEach((v) => rxcui.push(v));
-//     }
-//     // const newRxcui = await findNewRxcui(rxcui);
-//     // if (newRxcui) {
-//     //   newRxcui.forEach((v) => rxcui.push(v));
-//     // }
-//     if (rxcui.length === 0) {
-//       return new Error();
-//     }
-//     return (await alternative.findOne({ rxcui: { $in: rxcui } })) ?? undefined;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {string} rxcui
-//  * @returns {Promise<[string]|undefined>}
-//  */
-// const findOldRxcui = async (rxcui) => {
-//   try {
-//     const historicalNdcConcept = await getAllHistoricalNDCs(rxcui);
-//     if (historicalNdcConcept) {
-//       const oldRxcui = [];
-//       historicalNdcConcept.historicalNdcTime.forEach((v) => {
-//         oldRxcui.push(v.rxcui);
-//       });
-//       return oldRxcui;
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {string} rxcui
-//  * @returns {Promise<[string]|undefined>}
-//  */
-// const findNewRxcui = async (rxcui) => {
-//   try {
-//     const output = await getRxcuiHistoryStatus(rxcui);
-//     if (output && Object.keys(output).length > 2) {
-//       const newRxcui = [];
-//       const { quantifiedConcept, remappedConcept, scdConcept, qdFreeConcept } =
-//         output;
-//       if (quantifiedConcept) {
-//         quantifiedConcept.forEach((v) => newRxcui.push(v.quantifiedRxcui));
-//       }
-//       if (remappedConcept?.length === 1) {
-//         newRxcui.push(remappedConcept[0].remappedRxCui);
-//       }
-//       if (scdConcept) {
-//         newRxcui.push(scdConcept.scdConceptRxcui);
-//       }
-//       return newRxcui;
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
 /**
  * Creates an Alternative document.
  * @param {string} rxcui
@@ -147,7 +79,6 @@ const needsUpdate = (alt) => {
 const updateAlternative = async (alt, option) => {
   try {
     let _alt = alt;
-    const rxcui = selectRxcui(_alt);
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
     const { force } = setOptionParameters(defaultOption, option);
@@ -170,21 +101,7 @@ const updateAlternative = async (alt, option) => {
     console.log(e);
   }
 };
-/**
- * @param {Alternative} alt
- * @returns {string}
- */
-const selectRxcui = (alt) => {
-  // const rxcui = alt.rxcui;
-  // let _rxcui = 0;
-  // for (let i = 0; i < rxcui.length; i++) {
-  //   const number = Number(rxcui[i]);
-  //   if (number > _rxcui) {
-  //     _rxcui = number;
-  //   }
-  // }
-  // return _rxcui.toString();
-};
+
 /**
  * @param {string} rxcui
  * @returns {Promise<|undefined>}
@@ -192,11 +109,16 @@ const selectRxcui = (alt) => {
 const updateViaRxNav = async (rxcui) => {
   try {
     const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
-    if (!rxcuiStatus || rxcuiStatus.status !== "Active") {
+    if (!rxcuiStatus) {
       return;
     }
     /** @type {UpdateObj} */
     const obj = {};
+    const { attributes, status } = rxcuiStatus;
+    const { name, tty } = attributes;
+    obj.isBranded = tty === "SBD" ? true : false;
+    if (status === "Active") {
+    }
     const allRelatedInfo = await getAllRelatedInfo(rxcui);
     if (allRelatedInfo) {
       const { sbd, scd, sbdf, scdf } = allRelatedInfo;
