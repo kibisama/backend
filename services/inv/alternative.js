@@ -61,14 +61,14 @@ const upsertAlternative = async (rxcui, option) => {
 /**
  * Determines if the Alternative document needs an update.
  * @param {Alternative} alt
- * @returns {{rxNav: {}}}
+ * @returns {{rxNav: boolean}}
  */
 const needsUpdate = (alt) => {
-  // let rxNav = {};
-  // if (!alt.genericName || !alt.brandName) {
-  //   // rxNav = true;
-  // }
-  // return { rxNav };
+  let rxNav = {};
+  if (!alt.defaultName) {
+    rxNav = true;
+  }
+  return { rxNav };
 };
 /**
  * Updates an Alternative document.
@@ -78,25 +78,24 @@ const needsUpdate = (alt) => {
  */
 const updateAlternative = async (alt, option) => {
   try {
-    let _alt = alt;
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
     const { force } = setOptionParameters(defaultOption, option);
     /** @type {Parameters<alternative["findOneAndUpdate"]>["1"]} */
     const update = { $set: {} };
-    //   const { rxNav } = force ? { rxNav: true } : needsUpdate(_alt);
-    //   if (rxNav) {
-    //     const rxNavData = await updateViaRxNav(rxcui);
-    //     if (rxNavData) {
-    //       Object.assign(update.$set, rxNavData);
-    //     }
-    //   }
-    //   if (Object.keys(update.$set).length) {
-    //      return await alternative.findOneAndUpdate({ _id: _alt._id }, update, {
-    //       new: true,
-    //     });
-    //   }
-    //
+    const { rxNav } = force ? { rxNav: true } : needsUpdate(alt);
+    if (rxNav) {
+      const rxNavData = await updateViaRxNav(rxcui);
+      if (rxNavData) {
+        Object.assign(update.$set, rxNavData);
+      }
+    }
+    if (Object.keys(update.$set).length) {
+      return await alternative.findOneAndUpdate({ _id: alt._id }, update, {
+        new: true,
+      });
+    }
+    return alt;
   } catch (e) {
     console.log(e);
   }
@@ -114,19 +113,20 @@ const updateViaRxNav = async (rxcui) => {
     }
     /** @type {UpdateObj} */
     const obj = {};
-    const { attributes, status } = rxcuiStatus;
-    const { name, tty } = attributes;
+    const { name, tty } = rxcuiStatus.attributes;
     obj.isBranded = tty === "SBD" ? true : false;
-    if (status === "Active") {
+    const activeRxcui = getActiveRxcui(rxcui);
+    if (!activeRxcui) {
+      obj.defaultName = name;
+      return obj;
     }
-    const allRelatedInfo = await getAllRelatedInfo(rxcui);
+    const allRelatedInfo = await getAllRelatedInfo(activeRxcui);
     if (allRelatedInfo) {
       const { sbd, scd, sbdf, scdf } = allRelatedInfo;
-      if (sbd) {
-        obj.brandName = selectName(sbd);
-      }
-      if (scd) {
-        obj.genericName = selectName(scd);
+      if (tty === "SBD") {
+        obj.defaultName = selectName(sbd);
+      } else if (tty === "SCD") {
+        obj.defaultName = selectName(scd);
       }
     }
     // (await linkWithFamily(_alt)) || _alt;
@@ -135,6 +135,56 @@ const updateViaRxNav = async (rxcui) => {
     console.log(e);
   }
 };
+
+/**
+ * @param {getRxcuiHistoryStatus.Output} rxcuiStatus
+ * @returns {string|undefined}
+ */
+const getActiveRxcui = (rxcuiStatus) => {
+  const { status, attributes, remappedConcept, quantifiedConcept } =
+    rxcuiStatus;
+  const { rxcui, tty } = attributes;
+  let _rxcui = 0;
+  switch (status) {
+    case "Active":
+      return rxcui;
+    case "Remapped":
+      for (let i = 0; i < remappedConcept.length; i++) {
+        const { remappedActive, remappedTTY, remappedRxCui } =
+          remappedConcept[i];
+        if (remappedActive === "YES") {
+          if (tty === remappedTTY) {
+            return remappedRxCui;
+          }
+          const number = Number(remappedRxCui);
+          if (number > _rxcui) {
+            _rxcui = number;
+          }
+        }
+      }
+      break;
+    case "Quantified":
+      for (let i = 0; i < quantifiedConcept.length; i++) {
+        const { quantifiedActive, quantifiedTTY, quantifiedRxcui } =
+          quantifiedConcept[i];
+        if (quantifiedActive === "YES") {
+          if (tty === quantifiedTTY) {
+            return quantifiedRxcui;
+          }
+          const number = Number(quantifiedRxcui);
+          if (number > _rxcui) {
+            _rxcui = number;
+          }
+        }
+      }
+      break;
+    default:
+  }
+  if (_rxcui) {
+    return _rxcui.toString;
+  }
+};
+
 /**
  * @param {getAllRelatedInfo.ConceptProperties} conceptProperties
  * @returns {string|undefined}

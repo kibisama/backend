@@ -15,7 +15,7 @@ const alternativeSchema = new Schema({
   name: String,
   // active: { type: Boolean, default: true },
 
-  /* Updated via getAllRelatedInfo */
+  /* Updated via getRxcuiHistoryStatus */
   isBranded: Boolean,
   /* Updated via getAllRelatedInfo */
   defaultName: { type: String, uppercase: true },
