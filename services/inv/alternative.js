@@ -124,10 +124,10 @@ const updateViaRxNav = async (rxcui) => {
     const allRelatedInfo = await getAllRelatedInfo(activeRxcui);
     if (allRelatedInfo) {
       const { sbd, scd, sbdf, scdf } = allRelatedInfo;
-      if (tty === "SBD") {
-        obj.defaultName = selectName(sbd);
-      } else if (tty === "SCD") {
-        obj.defaultName = selectName(scd);
+      if (sbd && tty === "SBD") {
+        obj.defaultName = selectName(sbd[0]);
+      } else if (scd && tty === "SCD") {
+        obj.defaultName = selectName(scd[0]);
       }
     }
     // (await linkWithFamily(_alt)) || _alt;

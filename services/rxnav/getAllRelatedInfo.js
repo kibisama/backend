@@ -23,37 +23,38 @@ const rxnav = require("../../api/rxnav");
 let termIndex;
 /** @returns {undefined} */
 const getTermType = async () => {
-  const termTypeList = await rxnav("getTermTypes");
-  if (!(termTypeList instanceof Error)) {
-    /** @type {[rxnav.TermType]} */
-    const termType = termTypeList.termTypeList?.termType;
-    if (termType) {
-      const _termIndex = {};
-      termType.forEach((v, i) => {
-        switch (v) {
-          case "SBD":
-            _termIndex.sbd = i;
-            break;
-          case "SCD":
-            _termIndex.scd = i;
-            break;
-          case "SBDF":
-            _termIndex.sbdf = i;
-            break;
-          case "SCDF":
-            _termIndex.scdf = i;
-            break;
-          default:
-        }
-      });
-      if (
-        _termIndex.sbd &&
-        _termIndex.scd &&
-        _termIndex.sbdf &&
-        _termIndex.scdf
-      ) {
-        termIndex = _termIndex;
+  const result = await rxnav("getTermTypes");
+  if (result instanceof Error) {
+    return;
+  }
+  /** @type {[rxnav.TermType]} */
+  const termType = result.data.termTypeList?.termType;
+  if (termType) {
+    const _termIndex = {};
+    termType.forEach((v, i) => {
+      switch (v) {
+        case "SBD":
+          _termIndex.sbd = i;
+          break;
+        case "SCD":
+          _termIndex.scd = i;
+          break;
+        case "SBDF":
+          _termIndex.sbdf = i;
+          break;
+        case "SCDF":
+          _termIndex.scdf = i;
+          break;
+        default:
       }
+    });
+    if (
+      _termIndex.sbd &&
+      _termIndex.scd &&
+      _termIndex.sbdf &&
+      _termIndex.scdf
+    ) {
+      termIndex = _termIndex;
     }
   }
 };
@@ -68,18 +69,19 @@ const mapOutput = (conceptGroup) => {
   /** @type {Output} */
   const output = {};
   conceptGroup.forEach((v) => {
-    switch (v.tty) {
+    const { tty, conceptProperties } = v;
+    switch (tty) {
       case "SBD":
-        output.sbd = v;
+        output.sbd = conceptProperties;
         break;
       case "SCD":
-        output.scd = v;
+        output.scd = conceptProperties;
         break;
       case "SBDF":
-        output.sbdf = v;
+        output.sbdf = conceptProperties;
         break;
       case "SCDF":
-        output.scdf = v;
+        output.scdf = conceptProperties;
         break;
       default:
     }
