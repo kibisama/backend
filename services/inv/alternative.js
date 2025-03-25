@@ -78,6 +78,7 @@ const needsUpdate = (alt) => {
  */
 const updateAlternative = async (alt, option) => {
   try {
+    const { _id, rxcui } = alt;
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
     const { force } = setOptionParameters(defaultOption, option);
@@ -91,7 +92,7 @@ const updateAlternative = async (alt, option) => {
       }
     }
     if (Object.keys(update.$set).length) {
-      return await alternative.findOneAndUpdate({ _id: alt._id }, update, {
+      return await alternative.findOneAndUpdate({ _id }, update, {
         new: true,
       });
     }
@@ -115,7 +116,7 @@ const updateViaRxNav = async (rxcui) => {
     const obj = {};
     const { name, tty } = rxcuiStatus.attributes;
     obj.isBranded = tty === "SBD" ? true : false;
-    const activeRxcui = getActiveRxcui(rxcui);
+    const activeRxcui = getActiveRxcui(rxcuiStatus);
     if (!activeRxcui) {
       obj.defaultName = name;
       return obj;
