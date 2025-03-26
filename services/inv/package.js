@@ -72,7 +72,7 @@ const createPackage = async (arg, type) => {
  * Upserts a Package document.
  * @param {string} arg
  * @param {ArgType} type
- * @param {UpdateOption} option
+ * @param {UpdateOption} [option]
  * @returns {Promise<Package|undefined>}
  */
 const upsertPackage = async (arg, type, option) => {
@@ -81,7 +81,9 @@ const upsertPackage = async (arg, type, option) => {
     if (pkg === null) {
       pkg = await createPackage(arg, type);
     }
-    updatePackage(pkg, option);
+    if (pkg) {
+      updatePackage(pkg, option);
+    }
     return pkg;
   } catch (e) {
     console.log(e);
@@ -111,7 +113,7 @@ const needsUpdate = (package) => {
 /**
  * Updates a Package document.
  * @param {Package} pkg
- * @param {UpdateOption} option
+ * @param {UpdateOption} [option]
  * @returns {Promise<Package|undefined>}
  */
 const updatePackage = async (pkg, option) => {
@@ -140,9 +142,7 @@ const updatePackage = async (pkg, option) => {
         new: true,
       });
     }
-    if (_pkg.rxcui) {
-      _pkg = (await linkWithAlternative(_pkg)) || _pkg;
-    }
+    _pkg = (await linkWithAlternative(_pkg)) || _pkg;
     if (callback instanceof Function) {
       callback(_pkg);
     }
@@ -204,12 +204,16 @@ const updateViaOpenFDA = async (pkg) => {
   }
 };
 /**
+ * This upserts an Alternative document.
  * @param {Package} pkg
  * @returns {Promise<Package|undefined>}
  */
 const linkWithAlternative = async (pkg) => {
   try {
     const { _id, rxcui } = pkg;
+    if (!rxcui) {
+      return;
+    }
     const _alt = await alt.upsertAlternative(rxcui);
     if (_alt) {
       await _alt.updateOne({ $addToSet: { packages: _id } });

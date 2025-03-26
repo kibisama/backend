@@ -5,18 +5,15 @@ const {
 } = Schema;
 
 const familySchema = new Schema({
-  rxcui: {
-    type: [String],
-    validate: (v) => v.length > 0,
-  },
+  scdf: { type: String, required: true, unique: true },
 
   /* Internal data */
   name: String,
-  _rxcui: [String],
 
   /* Updated via getAllRelatedInfo */
-  genericName: { type: String, uppercase: true },
-  brandName: { type: String, uppercase: true },
+  defaultName: { type: String, uppercase: true },
+  // sbdf: [String],
+  rxcui: [String],
 
   // deaSchedule
 

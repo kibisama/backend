@@ -1,6 +1,6 @@
 const alternative = require("../../schemas/alternative");
 const package = require("./package");
-const getAllHistoricalNDCs = require("../rxnav/getAllHistoricalNDCs");
+const family = require("./family");
 const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
 const { setOptionParameters } = require("../common");
@@ -37,7 +37,7 @@ const createAlternative = async (rxcui) => {
 /**
  * Upserts an Alternative document.
  * @param {string} rxcui
- * @param {UpdateOption} option
+ * @param {UpdateOption} [option]
  * @returns {Promise<Alternative|undefined>}
  */
 const upsertAlternative = async (rxcui, option) => {
@@ -46,7 +46,9 @@ const upsertAlternative = async (rxcui, option) => {
     if (!alt) {
       alt = await createAlternative(rxcui);
     }
-    updateAlternative(alt, option);
+    if (alt) {
+      updateAlternative(alt, option);
+    }
     return alt;
   } catch (e) {
     console.log(e);
@@ -73,12 +75,11 @@ const needsUpdate = (alt) => {
 /**
  * Updates an Alternative document.
  * @param {Alternative} alt
- * @param {UpdateOption} option
+ * @param {UpdateOption} [option]
  * @returns {Promise<Alternative|undefined>}
  */
 const updateAlternative = async (alt, option) => {
   try {
-    const { _id, rxcui } = alt;
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
     const { force } = setOptionParameters(defaultOption, option);
@@ -86,35 +87,39 @@ const updateAlternative = async (alt, option) => {
     const update = { $set: {} };
     const { rxNav } = force ? { rxNav: true } : needsUpdate(alt);
     if (rxNav) {
-      const rxNavData = await updateViaRxNav(rxcui);
+      const rxNavData = await updateViaRxNav(alt);
       if (rxNavData) {
         Object.assign(update.$set, rxNavData);
       }
     }
     if (Object.keys(update.$set).length) {
-      return await alternative.findOneAndUpdate({ _id }, update, {
+      return await alternative.findOneAndUpdate({ _id: alt._id }, update, {
         new: true,
       });
     }
-    return alt;
+    return (await linkWithFamily(alt)) ?? alt;
   } catch (e) {
     console.log(e);
   }
 };
-
 /**
- * @param {string} rxcui
- * @returns {Promise<|undefined>}
+ * @param {Alternative} alt
+ * @returns {Promise<UpdateObj|undefined>}
  */
-const updateViaRxNav = async (rxcui) => {
+const updateViaRxNav = async (alt) => {
   try {
+    const { rxcui } = alt;
     const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
     if (!rxcuiStatus) {
       return;
     }
     /** @type {UpdateObj} */
     const obj = {};
-    const { name, tty } = rxcuiStatus.attributes;
+    const { attributes, scdConcept } = rxcuiStatus;
+    if (scdConcept) {
+      await updateScd(alt, scdConcept);
+    }
+    const { name, tty } = attributes;
     obj.isBranded = tty === "SBD" ? true : false;
     const activeRxcui = getActiveRxcui(rxcuiStatus);
     if (!activeRxcui) {
@@ -123,20 +128,33 @@ const updateViaRxNav = async (rxcui) => {
     }
     const allRelatedInfo = await getAllRelatedInfo(activeRxcui);
     if (allRelatedInfo) {
-      const { sbd, scd, sbdf, scdf } = allRelatedInfo;
+      const { sbd, scd, scdf } = allRelatedInfo;
       if (sbd && tty === "SBD") {
         obj.defaultName = selectName(sbd[0]);
       } else if (scd && tty === "SCD") {
         obj.defaultName = selectName(scd[0]);
       }
+      if (scdf) {
+        const fm = await family.upsertFamily(scdf);
+        await fm.updateOne({ $addToSet: { rxcui } });
+      }
     }
-    // (await linkWithFamily(_alt)) || _alt;
     return obj;
   } catch (e) {
     console.log(e);
   }
 };
-
+/**
+ * @param {Alternative} alt
+ * @param {getRxcuiHistoryStatus.ScdConcept}
+ * @returns {Promise<undefined>}
+ */
+const updateScd = async (alt, scdConcept) => {
+  const scdAlt = await upsertAlternative(scdConcept.scdConceptRxcui);
+  if (scdAlt) {
+    await alt.updateOne({ scd: scdAlt._id });
+  }
+};
 /**
  * @param {getRxcuiHistoryStatus.Output} rxcuiStatus
  * @returns {string|undefined}
@@ -185,7 +203,6 @@ const getActiveRxcui = (rxcuiStatus) => {
     return _rxcui.toString;
   }
 };
-
 /**
  * @param {getAllRelatedInfo.ConceptProperties} conceptProperties
  * @returns {string|undefined}
@@ -200,5 +217,26 @@ const selectName = (conceptProperties) => {
   }
   return name;
 };
+/**
+ * This will not upsert a Family document.
+ * @param {Alternative} alt
+ * @returns {Promise<Alternative|undefined>}
+ */
+const linkWithFamily = async (alt) => {
+  try {
+    const { _id, rxcui } = alt;
+    const fm = await family.searchFamily({ rxcui });
+    if (fm) {
+      await fm.updateOne({ $addToSet: { alternatives: _id } });
+      return await alternative.findOneAndUpdate(
+        { _id },
+        { family: fm._id },
+        { new: true }
+      );
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
 
-module.exports = { findAlternative, upsertAlternative };
+module.exports = { findAlternative, upsertAlternative, selectName };

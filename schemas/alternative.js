@@ -21,6 +21,10 @@ const alternativeSchema = new Schema({
   defaultName: { type: String, uppercase: true },
 
   /* Relational */
+  scd: {
+    type: ObjectId,
+    ref: "Alternative",
+  },
   packages: {
     type: [ObjectId],
     ref: "Package",
