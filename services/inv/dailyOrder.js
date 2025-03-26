@@ -14,7 +14,6 @@ const getToday = () => {
   return dayjs().startOf("date");
 };
 /**
- * @param {[item.Item]} items
  * @param {package.Package} package
  * @returns {Promise<DailyOrder|undefined>}
  */
@@ -32,10 +31,14 @@ const createDO = async (package) => {
 };
 const upsertDO = async (package) => {
   try {
-    const dO = await dailyOrder.findOne({
+    let _dailyOrder = await dailyOrder.findOne({
       package: package._id,
       date: { $gte: getToday() },
     });
+    if (!_dailyOrder) {
+      _dailyOrder = await createDO(package);
+    }
+    return _dailyOrder;
   } catch (e) {
     console.log(e);
   }
