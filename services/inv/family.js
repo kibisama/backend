@@ -1,5 +1,4 @@
 const family = require("../../schemas/family");
-const alt = require("./alternative");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
 const { setOptionParameters } = require("../common");
 
@@ -15,7 +14,7 @@ const { setOptionParameters } = require("../common");
  */
 const createFamily = async (scdf) => {
   try {
-    return await family.create(scdf);
+    return await family.create({ scdf });
   } catch (e) {
     console.log(e);
   }
@@ -23,11 +22,11 @@ const createFamily = async (scdf) => {
 /**
  * Searches a Family document.
  * @param {UpdateObj} obj
- * @returns {Promise<Family|undefined>}
+ * @returns {Promise<[Family]|undefined>}
  */
 const searchFamily = async (obj) => {
   try {
-    return (await family.create(obj)) ?? undefined;
+    return (await family.find(obj)) ?? undefined;
   } catch (e) {
     console.log(e);
   }
@@ -112,7 +111,7 @@ const updateViaRxNav = async (fm) => {
       const { sbd, scd, scdf } = allRelatedInfo;
       const rxcui = [];
       if (scdf) {
-        obj.$set.defaultName = alt.selectName(scdf[0]);
+        obj.$set.defaultName = selectName(scdf[0]);
       }
       if (sbd) {
         sbd.forEach((v) => rxcui.push(v.rxcui));
@@ -128,5 +127,19 @@ const updateViaRxNav = async (fm) => {
   } catch (e) {
     console.log(e);
   }
+};
+/**
+ * @param {getAllRelatedInfo.ConceptProperties} conceptProperties
+ * @returns {string|undefined}
+ */
+const selectName = (conceptProperties) => {
+  const { name, synonym, psn } = conceptProperties;
+  if (psn) {
+    return psn;
+  }
+  if (synonym) {
+    return synonym;
+  }
+  return name;
 };
 module.exports = { upsertFamily, searchFamily };

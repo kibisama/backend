@@ -80,24 +80,25 @@ const needsUpdate = (alt) => {
  */
 const updateAlternative = async (alt, option) => {
   try {
+    let _alt = alt;
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
     const { force } = setOptionParameters(defaultOption, option);
     /** @type {Parameters<alternative["findOneAndUpdate"]>["1"]} */
     const update = { $set: {} };
-    const { rxNav } = force ? { rxNav: true } : needsUpdate(alt);
+    const { rxNav } = force ? { rxNav: true } : needsUpdate(_alt);
     if (rxNav) {
-      const rxNavData = await updateViaRxNav(alt);
+      const rxNavData = await updateViaRxNav(_alt);
       if (rxNavData) {
         Object.assign(update.$set, rxNavData);
       }
     }
     if (Object.keys(update.$set).length) {
-      return await alternative.findOneAndUpdate({ _id: alt._id }, update, {
+      _alt = await alternative.findOneAndUpdate({ _id: _alt._id }, update, {
         new: true,
       });
     }
-    return (await linkWithFamily(alt)) ?? alt;
+    return (await linkWithFamily(_alt)) ?? _alt;
   } catch (e) {
     console.log(e);
   }
@@ -135,7 +136,7 @@ const updateViaRxNav = async (alt) => {
         obj.defaultName = selectName(scd[0]);
       }
       if (scdf) {
-        const fm = await family.upsertFamily(scdf);
+        const fm = await family.upsertFamily(scdf[0].rxcui);
         await fm.updateOne({ $addToSet: { rxcui } });
       }
     }
@@ -226,11 +227,12 @@ const linkWithFamily = async (alt) => {
   try {
     const { _id, rxcui } = alt;
     const fm = await family.searchFamily({ rxcui });
-    if (fm) {
-      await fm.updateOne({ $addToSet: { alternatives: _id } });
+    if (fm?.length > 0) {
+      const _fm = fm[0];
+      await _fm.updateOne({ $addToSet: { alternatives: _id } });
       return await alternative.findOneAndUpdate(
         { _id },
-        { family: fm._id },
+        { family: _fm._id },
         { new: true }
       );
     }
@@ -239,4 +241,4 @@ const linkWithFamily = async (alt) => {
   }
 };
 
-module.exports = { findAlternative, upsertAlternative, selectName };
+module.exports = { findAlternative, upsertAlternative };
