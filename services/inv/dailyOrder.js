@@ -89,3 +89,14 @@ const updateFilledItems = async (dO, gtin) => {
     console.log(e);
   }
 };
+/**
+ * @param {}
+ * @returns {}
+ */
+const updateDO = async () => {
+  try {
+    //
+  } catch (e) {
+    console.log(e);
+  }
+};
