@@ -5,16 +5,15 @@ const package = require("./package");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
+ * @typedef {package.Package} Package
  * @typedef {Parameters<dailyOrder["updateOne"]>["0"]} UpdateParam
  */
 
 /**
- * @param {UpdateParam}
  * @returns {UpdateParam}
  */
-const createUpdateParam = (obj) => {
-  const updateParam = { $set: { lastUpdated: new Date() } };
-  return obj ? Object.assign(updateParam, obj) : updateParam;
+const createUpdateParam = () => {
+  return { $set: { lastUpdated: new Date() } };
 };
 /**
  * @returns {dayjs.Dayjs}
@@ -23,7 +22,7 @@ const getToday = () => {
   return dayjs().startOf("date");
 };
 /**
- * @param {package.Package} package
+ * @param {Package} package
  * @returns {Promise<DailyOrder|undefined>}
  */
 const createDO = async (package) => {
@@ -39,7 +38,7 @@ const createDO = async (package) => {
   }
 };
 /**
- * @param {package.Package} package
+ * @param {Package} package
  * @returns {Promise<DailyOrder|undefined>}
  */
 const upsertDO = async (package) => {
@@ -51,6 +50,7 @@ const upsertDO = async (package) => {
     if (!_dailyOrder) {
       _dailyOrder = await createDO(package);
     }
+    updateDO(_dailyOrder, package);
     return _dailyOrder;
   } catch (e) {
     console.log(e);
@@ -78,25 +78,30 @@ const findFilledItems = async (gtin) => {
 const updateFilledItems = async (dO, gtin) => {
   try {
     const items = await findFilledItems(gtin);
+    const updateParam = createUpdateParam();
+    updateParam.$addToSet = { items: items.map((v) => v._id) };
     if (items?.length > 0) {
-      return await dailyOrder.findOneAndUpdate(
-        { _id: dO._id },
-        createUpdateParam({ $addToSet: { items: items.map((v) => v._id) } }),
-        { new: true }
-      );
+      return await dailyOrder.findOneAndUpdate({ _id: dO._id }, updateParam, {
+        new: true,
+      });
     }
   } catch (e) {
     console.log(e);
   }
 };
 /**
- * @param {}
+ * @param {DailyOrder} dO
+ * @param {Package} package
  * @returns {}
  */
-const updateDO = async () => {
+const updateDO = async (dO, package) => {
   try {
-    //
+    await updateFilledItems(dO, package.gtin);
   } catch (e) {
     console.log(e);
   }
+};
+
+module.exports = {
+  upsertDO,
 };

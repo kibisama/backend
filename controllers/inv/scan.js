@@ -1,5 +1,6 @@
 const item = require("../../services/inv/item");
 const package = require("../../services/inv/package");
+const dailyOrder = require("../../services/inv/dailyOrder");
 
 module.exports = async (req, res, next) => {
   try {
@@ -13,9 +14,9 @@ module.exports = async (req, res, next) => {
     const pkg = await package.upsertPackage(gtin, "gtin");
     await package.updateInventories(_item, mode);
     res.sendStatus(200);
-    // if (item.isNewFill(_item)) {
-    //   //
-    // }
+    if (item.isNewFill(_item)) {
+      dailyOrder.upsertDO(pkg);
+    }
   } catch (e) {
     next(e);
   }
