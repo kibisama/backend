@@ -1,7 +1,5 @@
 const dayjs = require("dayjs");
 const psItem = require("../../schemas/psItem");
-const getSearchResults = require("./getSearchResults");
-const { setOptionParameters } = require("../common");
 
 /**
  * @typedef {psItem.PSItem} PSItem
@@ -124,28 +122,6 @@ const needsUpdate = async (package) => {
 };
 
 /**
- * @typedef {object} RequestOption
- * @property {boolean} [force]
- * @property {Function} [callback]
- */
-
-/**
- * @param {Package} package
- * @param {RequestOption} [option]
- * @returns {Promise<undefined>}
- */
-const requestPuppet = async (package, option) => {
-  try {
-    const defaultOption = { force: false };
-    const { force, callback } = setOptionParameters(defaultOption, option);
-    if (force || (await needsUpdate(package))) {
-      getSearchResults(package, callback);
-    }
-  } catch (e) {
-    console.log(e);
-  }
-};
-/**
  * @param {Package} package
  * @param {import("./getSearchResults".Result)} result
  * @returns {Promise<undefined>}
@@ -164,4 +140,4 @@ const handleResult = async (package, result) => {
   }
 };
 
-module.exports = { voidItem, requestPuppet, handleResult };
+module.exports = { voidItem, handleResult, needsUpdate };

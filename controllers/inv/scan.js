@@ -11,8 +11,8 @@ module.exports = async (req, res, next) => {
     if (!item.isDuplicateFill(_item, mode)) {
       await item.updateItem(scanReq);
     }
-    /** @type {Parameters<package["upsertPackage"]>["2"]} */
-    const option = item.isNewFill(_item)
+    /** @type {package.UpdateOption} */
+    const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }
       : undefined;
     await package.upsertPackage(gtin, "gtin", option);

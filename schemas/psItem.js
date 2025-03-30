@@ -6,7 +6,7 @@ const {
 
 const psItemSchema = new Schema({
   package: {
-    type: [ObjectId],
+    type: ObjectId,
     ref: "Package",
     required: true,
     unique: true,

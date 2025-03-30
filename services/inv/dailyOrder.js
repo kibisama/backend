@@ -2,7 +2,7 @@ const dayjs = require("dayjs");
 const dailyOrder = require("../../schemas/dailyOrder");
 const item = require("../../schemas/item");
 const package = require("./package");
-const psItem = require("../ps/psItem");
+const getSearchResults = require("../ps/getSearchResults");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
@@ -99,7 +99,7 @@ const updateFilledItems = async (dO, gtin) => {
  */
 const updateSources = (package) => {
   try {
-    psItem.requestPuppet(package);
+    getSearchResults(package);
   } catch (e) {
     console.log(e);
   }

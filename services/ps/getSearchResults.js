@@ -3,6 +3,7 @@ const { scheduleJob } = require("node-schedule");
 const { ps } = require("../../api/puppet");
 const psItem = require("./psItem");
 const { ndcToCMSNDC11, stringToNumber } = require("../convert");
+const { setOptionParameters } = require("../common");
 
 /**
  * @typedef {psItem.Package} Package
@@ -166,7 +167,9 @@ const handle200 = async (package, data) => {
     } else {
       await psItem.voidItem(package);
     }
-    // await items
+    if (package.alternative) {
+      // await items
+    }
   } catch (e) {
     console.log(e);
   }
@@ -177,7 +180,7 @@ const handle200 = async (package, data) => {
  * @param {Function} [callback]
  * @returns {undefined}
  */
-module.exports = (package, callback) => {
+const requestPuppet = (package, callback) => {
   const query = selectQuery(package);
   let count = 0;
   const maxCount = 99;
@@ -211,4 +214,27 @@ module.exports = (package, callback) => {
     }
   }
   request();
+};
+
+/**
+ * @typedef {object} RequestOption
+ * @property {boolean} [force]
+ * @property {Function} [callback]
+ */
+
+/**
+ * @param {Package} package
+ * @param {RequestOption} [option]
+ * @returns {Promise<undefined>}
+ */
+module.exports = async (package, option) => {
+  try {
+    const defaultOption = { force: false };
+    const { force, callback } = setOptionParameters(defaultOption, option);
+    if (force || (await psItem.needsUpdate(package))) {
+      requestPuppet(package, callback);
+    }
+  } catch (e) {
+    console.log(e);
+  }
 };

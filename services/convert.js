@@ -27,7 +27,7 @@ module.exports = {
    * @returns {string}
    */
   ndcToCMSNDC11(ndc) {
-    return this.ndcToNDC11(ndc).replaceAll("-", "");
+    return module.exports.ndcToNDC11(ndc).replaceAll("-", "");
   },
   /**
    * Returns a 11-digit ndc with hyphens from a CMS 11-digit NDC.
