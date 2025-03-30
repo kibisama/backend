@@ -1,11 +1,11 @@
 const dayjs = require("dayjs");
-const psItem = require("../../schemas/psItem");
+const psPackage = require("../../schemas/psPackage");
 
 /**
- * @typedef {psItem.PSItem} PSItem
+ * @typedef {psPackage.PSPackage} PSPackage
  * @typedef {import("../inv/package").Package} Package
- * @typedef {Parameters<psItem["findOneAndUpdate"]>["0"]} Filter
- * @typedef {Parameters<psItem["findOneAndUpdate"]>["1"]} UpdateParam
+ * @typedef {Parameters<psPackage["findOneAndUpdate"]>["0"]} Filter
+ * @typedef {Parameters<psPackage["findOneAndUpdate"]>["1"]} UpdateParam
  */
 
 /**
@@ -31,7 +31,7 @@ const createFilter = (package) => {
 };
 /**
  * @param {Package} package
- * @returns {typeof psItem.schema.obj}
+ * @returns {typeof psPackage.schema.obj}
  */
 const createBase = (package) => {
   return {
@@ -41,23 +41,23 @@ const createBase = (package) => {
 };
 /**
  * @param {Package} package
- * @returns {Promise<PSItem|undefined>}
+ * @returns {Promise<PSPackage|undefined>}
  */
 const findItem = async (package) => {
   try {
-    return (await psItem.findOne(createFilter(package))) ?? undefined;
+    return (await psPackage.findOne(createFilter(package))) ?? undefined;
   } catch (e) {
     console.log(e);
   }
 };
 /**
  * @param {Package} package
- * @returns {Promise<PSItem|undefined>}
+ * @returns {Promise<PSPackage|undefined>}
  */
 const createItem = async (package) => {
   try {
-    const item = await psItem.create(createBase(package));
-    await package.updateOne({ psItem: item._id });
+    const item = await psPackage.create(createBase(package));
+    await package.updateOne({ psPackage: item._id });
     return item;
   } catch (e) {
     console.log(e);
@@ -65,7 +65,7 @@ const createItem = async (package) => {
 };
 /**
  * @param {Package} package
- * @returns {Promise<PSItem|undefined>}
+ * @returns {Promise<PSPackage|undefined>}
  */
 const voidItem = async (package) => {
   try {
@@ -75,9 +75,13 @@ const voidItem = async (package) => {
     } else if (item.active) {
       const updateParam = createUpdateParam();
       updateParam.$set.active = false;
-      return await psItem.findOneAndUpdate(createFilter(package), updateParam, {
-        new: true,
-      });
+      return await psPackage.findOneAndUpdate(
+        createFilter(package),
+        updateParam,
+        {
+          new: true,
+        }
+      );
     }
     return item;
   } catch (e) {
@@ -86,7 +90,7 @@ const voidItem = async (package) => {
 };
 /**
  * @param {Package} package
- * @returns {Promise<PSItem|undefined>}
+ * @returns {Promise<PSPackage|undefined>}
  */
 const upsertItem = async (package) => {
   try {
@@ -106,11 +110,11 @@ const upsertItem = async (package) => {
  */
 const needsUpdate = async (package) => {
   try {
-    if (package.psItem) {
+    if (package.psPackage) {
       const populated = await package.populate([
-        { path: "psItem", select: ["lastUpdated"] },
+        { path: "psPackage", select: ["lastUpdated"] },
       ]);
-      if (isOld(populated.psItem.lastUpdated)) {
+      if (isOld(populated.psPackage.lastUpdated)) {
         return true;
       }
       return false;

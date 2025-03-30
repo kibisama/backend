@@ -1,12 +1,12 @@
 const dayjs = require("dayjs");
 const { scheduleJob } = require("node-schedule");
 const { ps } = require("../../api/puppet");
-const psItem = require("./psItem");
+const psPackage = require("./psPackage");
 const { ndcToCMSNDC11, stringToNumber } = require("../convert");
 const { setOptionParameters } = require("../common");
 
 /**
- * @typedef {psItem.Package} Package
+ * @typedef {psPackage.Package} Package
  *
  * @typedef {object} Response
  * @property {string} value
@@ -59,7 +59,7 @@ const gtinToQuery = (gtin) => {
  */
 
 /**
- * @param {import("./psItem").Package} package
+ * @param {Package} package
  * @returns {Body}
  */
 const selectQuery = (package) => {
@@ -140,9 +140,9 @@ const filterResult = (results, cms) => {
 const handle404 = async (package) => {
   try {
     if (package.alternative) {
-      // await psItems.voidItems
+      // await psPackages.voidItems
     }
-    await psItem.voidItem(package);
+    await psPackage.voidItem(package);
   } catch (e) {
     console.log(e);
   }
@@ -163,9 +163,9 @@ const handle200 = async (package, data) => {
       if (!ndc11) {
         // update package via ps
       }
-      await psItem.handleResult(item);
+      await psPackage.handleResult(item);
     } else {
-      await psItem.voidItem(package);
+      await psPackage.voidItem(package);
     }
     if (package.alternative) {
       // await items
@@ -231,7 +231,7 @@ module.exports = async (package, option) => {
   try {
     const defaultOption = { force: false };
     const { force, callback } = setOptionParameters(defaultOption, option);
-    if (force || (await psItem.needsUpdate(package))) {
+    if (force || (await psPackage.needsUpdate(package))) {
       requestPuppet(package, callback);
     }
   } catch (e) {

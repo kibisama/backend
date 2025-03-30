@@ -4,7 +4,7 @@ const {
   Types: { ObjectId },
 } = Schema;
 
-const psItemSchema = new Schema({
+const psPackageSchema = new Schema({
   package: {
     type: ObjectId,
     ref: "Package",
@@ -27,8 +27,8 @@ const psItemSchema = new Schema({
   wholesaler: String,
   manufacturer: String,
 });
-const model = mongoose.model("PharmSaver Item", psItemSchema);
+const model = mongoose.model("PharmSaver Package", psPackageSchema);
 /**
- * @typedef {Awaited<ReturnType<model["create"]>>[0]} PSItem
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} PSPackage
  */
 module.exports = model;
