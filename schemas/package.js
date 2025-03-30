@@ -54,7 +54,7 @@ const packageSchema = new Schema({
   //     type: ObjectId,
   //     ref: "Cardinal Product",
   //   },
-  //   psItem: { type: ObjectId, ref: "PharmSaver Item" },
+  psItem: { type: ObjectId, ref: "PharmSaver Item" },
 });
 const model = mongoose.model("Package", packageSchema);
 /**

@@ -2,11 +2,12 @@ const dayjs = require("dayjs");
 const dailyOrder = require("../../schemas/dailyOrder");
 const item = require("../../schemas/item");
 const package = require("./package");
+const psItem = require("../ps/psItem");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
  * @typedef {package.Package} Package
- * @typedef {Parameters<dailyOrder["updateOne"]>["0"]} UpdateParam
+ * @typedef {Parameters<dailyOrder["findOneAndUpdate"]>["1"]} UpdateParam
  */
 
 /**
@@ -49,8 +50,9 @@ const upsertDO = async (package) => {
     });
     if (!_dailyOrder) {
       _dailyOrder = await createDO(package);
+      updateSources(package);
     }
-    updateDO(_dailyOrder, package);
+    await updateFilledItems(_dailyOrder, package.gtin);
     return _dailyOrder;
   } catch (e) {
     console.log(e);
@@ -78,9 +80,9 @@ const findFilledItems = async (gtin) => {
 const updateFilledItems = async (dO, gtin) => {
   try {
     const items = await findFilledItems(gtin);
-    const updateParam = createUpdateParam();
-    updateParam.$addToSet = { items: items.map((v) => v._id) };
     if (items?.length > 0) {
+      const updateParam = createUpdateParam();
+      updateParam.$addToSet = { items: items.map((v) => v._id) };
       return await dailyOrder.findOneAndUpdate({ _id: dO._id }, updateParam, {
         new: true,
       });
@@ -90,16 +92,23 @@ const updateFilledItems = async (dO, gtin) => {
   }
 };
 /**
- * @param {DailyOrder} dO
  * @param {Package} package
- * @returns {}
+ * @param {} [psOption]
+ * @param {} [cahOption]
+ * @returns {Promise<undefined>}
  */
-const updateDO = async (dO, package) => {
+const updateSources = (package) => {
   try {
-    await updateFilledItems(dO, package.gtin);
+    psItem.requestPuppet(package);
   } catch (e) {
     console.log(e);
   }
+};
+/**
+ *
+ */
+const updateDO = async () => {
+  //
 };
 
 module.exports = {

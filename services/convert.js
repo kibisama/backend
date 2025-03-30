@@ -1,5 +1,13 @@
 module.exports = {
   /**
+   * Returns a number from a string (e.g. USD currency).
+   * @param {string} string
+   * @returns {number}
+   */
+  stringToNumber(string) {
+    return Number(string.replaceAll(/[^0-9.-]+/g, ""));
+  },
+  /**
    * Returns a 11-digit ndc string from a 10-digit ndc string.
    * @param {string} ndc
    * @returns {string}
@@ -14,7 +22,15 @@ module.exports = {
     }
   },
   /**
-   * Returns a 11-digit ndc with hyphens from one no hyphens (CMS 11-digit NDC).
+   * Returns a CMS 11-digit NDC from a 10-digit ndc string.
+   * @param {string} ndc
+   * @returns {string}
+   */
+  ndcToCMSNDC11(ndc) {
+    return this.ndcToNDC11(ndc).replaceAll("-", "");
+  },
+  /**
+   * Returns a 11-digit ndc with hyphens from a CMS 11-digit NDC.
    * @param {string} ndc11
    * @returns {string}
    */

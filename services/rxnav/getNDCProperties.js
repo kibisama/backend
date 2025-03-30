@@ -25,6 +25,7 @@ const { getMaxNumberString } = require("../common");
 
 /**
  * @param {[NDCProperty]} ndcProps
+ * @param {string} rxcui
  * @return {NDCProperty}
  */
 const selectNdcProp = (ndcProps, rxcui) => {
@@ -38,9 +39,7 @@ const selectNdcProp = (ndcProps, rxcui) => {
     }
   }
   if (!ndcProperty) {
-    const numberArray = ndcProps.map((v) => {
-      Number(v.rxcui);
-    });
+    const numberArray = ndcProps.map((v) => Number(v.rxcui));
     ndcProperty = ndcProps[getMaxNumberString(numberArray)[1]];
   }
   return ndcProperty;
@@ -80,7 +79,7 @@ const createUpdateObj = (ndcProp) => {
 };
 /**
  * @param {string} ndc
- * @param {string} rxcui optional
+ * @param {string} [rxcui]
  * @returns {Promise<Output|undefined>}
  */
 module.exports = async (ndc, rxcui) => {

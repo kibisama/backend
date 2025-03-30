@@ -27,9 +27,12 @@ module.exports = {
   },
   ps: {
     url: "/pharmsaver",
-    async getSearchResults(ndc11) {
+    async getSearchResults({ ndc11, query }) {
       try {
-        return await client.post(`${this.url}/getSearchResults`, { ndc11 });
+        return await client.post(`${this.url}/getSearchResults`, {
+          ndc11,
+          query,
+        });
       } catch (e) {
         console.log(e);
         return e;

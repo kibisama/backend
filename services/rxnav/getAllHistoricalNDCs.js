@@ -14,8 +14,7 @@ const rxnav = require("../../api/rxnav");
  */
 
 /**
- * @param {string} arg
- * @param {ArgType} type
+ * @param {string} rxcui
  * @returns {Promise<HistoricalNdcConcept|undefined>}
  */
 module.exports = async (rxcui) => {

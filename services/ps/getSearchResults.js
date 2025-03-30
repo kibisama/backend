@@ -1,0 +1,214 @@
+const dayjs = require("dayjs");
+const { scheduleJob } = require("node-schedule");
+const { ps } = require("../../api/puppet");
+const psItem = require("./psItem");
+const { ndcToCMSNDC11, stringToNumber } = require("../convert");
+
+/**
+ * @typedef {psItem.Package} Package
+ *
+ * @typedef {object} Response
+ * @property {string} value
+ * @property {[Result]} results
+ * @typedef {object} Result
+ * @property {string} description
+ * @property {string} str
+ * @property {string} pkg
+ * @property {string} form
+ * @property {string} pkgPrice
+ * @property {string} ndc
+ * @property {string} qtyAvl
+ * @property {string} unitPrice
+ * @property {"Rx"|"OTC"} rxOtc
+ * @property {string} lotExpDate
+ * @property {"B"|"G"} bG
+ * @property {string} wholesaler
+ * @property {string} manufacturer
+ */
+
+/**
+ * Returns a native Date object indicating m minutes from now.
+ * @param {*} m
+ * @returns {Date}
+ */
+const setDelay = (m) => {
+  return dayjs().add(m, "minute").toDate();
+};
+
+/**
+ * @param {string} lotExpDate
+ * @returns {dayjs.Dayjs}
+ */
+const isShortDated = (lotExpDate) => {
+  return dayjs(lotExpDate, "MM/YY").isBefore(dayjs().add(11, "month"));
+};
+
+/**
+ * @param {string} gtin
+ * @returns {string}
+ */
+const gtinToQuery = (gtin) => {
+  return gtin.slice(3, 13);
+};
+
+/**
+ * @typedef {object} Body
+ * @property {string} [ndc11]
+ * @property {string} [query]
+ */
+
+/**
+ * @param {import("./psItem").Package} package
+ * @returns {Body}
+ */
+const selectQuery = (package) => {
+  const { ndc, gtin } = package;
+  if (ndc) {
+    return { ndc11: ndcToCMSNDC11(ndc) };
+  } else if (gtin) {
+    return { query: gtinToQuery(gtin) };
+  }
+};
+
+/**
+ * Modifies each original result object.
+ * @param {[Result]} results
+ * @returns {undefined}
+ */
+const correctDescription = (results) => {
+  results.forEach((v) => {
+    const suffix = ` ${v.str} ${v.form} (${v.pkg})`;
+    if (!v.description.endsWith(suffix)) {
+      v.description += suffix;
+    }
+  });
+};
+
+/**
+ * @param {[Result]} results
+ * @param {string} cms
+ * @returns {{item: Result|undefined, items: [Result]}}
+ */
+const filterResult = (results, cms) => {
+  /** @type {Result|undefined} */
+  let cheapestSameNdc;
+  /** @type {Result|undefined} */
+  let cheapestSameNdcShort;
+  const table = {};
+  results.forEach((v) => {
+    const { description, unitPrice, ndc, lotExpDate } = v;
+    if (!table[description]) {
+      table[description] = v;
+    } else if (
+      stringToNumber(table[description].unitPrice) > stringToNumber(unitPrice)
+    ) {
+      table[description] = v;
+    }
+    if (ndc === cms) {
+      if (isShortDated(lotExpDate)) {
+        if (!cheapestSameNdcShort) {
+          cheapestSameNdcShort = v;
+        } else if (
+          stringToNumber(cheapestSameNdcShort.unitPrice) >
+          stringToNumber(unitPrice)
+        ) {
+          cheapestSameNdcShort = v;
+        }
+      } else {
+        if (!cheapestSameNdc) {
+          cheapestSameNdc = v;
+        } else if (
+          stringToNumber(cheapestSameNdc.unitPrice) > stringToNumber(unitPrice)
+        ) {
+          cheapestSameNdc = v;
+        }
+      }
+    }
+  });
+  const items = [];
+  for (const prop in table) {
+    results.push(table[prop]);
+  }
+  return { item: cheapestSameNdc || cheapestSameNdcShort, items };
+};
+
+/**
+ * @param {Package} package
+ * @returns {Promise<undefined>}
+ */
+const handle404 = async (package) => {
+  try {
+    if (package.alternative) {
+      // await psItems.voidItems
+    }
+    await psItem.voidItem(package);
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} package
+ * @param {Response} data
+ * @returns {Promise<undefined>}
+ */
+const handle200 = async (package, data) => {
+  try {
+    const { value, results } = data;
+    const { ndc, ndc11 } = package;
+    correctDescription(results);
+    const cms = ndc ? ndcToCMSNDC11(ndc) : value;
+    const { item, items } = filterResult(results, cms);
+    if (item) {
+      if (!ndc11) {
+        // update package via ps
+      }
+      await psItem.handleResult(item);
+    } else {
+      await psItem.voidItem(package);
+    }
+    // await items
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+/**
+ * @param {Package} package
+ * @param {Function} [callback]
+ * @returns {undefined}
+ */
+module.exports = (package, callback) => {
+  const query = selectQuery(package);
+  let count = 0;
+  const maxCount = 99;
+  async function request() {
+    try {
+      const result = await ps.getSearchResults(query);
+      if (result instanceof Error) {
+        switch (result.status) {
+          case 404:
+            await handle404(package);
+            break;
+          case 500:
+            if (count < maxCount) {
+              count++;
+              scheduleJob(setDelay(5), request);
+            }
+            break;
+          case 503:
+            scheduleJob(setDelay(3), request);
+            break;
+          default:
+        }
+      } else {
+        await handle200(package, result.data);
+        if (callback instanceof Function) {
+          callback();
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  request();
+};

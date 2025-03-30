@@ -92,8 +92,8 @@ const upsertPackage = async (arg, type, option) => {
 
 /**
  * @typedef {object} UpdateOption
- * @property {boolean} force
- * @property {Function} callback
+ * @property {boolean} [force]
+ * @property {Function} [callback]
  */
 
 /**
