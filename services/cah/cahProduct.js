@@ -122,3 +122,5 @@ const needsUpdate = async (package) => {
     console.log(e);
   }
 };
+
+module.exports = { voidProduct, needsUpdate };
