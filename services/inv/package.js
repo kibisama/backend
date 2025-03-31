@@ -210,12 +210,12 @@ const updateViaOpenFDA = async (pkg) => {
  */
 const linkWithAlternative = async (pkg) => {
   try {
-    const { _id, rxcui } = pkg;
+    const { _id, rxcui, alternative } = pkg;
     if (!rxcui) {
       return;
     }
     const _alt = await alt.upsertAlternative(rxcui);
-    if (_alt) {
+    if (_alt && !alternative.equals(_alt._id)) {
       await _alt.updateOne({ $addToSet: { packages: _id } });
       return await package.findOneAndUpdate(
         { _id },

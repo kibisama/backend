@@ -66,7 +66,7 @@ const upsertAlternative = async (rxcui, option) => {
  * @returns {{rxNav: boolean}}
  */
 const needsUpdate = (alt) => {
-  let rxNav = {};
+  let rxNav = false;
   if (!alt.defaultName) {
     rxNav = true;
   }
@@ -229,12 +229,14 @@ const linkWithFamily = async (alt) => {
     const fm = await family.searchFamily({ rxcui });
     if (fm?.length > 0) {
       const _fm = fm[0];
-      await _fm.updateOne({ $addToSet: { alternatives: _id } });
-      return await alternative.findOneAndUpdate(
-        { _id },
-        { family: _fm._id },
-        { new: true }
-      );
+      if (!alt.family.equals(_fm._id)) {
+        await _fm.updateOne({ $addToSet: { alternatives: _id } });
+        return await alternative.findOneAndUpdate(
+          { _id },
+          { family: _fm._id },
+          { new: true }
+        );
+      }
     }
   } catch (e) {
     console.log(e);

@@ -25,6 +25,13 @@ const packageSchema = new Schema({
     maxLength: 13,
   },
 
+  upc: {
+    type: String,
+  },
+  mpn: {
+    type: String,
+  },
+
   /* Package details */
   /* Updated via getNDCStatus */
   rxcui: String,
@@ -50,10 +57,10 @@ const packageSchema = new Schema({
     type: ObjectId,
     ref: "Alternative",
   },
-  //   cardinalProduct: {
-  //     type: ObjectId,
-  //     ref: "Cardinal Product",
-  //   },
+  cahProduct: {
+    type: ObjectId,
+    ref: "Cardinal Product",
+  },
   psPackage: { type: ObjectId, ref: "PharmSaver Package" },
 });
 const model = mongoose.model("Package", packageSchema);

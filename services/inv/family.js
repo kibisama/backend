@@ -62,7 +62,7 @@ const upsertFamily = async (scdf) => {
  * @returns {{rxNav: boolean}}
  */
 const needsUpdate = (fm) => {
-  let rxNav = {};
+  let rxNav = false;
   if (!fm.defaultName) {
     rxNav = true;
   }
@@ -80,7 +80,7 @@ const updateFamily = async (fm, option) => {
     const defaultOption = { force: false };
     const { force } = setOptionParameters(defaultOption, option);
     /** @type {Update} */
-    const update = {};
+    const update = { $set: {} };
     const { rxNav } = force ? { rxNav: true } : needsUpdate(fm);
     if (rxNav) {
       const rxNavData = await updateViaRxNav(fm);
