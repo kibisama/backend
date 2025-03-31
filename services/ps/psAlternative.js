@@ -44,15 +44,13 @@ const findAlt = async (alt) => {
   }
 };
 /**
- * @param {ObjectId} alternative
+ * @param {ObjectId} alt
  * @returns {Promise<PSAlternative|undefined>}
  */
-const createAlt = async (alternative) => {
+const createAlt = async (alt) => {
   try {
-    const _psAlt = await psAlt.create(createBase(alternative));
-    await alternative.findByIdAndUpdate(alternative, {
-      psAlternative: _psAlt._id,
-    });
+    const _psAlt = await psAlt.create(createBase(alt));
+    await alternative.findByIdAndUpdate(alt, { psAlternative: _psAlt._id });
     return _psAlt;
   } catch (e) {
     console.log(e);

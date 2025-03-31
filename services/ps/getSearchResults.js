@@ -115,7 +115,7 @@ const filterResult = (results, cms) => {
   });
   const items = [];
   for (const prop in table) {
-    results.push(table[prop]);
+    items.push(table[prop]);
   }
   return { item: cheapestSameNdc || cheapestSameNdcShort, items };
 };
