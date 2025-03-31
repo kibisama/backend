@@ -10,13 +10,13 @@ module.exports = async (req, res, next) => {
     const _item = await item.upsertItem(scanReq);
     if (!item.isDuplicateFill(_item, mode)) {
       await item.updateItem(scanReq);
-      await package.updateInventories(_item, mode);
     }
     /** @type {package.UpdateOption} */
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }
       : undefined;
     await package.upsertPackage(gtin, "gtin", option);
+    await package.updateInventories(_item, mode);
     res.sendStatus(200);
   } catch (e) {
     next(e);
