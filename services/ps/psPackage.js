@@ -78,9 +78,7 @@ const voidItem = async (package) => {
       return await psPackage.findOneAndUpdate(
         createFilter(package),
         updateParam,
-        {
-          new: true,
-        }
+        { new: true }
       );
     }
     return item;
@@ -124,7 +122,6 @@ const needsUpdate = async (package) => {
     console.log(e);
   }
 };
-
 /**
  * @param {Package} package
  * @param {import("./getSearchResults".Result)} result

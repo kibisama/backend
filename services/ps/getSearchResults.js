@@ -2,29 +2,16 @@ const dayjs = require("dayjs");
 const { scheduleJob } = require("node-schedule");
 const { ps } = require("../../api/puppet");
 const psPackage = require("./psPackage");
+const psAlt = require("./psAlternative");
 const { ndcToCMSNDC11, stringToNumber } = require("../convert");
 const { setOptionParameters } = require("../common");
 
 /**
  * @typedef {psPackage.Package} Package
- *
+ * @typedef {import("../../schemas/psAlternative").Result} Result
  * @typedef {object} Response
  * @property {string} value
  * @property {[Result]} results
- * @typedef {object} Result
- * @property {string} description
- * @property {string} str
- * @property {string} pkg
- * @property {string} form
- * @property {string} pkgPrice
- * @property {string} ndc
- * @property {string} qtyAvl
- * @property {string} unitPrice
- * @property {"Rx"|"OTC"} rxOtc
- * @property {string} lotExpDate
- * @property {"B"|"G"} bG
- * @property {string} wholesaler
- * @property {string} manufacturer
  */
 
 /**
@@ -139,8 +126,9 @@ const filterResult = (results, cms) => {
  */
 const handle404 = async (package) => {
   try {
-    if (package.alternative) {
-      // await psPackages.voidItems
+    const alternative = package.alternative;
+    if (alternative) {
+      await psAlt.voidAlt(alternative);
     }
     await psPackage.voidItem(package);
   } catch (e) {
@@ -155,7 +143,7 @@ const handle404 = async (package) => {
 const handle200 = async (package, data) => {
   try {
     const { value, results } = data;
-    const { ndc, ndc11 } = package;
+    const { ndc, ndc11, alternative } = package;
     correctDescription(results);
     const cms = ndc ? ndcToCMSNDC11(ndc) : value;
     const { item, items } = filterResult(results, cms);
@@ -167,8 +155,8 @@ const handle200 = async (package, data) => {
     } else {
       await psPackage.voidItem(package);
     }
-    if (package.alternative) {
-      // await items
+    if (alternative) {
+      await psAlt.handleResult(alternative, items);
     }
   } catch (e) {
     console.log(e);

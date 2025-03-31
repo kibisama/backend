@@ -41,10 +41,10 @@ const alternativeSchema = new Schema({
   //     type: ObjectId,
   //     ref: "Package",
   //   },
-  //   psSearch: {
-  //     type: ObjectId,
-  //     ref: "PharmSaver Search",
-  //   },
+  psAlternative: {
+    type: ObjectId,
+    ref: "PharmSaver Alternative",
+  },
 });
 const model = mongoose.model("Alternative", alternativeSchema);
 /**
