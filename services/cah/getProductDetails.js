@@ -1,4 +1,6 @@
+const fs = require("fs");
 const dayjs = require("dayjs");
+const axios = require("axios");
 const { scheduleJob } = require("node-schedule");
 const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
@@ -6,8 +8,36 @@ const cahProduct = require("./cahProduct");
 // const { ndcToCMSNDC11, stringToNumber } = require("../convert");
 const { setOptionParameters } = require("../common");
 
+const defaultImgUrl =
+  "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
+
 /**
  * @typedef {cahProduct.Package} Package
+ * @typedef {import("../../schemas/cahProduct").CAHData} CAHData
+ * @typedef {import("../../schemas/cahProduct").BooleanIcon} BooleanIcon
+ * @typedef {object} Data
+ * @property {Result} results
+ * @typedef {Alt & Product} Result
+ * @typedef {object} Product
+ * @property {string} img
+ * @property {CAHData} gtin
+ * @property {[Alt]} alts
+ * @typedef {object} Alt
+ * @property {CAHData} name
+ * @property {CAHData} genericName
+ * @property {CAHData} ndc
+ * @property {CAHData} cin
+ * @property {CAHData} upc
+ * @property {CAHData} mfr
+ * @property {CAHData} orangeBookCode
+ * @property {CAHData} estNetCost
+ * @property {CAHData} netUoiCost
+ * @property {CAHData} lastOrdered
+ * @property {string} [contract]
+ * @property {import("../../schemas/cahProduct").StockStatus} stockStatus
+ * @property {string} [stock]
+ * @property {import("../../schemas/cahProduct").BooleanIcon} rebateEligible
+ * @property {import("../../schemas/cahProduct").BooleanIcon} returnable
  */
 
 /**
@@ -70,6 +100,49 @@ const handle404 = async (package) => {
 
 /**
  * @param {Package} package
+ * @param {Data} data
+ * @returns {Promise<undefined>}
+ */
+const handle200 = async (package, data) => {
+  try {
+    const {} = data.results;
+
+    const { ndc11, gtin, alternative } = package;
+    if (!ndc11 || !gtin) {
+      // update package via cah
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+/**
+ * @param {Result} result
+ * @returns {Promise<undefined>}
+ */
+const saveImg = async (result) => {
+  try {
+    const { cin, img } = result;
+    const path = `img/pharma-medium/${cin}.jpg`;
+    fs.access(path, fs.constants.F_OK, async (err) => {
+      if (err) {
+        if (img && img !== defaultImgUrl) {
+          const { data } = await axios.get(img, {
+            responseType: "arraybuffer",
+          });
+          if (data) {
+            fs.writeFileSync(path, data);
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+/**
+ * @param {Package} package
  * @param {Function} [callback]
  * @returns {undefined}
  */
@@ -97,7 +170,7 @@ const requestPuppet = (package, callback) => {
           default:
         }
       } else {
-        // await handle200(package, result.data);
+        await handle200(package, result.data);
         if (callback instanceof Function) {
           callback();
         }
@@ -125,7 +198,7 @@ module.exports = async (package, option) => {
     const defaultOption = { force: false };
     const { force, callback } = setOptionParameters(defaultOption, option);
     if (force || (await cahProduct.needsUpdate(package))) {
-      //   requestPuppet(package, callback);
+      requestPuppet(package, callback);
     }
   } catch (e) {
     console.log(e);

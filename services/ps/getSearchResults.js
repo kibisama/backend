@@ -9,7 +9,7 @@ const { setOptionParameters } = require("../common");
 /**
  * @typedef {psPackage.Package} Package
  * @typedef {import("../../schemas/psAlternative").Result} Result
- * @typedef {object} Response
+ * @typedef {object} Data
  * @property {string} value
  * @property {[Result]} results
  */
@@ -137,7 +137,7 @@ const handle404 = async (package) => {
 };
 /**
  * @param {Package} package
- * @param {Response} data
+ * @param {Data} data
  * @returns {Promise<undefined>}
  */
 const handle200 = async (package, data) => {

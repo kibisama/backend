@@ -11,30 +11,31 @@ const cahProductSchema = new Schema({
   },
   lastUpdated: { type: Date, required: true },
   active: { type: Boolean, default: false },
-  cin: { type: String, unique: true }, // Note: the same product can have more than one cins
   //   priority: { type: Number, default: 0 },
-  /* Selected fields */
-  //manupartnumber
-  // name: String,
-  // genericName: String,
-  // ndc: String, // 11-digit with hyphens
-  // upc: String,
-  // gtin: String,
-  // brandName: String,
-  // mfr: String,
+  /* Common fields */
+  cin: { type: String, unique: true }, // Note: the same product can have more than one cins
+  name: String,
+  genericName: String,
+  ndc: String, // 11-digit with hyphens
+  upc: String,
+  mfr: String,
+  orangeBookCode: String,
+  lastOrdered: String, // "MM/DD/YYYY"
+  estNetCost: String,
+  netUoiCost: String, // 4 decimal places
+  rebateEligible: Boolean,
+  returnable: Boolean,
+  stockStatus: String,
+
+  // uoifactor
+  // invoiceCost: String,
   // amu: String,
   // size: String,
   // form: String,
   // strength: String,
-  // orangeBookCode: String,
-  //   lastOrdered: String, // "MM/DD/YYYY"
-  //   invoiceCost: String,
-  //   estNetCost: String,
-  //   netUoiCost: String, // 4 decimal places
-  // uoifactor
-  //   rebateEligible: String, // boolean
-  //   returnable: String, // boolean
-  //   stockStatus: String,
+  // brandName: String,
+  gtin: String,
+  //manupartnumber
   //   /* More details */
   //   rx: String, //boolean
   //   deaSchedule: String,
@@ -49,24 +50,7 @@ const cahProductSchema = new Schema({
   //   avlAlertMsg: String,
   //   avlAlertAddMsg: String,
   //   avlAlertExpected: String,
-  //   /* Subs & alts */
-  //   // alts: [
-  //   //   {
-  //   //     name: String,
-  //   //     genericName: String,
-  //   //     ndc: String,
-  //   //     cin: String,
-  //   //     upc: String,
-  //   //     mfr: String,
-  //   //     orangeBookCode: String,
-  //   //     estNetCost: String,
-  //   //     netUoiCost: String,
-  //   //     lastOrdered: String,
-  //   //     contract: String,
-  //   //     stockStatus: String,
-  //   //     stock: String,
-  //   //   },
-  //   // ],
+
   //   /* Purchase history */
   //   purchaseHistory: [
   //     {
@@ -113,5 +97,9 @@ const cahProductSchema = new Schema({
 const model = mongoose.model("Cardinal Product", cahProductSchema);
 /**
  * @typedef {Awaited<ReturnType<model["create"]>>[0]} CAHProduct
+ * @typedef {string|CAHNoData} CAHData
+ * @typedef {"— —"} CAHNoData
+ * @typedef {"IN STOCK"|"LOW STOCK"|"OUT OF STOCK"|"INELIGIBLE"} StockStatus
+ * @typedef {"done"|"clear"|"close"} BooleanIcon
  */
 module.exports = model;

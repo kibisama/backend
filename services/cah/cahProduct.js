@@ -90,7 +90,7 @@ const voidProduct = async (package) => {
  * @param {Package} package
  * @returns {Promise<CAHProduct|undefined>}
  */
-const upsertItem = async (package) => {
+const upsertProduct = async (package) => {
   try {
     const product = await findProduct(package);
     if (!product) {
@@ -118,6 +118,24 @@ const needsUpdate = async (package) => {
       return false;
     }
     return true;
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} package
+ * @param {import("./getProductDetails".Result)} result
+ * @returns {Promise<undefined>}
+ */
+const handleResult = async (package, result) => {
+  try {
+    const product = await upsertProduct(package);
+    if (product) {
+      const updateParam = createUpdateParam();
+      updateParam.$set.active = true;
+      Object.assign(updateParam.$set, result);
+      await product.updateOne(updateParam);
+    }
   } catch (e) {
     console.log(e);
   }
