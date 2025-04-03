@@ -1,12 +1,11 @@
-const fs = require("fs");
 const dayjs = require("dayjs");
-const axios = require("axios");
+
 const { scheduleJob } = require("node-schedule");
 const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
 // const psAlt = require("./psAlternative");
-// const { ndcToCMSNDC11, stringToNumber } = require("../convert");
-const { setOptionParameters } = require("../common");
+const { stringToNumber } = require("../convert");
+const { setOptionParameters, saveImg } = require("../common");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -14,14 +13,31 @@ const defaultImgUrl =
 /**
  * @typedef {cahProduct.Package} Package
  * @typedef {import("../../schemas/cahProduct").CAHData} CAHData
+ * @typedef {import("../../schemas/cahProduct").StockStatus} StockStatus
  * @typedef {import("../../schemas/cahProduct").BooleanIcon} BooleanIcon
+ * @typedef {import("../../schemas/cahProduct").BooleanText} BooleanText
+ * @typedef {import("../../schemas/cahProduct").BooleanTextCaps} BooleanTextCaps
  * @typedef {object} Data
  * @property {Result} results
  * @typedef {Alt & Product} Result
  * @typedef {object} Product
  * @property {string} img
  * @property {CAHData} gtin
+ * @property {CAHData} mpn
+ * @property {CAHData} brandName
+ * @property {CAHData} amu
+ * @property {CAHData} size
+ * @property {CAHData} form
+ * @property {CAHData} strength
+ * @property {CAHData} unit
+ * @property {BooleanText} rx
+ * @property {BooleanText} refrigerated
+ * @property {BooleanTextCaps} serialized
+ * @property {string} avlAlertUpdated
+ * @property {string} avlAlertAddMsg
+ * @property {string} avlAlertExpected
  * @property {[Alt]} alts
+ * @property {[PurchaseHistory]} purchaseHistory
  * @typedef {object} Alt
  * @property {CAHData} name
  * @property {CAHData} genericName
@@ -34,10 +50,21 @@ const defaultImgUrl =
  * @property {CAHData} netUoiCost
  * @property {CAHData} lastOrdered
  * @property {string} [contract]
- * @property {import("../../schemas/cahProduct").StockStatus} stockStatus
+ * @property {StockStatus} stockStatus
  * @property {string} [stock]
- * @property {import("../../schemas/cahProduct").BooleanIcon} rebateEligible
- * @property {import("../../schemas/cahProduct").BooleanIcon} returnable
+ * @property {BooleanIcon} rebateEligible
+ * @property {BooleanIcon} returnable
+ * @typedef {object} PurchaseHistory
+ * @property {string} orderDate
+ * @property {string} invoiceDate
+ * @property {string} invoiceCost
+ * @property {string} orderQty
+ * @property {string} shipQty
+ * @property {string} unitCost
+ * @property {string} orderMethod
+ * @property {string} poNumber
+ * @property {string} contract
+ * @property {string} invoiceNumber
  */
 
 /**
@@ -99,43 +126,95 @@ const handle404 = async (package) => {
 };
 
 /**
+ * @param {StockStatus} stockStatus
+ * @returns {boolean}
+ */
+const isInStock = (stockStatus) => {
+  return stockStatus === "IN STOCK" || stockStatus === "LOW STOCK";
+};
+
+/**
+ * Returns itself if it is the best.
+ * @param {Result} result
+ * @returns {Result|Alt}
+ */
+const selectSource = (result) => {
+  const { alts, contract, stockStatus, netUoiCost, orangeBookCode } = result;
+  /** @type {Alt} */
+  let cheapSrcInStock;
+  /** @type {Alt} */
+  let cheapSrc;
+  /** @type {Alt} */
+  let cheap;
+  if (alts.length > 0) {
+    alts.forEach((v) => {
+      if (orangeBookCode && orangeBookCode !== v.orangeBookCode) {
+        return;
+      }
+      const numCost = stringToNumber(v.netUoiCost);
+      if (v.contract) {
+        if (isInStock(v.stockStatus)) {
+          if (!cheapSrcInStock) {
+            cheapSrcInStock = v;
+          } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+            cheapSrcInStock = v;
+          }
+        } else if (!cheapSrc) {
+          cheapSrc = v;
+        } else if (stringToNumber(cheapSrc.netUoiCost) > numCost) {
+          cheapSrc = v;
+        }
+      } else if (!cheap) {
+        cheap = v;
+      } else if (stringToNumber(cheap.netUoiCost) > numCost) {
+        cheap = v;
+      }
+    });
+  }
+  const numCost = stringToNumber(netUoiCost);
+  const inStock = isInStock(stockStatus);
+  if (cheapSrcInStock) {
+    if (contract && inStock) {
+      if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+        return result;
+      }
+    }
+    return cheapSrcInStock;
+  } else if (cheapSrc) {
+    if (contract) {
+      if (inStock || stringToNumber(cheapSrc.netUoiCost) > numCost) {
+        return result;
+      }
+    }
+    return cheapSrc;
+  } else if (cheap) {
+    if (contract || stringToNumber(cheap.netUoiCost) > numCost) {
+      return result;
+    }
+    return cheap;
+  }
+  return result;
+};
+
+/**
  * @param {Package} package
  * @param {Data} data
  * @returns {Promise<undefined>}
  */
 const handle200 = async (package, data) => {
   try {
-    const {} = data.results;
-
+    const result = data.results;
+    const { cin, img } = result;
+    if (img && img !== defaultImgUrl) {
+      await saveImg(`img/pharma-medium/${cin}.jpg`, img);
+    }
     const { ndc11, gtin, alternative } = package;
     if (!ndc11 || !gtin) {
       // update package via cah
     }
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
- * @param {Result} result
- * @returns {Promise<undefined>}
- */
-const saveImg = async (result) => {
-  try {
-    const { cin, img } = result;
-    const path = `img/pharma-medium/${cin}.jpg`;
-    fs.access(path, fs.constants.F_OK, async (err) => {
-      if (err) {
-        if (img && img !== defaultImgUrl) {
-          const { data } = await axios.get(img, {
-            responseType: "arraybuffer",
-          });
-          if (data) {
-            fs.writeFileSync(path, data);
-          }
-        }
-      }
-    });
+    await cahProduct.handleResult(package, result);
+    console.log(selectSource(result));
+    // update
   } catch (e) {
     console.log(e);
   }

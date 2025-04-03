@@ -124,7 +124,7 @@ const needsUpdate = async (package) => {
 };
 /**
  * @param {Package} package
- * @param {import("./getProductDetails".Result)} result
+ * @param {import("./getProductDetails").Result} result
  * @returns {Promise<undefined>}
  */
 const handleResult = async (package, result) => {
@@ -132,7 +132,11 @@ const handleResult = async (package, result) => {
     const product = await upsertProduct(package);
     if (product) {
       const updateParam = createUpdateParam();
-      updateParam.$set.active = true;
+      if (result.stockStatus === "INELIGIBLE") {
+        updateParam.$set.active = false;
+      } else {
+        updateParam.$set.active = true;
+      }
       Object.assign(updateParam.$set, result);
       await product.updateOne(updateParam);
     }
@@ -141,4 +145,4 @@ const handleResult = async (package, result) => {
   }
 };
 
-module.exports = { voidProduct, needsUpdate };
+module.exports = { voidProduct, needsUpdate, handleResult };

@@ -124,7 +124,7 @@ const needsUpdate = async (package) => {
 };
 /**
  * @param {Package} package
- * @param {import("./getSearchResults".Result)} result
+ * @param {import("./getSearchResults").Result} result
  * @returns {Promise<undefined>}
  */
 const handleResult = async (package, result) => {

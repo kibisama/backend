@@ -23,49 +23,51 @@ const cahProductSchema = new Schema({
   lastOrdered: String, // "MM/DD/YYYY"
   estNetCost: String,
   netUoiCost: String, // 4 decimal places
+  contract: String,
   rebateEligible: Boolean,
   returnable: Boolean,
   stockStatus: String,
-
-  // uoifactor
-  // invoiceCost: String,
-  // amu: String,
-  // size: String,
-  // form: String,
-  // strength: String,
-  // brandName: String,
+  stock: String,
+  /* Selected fields */
+  invoiceCost: String,
   gtin: String,
-  //manupartnumber
-  //   /* More details */
-  //   rx: String, //boolean
-  //   deaSchedule: String,
-  //   productType: String,
-  //   unitOfMeasure: String,
-  //   refrigerated: String, //boolean
-  //   serialized: String, //boolean
-  //   contract: String,
-  //   stock: String,
-  //   /* Availability alert */
-  //   avlAlertUpdated: String,
-  //   avlAlertMsg: String,
-  //   avlAlertAddMsg: String,
-  //   avlAlertExpected: String,
+  mpn: String,
+  brandName: String,
+  amu: String,
+  size: String, // n X n.nnn Units
+  form: String,
+  strength: String,
 
-  //   /* Purchase history */
-  //   purchaseHistory: [
-  //     {
-  //       orderDate: String,
-  //       invoiceDate: String,
-  //       invoiceCost: String,
-  //       orderQty: String,
-  //       shipQty: String,
-  //       unitCost: String,
-  //       orderMethod: String,
-  //       poNumber: String,
-  //       contract: String,
-  //       invoiceNumber: String,
-  //     },
-  //   ],
+  //   /* More details */
+  rx: Boolean,
+  deaSchedule: String,
+  productType: String,
+  unit: String,
+  refrigerated: Boolean,
+  serialized: Boolean,
+
+  /* Availability alert */
+  avlAlertUpdated: String,
+  // avlAlertMsg: String,
+  avlAlertAddMsg: String,
+  avlAlertExpected: String,
+
+  /* Purchase history */
+  // purchaseHistory: [
+  //   {
+  //     orderDate: String,
+  //     invoiceDate: String,
+  //     invoiceCost: String,
+  //     orderQty: String,
+  //     shipQty: String,
+  //     unitCost: String,
+  //     orderMethod: String,
+  //     poNumber: String,
+  //     contract: String,
+  //     invoiceNumber: String,
+  //   },
+  // ],
+
   //   /* Analysis */
   //   analysis: {
   //     lastCost: String,
@@ -100,6 +102,8 @@ const model = mongoose.model("Cardinal Product", cahProductSchema);
  * @typedef {string|CAHNoData} CAHData
  * @typedef {"— —"} CAHNoData
  * @typedef {"IN STOCK"|"LOW STOCK"|"OUT OF STOCK"|"INELIGIBLE"} StockStatus
+ * @typedef {"Yes"|"No"} BooleanText
+ * @typedef {"YES"|"NO"} BooleanTextCaps
  * @typedef {"done"|"clear"|"close"} BooleanIcon
  */
 module.exports = model;
