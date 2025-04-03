@@ -86,13 +86,13 @@ const gtinToQuery = (gtin) => {
 
 /**
  * @typedef {object} Body
- * @property {string} [ndc11]
+ * @property {string} [cin]
  * @property {string} [query]
  */
 
 /**
  * @param {Package} package
- * @returns {Body}
+ * @returns {Promise<Body>}
  */
 const selectQuery = async (package) => {
   const { cahProduct, ndc, gtin } = package;
@@ -225,8 +225,8 @@ const handle200 = async (package, data) => {
  * @param {Function} [callback]
  * @returns {undefined}
  */
-const requestPuppet = (package, callback) => {
-  const query = selectQuery(package);
+const requestPuppet = async (package, callback) => {
+  const query = await selectQuery(package);
   let count = 0;
   const maxCount = 99;
   async function request() {

@@ -5,12 +5,9 @@ client.defaults.baseURL = process.env.PUPPET_ADDRESS;
 module.exports = {
   cardinal: {
     url: "/cardinal",
-    async getProductDetails({ cin, query }) {
+    async getProductDetails(body) {
       try {
-        return await client.post(`${this.url}/getProductDetails`, {
-          cin,
-          query,
-        });
+        return await client.post(`${this.url}/getProductDetails`, body);
       } catch (e) {
         console.log(e);
         return e;
@@ -27,12 +24,9 @@ module.exports = {
   },
   ps: {
     url: "/pharmsaver",
-    async getSearchResults({ ndc11, query }) {
+    async getSearchResults(body) {
       try {
-        return await client.post(`${this.url}/getSearchResults`, {
-          ndc11,
-          query,
-        });
+        return await client.post(`${this.url}/getSearchResults`, body);
       } catch (e) {
         console.log(e);
         return e;
