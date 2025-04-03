@@ -215,7 +215,7 @@ const linkWithAlternative = async (pkg) => {
       return;
     }
     const _alt = await alt.upsertAlternative(rxcui);
-    if (_alt && !alternative.equals(_alt._id)) {
+    if (_alt && !alternative?.equals(_alt._id)) {
       await _alt.updateOne({ $addToSet: { packages: _id } });
       return await package.findOneAndUpdate(
         { _id },

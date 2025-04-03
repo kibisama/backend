@@ -26,7 +26,7 @@ const createFamily = async (scdf) => {
  */
 const searchFamily = async (obj) => {
   try {
-    return (await family.find(obj)) ?? undefined;
+    return await family.find(obj);
   } catch (e) {
     console.log(e);
   }

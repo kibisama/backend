@@ -229,7 +229,7 @@ const linkWithFamily = async (alt) => {
     const fm = await family.searchFamily({ rxcui });
     if (fm?.length > 0) {
       const _fm = fm[0];
-      if (!alt.family.equals(_fm._id)) {
+      if (!alt.family?.equals(_fm._id)) {
         await _fm.updateOne({ $addToSet: { alternatives: _id } });
         return await alternative.findOneAndUpdate(
           { _id },

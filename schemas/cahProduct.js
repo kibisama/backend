@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const {
+  Types: { ObjectId },
+} = Schema;
 
 const cahProductSchema = new Schema({
   /* Internal data */

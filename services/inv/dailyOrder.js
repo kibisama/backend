@@ -3,6 +3,7 @@ const dailyOrder = require("../../schemas/dailyOrder");
 const item = require("../../schemas/item");
 const package = require("./package");
 const getSearchResults = require("../ps/getSearchResults");
+const getProductDetails = require("../cah/getProductDetails");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
@@ -100,6 +101,7 @@ const updateFilledItems = async (dO, gtin) => {
 const updateSources = (package) => {
   try {
     getSearchResults(package);
+    getProductDetails(package);
   } catch (e) {
     console.log(e);
   }
