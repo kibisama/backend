@@ -55,48 +55,11 @@ const cahProductSchema = new Schema({
   avlAlertAddMsg: String,
   avlAlertExpected: String,
 
-  /* Purchase history */
-  // purchaseHistory: [
-  //   {
-  //     orderDate: String,
-  //     invoiceDate: String,
-  //     invoiceCost: String,
-  //     orderQty: String,
-  //     shipQty: String,
-  //     unitCost: String,
-  //     orderMethod: String,
-  //     poNumber: String,
-  //     contract: String,
-  //     invoiceNumber: String,
-  //   },
-  // ],
-
-  //   /* Analysis */
-  //   analysis: {
-  //     lastCost: String,
-  //     lowestHistCost: String,
-  //     lastSFDCDate: String,
-  //     lastSFDCCost: String,
-  //     shipQty: [Number],
-  //     maxUnitCost: [String],
-  //     source: {
-  //       name: String,
-  //       genericName: String,
-  //       ndc: String,
-  //       cin: String,
-  //       upc: String,
-  //       mfr: String,
-  //       orangeBookCode: String,
-  //       estNetCost: String,
-  //       netUoiCost: String,
-  //       lastOrdered: String,
-  //       contract: String,
-  //       stockStatus: String,
-  //       stock: String,
-  //       rebateEligible: String,
-  //       returnable: String,
-  //     },
-  //   },
+  /* PurchaseHistoryEval */
+  lastCost: String,
+  histLow: String,
+  lastSFDCDate: String,
+  lastSFDCCost: String,
 });
 
 const model = mongoose.model("Cardinal Product", cahProductSchema);

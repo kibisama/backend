@@ -3,9 +3,9 @@ const dayjs = require("dayjs");
 const { scheduleJob } = require("node-schedule");
 const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
-// const psAlt = require("./psAlternative");
 const { stringToNumber } = require("../convert");
 const { setOptionParameters, saveImg } = require("../common");
+const { formatCAHData } = require("./common");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -61,15 +61,20 @@ const defaultImgUrl =
  * @property {string} orderQty
  * @property {string} shipQty
  * @property {string} unitCost
- * @property {string} orderMethod
- * @property {string} poNumber
+ * @property {"VantusHQ Web Order"|"SFDC"} orderMethod
+ * @property {CAHData} poNumber
  * @property {string} contract
  * @property {string} invoiceNumber
+ * @typedef {object} PurchaseHistoryEval
+ * @property {string} lastCost
+ * @property {string} histLow
+ * @property {CAHData} lastSFDCDate
+ * @property {CAHData} lastSFDCCost
  */
 
 /**
  * Returns a native Date object indicating m minutes from now.
- * @param {*} m
+ * @param {Parameters<dayjs.Dayjs["add"]>["0"]} m
  * @returns {Date}
  */
 const setDelay = (m) => {
@@ -140,13 +145,13 @@ const isInStock = (stockStatus) => {
  */
 const selectSource = (result) => {
   const { alts, contract, stockStatus, netUoiCost, orangeBookCode } = result;
-  /** @type {Alt} */
-  let cheapSrcInStock;
-  /** @type {Alt} */
-  let cheapSrc;
-  /** @type {Alt} */
-  let cheap;
   if (alts.length > 0) {
+    /** @type {Alt} */
+    let cheapSrcInStock;
+    /** @type {Alt} */
+    let cheapSrc;
+    /** @type {Alt} */
+    let cheap;
     alts.forEach((v) => {
       if (orangeBookCode && orangeBookCode !== v.orangeBookCode) {
         return;
@@ -170,30 +175,69 @@ const selectSource = (result) => {
         cheap = v;
       }
     });
-  }
-  const numCost = stringToNumber(netUoiCost);
-  const inStock = isInStock(stockStatus);
-  if (cheapSrcInStock) {
-    if (contract && inStock) {
-      if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+    const numCost = stringToNumber(netUoiCost);
+    const inStock = isInStock(stockStatus);
+    if (cheapSrcInStock) {
+      if (contract && inStock) {
+        if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+          return result;
+        }
+      }
+      return cheapSrcInStock;
+    } else if (cheapSrc) {
+      if (contract) {
+        if (inStock || stringToNumber(cheapSrc.netUoiCost) > numCost) {
+          return result;
+        }
+      }
+      return cheapSrc;
+    } else if (cheap) {
+      if (contract || stringToNumber(cheap.netUoiCost) > numCost) {
         return result;
       }
+      return cheap;
     }
-    return cheapSrcInStock;
-  } else if (cheapSrc) {
-    if (contract) {
-      if (inStock || stringToNumber(cheapSrc.netUoiCost) > numCost) {
-        return result;
-      }
-    }
-    return cheapSrc;
-  } else if (cheap) {
-    if (contract || stringToNumber(cheap.netUoiCost) > numCost) {
-      return result;
-    }
-    return cheap;
   }
   return result;
+};
+/**
+ * @param {Result} result
+ * @returns {PurchaseHistoryEval|undefined}
+ */
+const evalHist = (result) => {
+  const purchaseHistory = result.purchaseHistory;
+  if (purchaseHistory.length > 0) {
+    let lastCost;
+    let histLow;
+    let lastSFDCDate;
+    let lastSFDCCost;
+    purchaseHistory.forEach((v) => {
+      const { invoiceCost, unitCost, orderMethod, invoiceDate } = v;
+      if (invoiceCost === "$0.00" || invoiceCost.startsWith("-")) {
+        return;
+      }
+      if (!lastCost) {
+        lastCost = unitCost;
+        histLow = unitCost;
+      } else {
+        if (stringToNumber(histLow) > stringToNumber(unitCost)) {
+          histLow = unitCost;
+        }
+      }
+      if (orderMethod === "SFDC") {
+        if (!lastSFDCDate) {
+          lastSFDCDate = invoiceDate;
+          lastSFDCCost = unitCost;
+        }
+      }
+    });
+    return {
+      lastCost,
+      histLow,
+      lastSFDCDate: formatCAHData(lastSFDCDate),
+      lastSFDCCost: formatCAHData(lastSFDCCost),
+    };
+  }
 };
 
 /**
@@ -212,9 +256,17 @@ const handle200 = async (package, data) => {
     if (!ndc11 || !gtin) {
       // update package via cah
     }
+    const histEval = evalHist(result);
+    if (histEval) {
+      Object.assign(result, histEval);
+    }
     await cahProduct.handleResult(package, result);
-    console.log(selectSource(result));
-    // update
+    const source = selectSource(result);
+    if (source === result) {
+      //
+    } else {
+      // upsert new pkg & module.exports()
+    }
   } catch (e) {
     console.log(e);
   }

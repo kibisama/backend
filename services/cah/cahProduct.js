@@ -1,5 +1,10 @@
 const dayjs = require("dayjs");
 const cahProduct = require("../../schemas/cahProduct");
+const {
+  interpretBooleanIcon,
+  interpretBooleanText,
+  interpretBooleanTextCaps,
+} = require("./common");
 
 /**
  * @typedef {cahProduct.CAHProduct} CAHProduct
@@ -132,12 +137,16 @@ const handleResult = async (package, result) => {
     const product = await upsertProduct(package);
     if (product) {
       const updateParam = createUpdateParam();
-      if (result.stockStatus === "INELIGIBLE") {
-        updateParam.$set.active = false;
-      } else {
-        updateParam.$set.active = true;
-      }
+      const set = updateParam.$set;
       Object.assign(updateParam.$set, result);
+      result.stockStatus === "INELIGIBLE"
+        ? (set.active = fasle)
+        : (set.active = true);
+      set.rebateEligible = interpretBooleanIcon(result.rebateEligible);
+      set.returnable = interpretBooleanIcon(result.returnable);
+      set.rx = interpretBooleanText(result.rx);
+      set.refrigerated = interpretBooleanText(result.refrigerated);
+      set.serialized = interpretBooleanTextCaps(result.serialized);
       await product.updateOne(updateParam);
     }
   } catch (e) {
