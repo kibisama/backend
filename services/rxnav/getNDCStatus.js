@@ -1,15 +1,21 @@
 const rxnav = require("../../api/rxnav");
-const { gtinToNDC } = require("../convert");
+const { gtinToNDC, hyphenateNDC11 } = require("../convert");
 
 /**
  * @typedef {import("../inv/package").ArgType} ArgType
- * 
+ *
  * @typedef {"ACTIVE"|"OBSOLETE"|"ALIEN"|"UNKNOWN"} Status
  * @typedef {object} NdcStatus
  * @property {string} ndc11
  * @property {rxnav.NdcStatus} status
  * @property {string} rxcui
- * @typedef {{ndc: string, rxcui: string, status: rxnav.NdcStatus}} Output
+ * @typedef {object} Output
+ * @property {string} [ndc]
+ * @property {string} rxcui
+ * @property {rxnav.NdcStatus} status
+ * @property {string} ndc11
+ */
+
 /**
  * @param {string} arg
  * @param {ArgType} type
@@ -39,12 +45,13 @@ const getQueries = (arg, type) => {
 module.exports = async (arg, type) => {
   try {
     const queries = getQueries(arg, type);
+    let query = "";
     let rxcui = "";
-    let ndc = "";
     let status = "";
+    let ndc11 = "";
     for (let i = 0; i < queries.length; i++) {
-      const _ndc = queries[i];
-      const result = await rxnav("getNDCStatus", _ndc);
+      const _query = queries[i];
+      const result = await rxnav("getNDCStatus", _query);
       if (result instanceof Error) {
         continue;
       }
@@ -52,8 +59,9 @@ module.exports = async (arg, type) => {
       const ndcStatus = result.data.ndcStatus;
       const _status = ndcStatus.status;
       if (_status !== "UNKNOWN") {
-        if (!ndc) {
-          ndc = _ndc;
+        if (!query) {
+          query = _query;
+          ndc11 = ndcStatus.ndc11;
           rxcui = ndcStatus.rxcui;
           status = _status;
         } else {
@@ -64,7 +72,12 @@ module.exports = async (arg, type) => {
     if (!rxcui) {
       return;
     }
-    return { ndc, rxcui, status };
+    /** @type {Output} */
+    const output = { rxcui, status, ndc11 };
+    if (type === "gtin" || type === "ndc") {
+      output.ndc = query;
+    }
+    return output;
   } catch (e) {
     console.log(e);
   }

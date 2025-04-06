@@ -91,6 +91,7 @@ module.exports = async (ndc, rxcui) => {
     const ndcPropertyList = result.data.ndcPropertyList;
     if (ndcPropertyList) {
       const ndcProperty = selectNdcProp(ndcPropertyList.ndcProperty, rxcui);
+      output.ndc = ndcProperty.ndc10;
       output.rxcui = ndcProperty.rxcui;
       Object.assign(output, createUpdateObj(ndcProperty));
       return output;

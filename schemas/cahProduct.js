@@ -16,7 +16,7 @@ const cahProductSchema = new Schema({
   active: { type: Boolean, default: false },
   //   priority: { type: Number, default: 0 },
   /* Common fields */
-  cin: { type: String, unique: true }, // Note: the same product can have more than one cins
+  cin: { type: String, unique: true, sparse: true }, // Note: the same product can have more than one cins
   name: String,
   genericName: String,
   ndc: String, // 11-digit with hyphens

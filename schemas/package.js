@@ -9,18 +9,21 @@ const packageSchema = new Schema({
   gtin: {
     type: String,
     unique: true,
+    sparse: true,
     minLength: 14,
     maxLength: 14,
   },
   ndc: {
     type: String,
     unique: true,
+    sparse: true,
     minLength: 12,
     maxLength: 12,
   },
   ndc11: {
     type: String,
     unique: true,
+    sparse: true,
     minLength: 13,
     maxLength: 13,
   },

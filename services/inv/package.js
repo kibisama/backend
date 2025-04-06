@@ -170,12 +170,14 @@ const updateViaRxNav = async (pkg) => {
     if (!ndcStatus) {
       return;
     }
-    const { ndc, rxcui } = ndcStatus;
+    const { ndc, ndc11, rxcui } = ndcStatus;
     /** @type {UpdateObj} */
-    let update = { ndc, ndc11: ndcToNDC11(ndc), rxcui };
-    const output = await getNDCProperties(ndc, rxcui);
-    if (output) {
-      update = Object.assign(output, update);
+    let update = { ndc, ndc11, rxcui };
+    if (ndc11) {
+      const output = await getNDCProperties(ndc11, rxcui);
+      if (output) {
+        update = Object.assign(output, update);
+      }
     }
     return update;
   } catch (e) {

@@ -128,11 +128,16 @@ const selectQuery = async (package) => {
 
 /**
  * @param {Package} package
+ * @param {boolean} updateSource
+ * @param {Function} callback
  * @returns {Promise<undefined>}
  */
-const handle404 = async (package) => {
+const handle404 = async (package, updateSource, callback) => {
   try {
     await cahProduct.voidProduct(package);
+    if (updateSource) {
+      //
+    }
   } catch (e) {
     console.log(e);
   }
@@ -321,7 +326,7 @@ const requestPuppet = async (package, updateSource, callback) => {
       if (result instanceof Error) {
         switch (result.status) {
           case 404:
-            await handle404(package);
+            await handle404(package, updateSource, callback);
             break;
           case 500:
             if (count < maxCount) {
