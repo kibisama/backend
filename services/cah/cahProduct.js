@@ -4,7 +4,7 @@ const {
   interpretBooleanIcon,
   interpretBooleanText,
   interpretBooleanTextCaps,
-  IsProductEligible,
+  isProductEligible,
 } = require("./common");
 
 /**
@@ -140,12 +140,17 @@ const handleResult = async (package, result) => {
       const updateParam = createUpdateParam();
       const set = updateParam.$set;
       Object.assign(updateParam.$set, result);
-      set.active = IsProductEligible(result.stockStatus);
+      const { rx, refrigerated, serialized } = result;
+      set.active = isProductEligible(result.stockStatus);
       set.rebateEligible = interpretBooleanIcon(result.rebateEligible);
       set.returnable = interpretBooleanIcon(result.returnable);
-      set.rx = interpretBooleanText(result.rx);
-      set.refrigerated = interpretBooleanText(result.refrigerated);
-      set.serialized = interpretBooleanTextCaps(result.serialized);
+      set.rx = rx ? interpretBooleanText(rx) : undefined;
+      set.refrigerated = refrigerated
+        ? interpretBooleanText(refrigerated)
+        : undefined;
+      set.serialized = serialized
+        ? interpretBooleanTextCaps(serialized)
+        : serialized;
       return await cahProduct.findOneAndUpdate(
         { _id: product._id },
         updateParam,

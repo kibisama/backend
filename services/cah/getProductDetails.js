@@ -2,10 +2,11 @@ const dayjs = require("dayjs");
 const { scheduleJob } = require("node-schedule");
 const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
-const alt = require("../inv/alternative");
+const { setCAHProduct } = require("../inv/alternative");
+const { upsertPackage } = require("../inv/package");
 const { stringToNumber } = require("../convert");
 const { setOptionParameters, saveImg } = require("../common");
-const { formatCAHData, IsProductInStock } = require("./common");
+const { formatCAHData, isProductInStock } = require("./common");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -100,19 +101,27 @@ const gtinToQuery = (gtin) => {
  * @returns {Promise<Body>}
  */
 const selectQuery = async (package) => {
-  const { cahProduct, ndc, gtin } = package;
+  const { ndc, ndc11, gtin, cahProduct } = package;
   if (cahProduct) {
-    const populated = await package.populate([
-      { path: "cahProduct", select: ["cin"] },
-    ]);
-    const cin = populated.cahProduct.cin;
-    if (cin) {
-      return { cin };
+    try {
+      const populated = await package.populate([
+        { path: "cahProduct", select: ["cin"] },
+      ]);
+      const cin = populated.cahProduct.cin;
+      if (cin) {
+        return { cin };
+      }
+    } catch (e) {
+      console.log(e);
     }
+  }
+  if (ndc11) {
+    return { query: ndc11 };
   }
   if (ndc) {
     return { query: ndc };
-  } else if (gtin) {
+  }
+  if (gtin) {
     return { query: gtinToQuery(gtin) };
   }
 };
@@ -124,7 +133,6 @@ const selectQuery = async (package) => {
 const handle404 = async (package) => {
   try {
     await cahProduct.voidProduct(package);
-    // optional update alternative
   } catch (e) {
     console.log(e);
   }
@@ -150,7 +158,7 @@ const selectSource = (result) => {
       }
       const numCost = stringToNumber(v.netUoiCost);
       if (v.contract) {
-        if (IsProductInStock(v.stockStatus)) {
+        if (isProductInStock(v.stockStatus)) {
           if (!cheapSrcInStock) {
             cheapSrcInStock = v;
           } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
@@ -168,7 +176,7 @@ const selectSource = (result) => {
       }
     });
     const numCost = stringToNumber(netUoiCost);
-    const inStock = IsProductInStock(stockStatus);
+    const inStock = isProductInStock(stockStatus);
     if (cheapSrcInStock) {
       if (contract && inStock) {
         if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
@@ -194,15 +202,15 @@ const selectSource = (result) => {
 };
 /**
  * @param {Result} result
- * @returns {PurchaseHistoryEval|undefined}
+ * @returns {PurchaseHistoryEval}
  */
 const evalHist = (result) => {
   const purchaseHistory = result.purchaseHistory;
+  let lastCost;
+  let histLow;
+  let lastSFDCDate;
+  let lastSFDCCost;
   if (purchaseHistory.length > 0) {
-    let lastCost;
-    let histLow;
-    let lastSFDCDate;
-    let lastSFDCCost;
     purchaseHistory.forEach((v) => {
       const { invoiceCost, unitCost, orderMethod, invoiceDate } = v;
       if (invoiceCost === "$0.00" || invoiceCost.startsWith("-")) {
@@ -223,21 +231,45 @@ const evalHist = (result) => {
         }
       }
     });
-    return {
-      lastCost,
-      histLow,
-      lastSFDCDate: formatCAHData(lastSFDCDate),
-      lastSFDCCost: formatCAHData(lastSFDCCost),
-    };
+  }
+  return {
+    lastCost: formatCAHData(lastCost),
+    histLow: formatCAHData(histLow),
+    lastSFDCDate: formatCAHData(lastSFDCDate),
+    lastSFDCCost: formatCAHData(lastSFDCCost),
+  };
+};
+
+/**
+ * @param {Alt} source
+ * @param {Function} callback
+ * @returns {Promise<undefined>}
+ */
+const updateSrc = async (source, callback) => {
+  try {
+    const { ndc } = source;
+    await upsertPackage(ndc, "ndc11", {
+      callback: async (package) => {
+        await cahProduct.handleResult(package, source);
+        module.exports(
+          package.cahProduct ? package : await upsertPackage(ndc, "ndc11"),
+          { callback }
+        );
+      },
+    });
+  } catch (e) {
+    console.log(e);
   }
 };
 
 /**
  * @param {Package} package
  * @param {Data} data
+ * @param {boolean} updateSource
+ * @param {Function} callback
  * @returns {Promise<undefined>}
  */
-const handle200 = async (package, data) => {
+const handle200 = async (package, data, updateSource, callback) => {
   try {
     const result = data.results;
     const { cin, img } = result;
@@ -248,25 +280,25 @@ const handle200 = async (package, data) => {
     if (!ndc11 || !gtin) {
       // update package via cah
     }
-    const histEval = evalHist(result);
-    if (histEval) {
-      Object.assign(result, histEval);
-    }
+    Object.assign(result, evalHist(result));
     const product = await cahProduct.handleResult(package, result);
     if (product && alternative) {
       const populated = await package.populate([
         { path: "alternative", select: ["isBranded"] },
       ]);
       if (populated.alternative.isBranded) {
-        await alt.setCAHProduct(alternative, product._id);
+        await setCAHProduct(alternative, product._id);
       } else {
         const source = selectSource(result);
         if (source === result) {
-          await alt.setCAHProduct(alternative, product._id);
-        } else {
-          // upsert new pkg & module.exports()
+          await setCAHProduct(alternative, product._id);
+        } else if (updateSource) {
+          return updateSrc(source, callback);
         }
       }
+    }
+    if (callback instanceof Function) {
+      callback();
     }
   } catch (e) {
     console.log(e);
@@ -275,10 +307,11 @@ const handle200 = async (package, data) => {
 
 /**
  * @param {Package} package
+ * @param {boolean} updateSource
  * @param {Function} [callback]
  * @returns {undefined}
  */
-const requestPuppet = async (package, callback) => {
+const requestPuppet = async (package, updateSource, callback) => {
   const query = await selectQuery(package);
   let count = 0;
   const maxCount = 99;
@@ -302,10 +335,7 @@ const requestPuppet = async (package, callback) => {
           default:
         }
       } else {
-        await handle200(package, result.data);
-        if (callback instanceof Function) {
-          callback();
-        }
+        await handle200(package, result.data, updateSource, callback);
       }
     } catch (e) {
       console.log(e);
@@ -317,6 +347,7 @@ const requestPuppet = async (package, callback) => {
 /**
  * @typedef {object} RequestOption
  * @property {boolean} [force]
+ * @property {boolean} [updateSource]
  * @property {Function} [callback]
  */
 
@@ -327,10 +358,13 @@ const requestPuppet = async (package, callback) => {
  */
 module.exports = async (package, option) => {
   try {
-    const defaultOption = { force: false };
-    const { force, callback } = setOptionParameters(defaultOption, option);
+    const defaultOption = { force: false, updateSource: false };
+    const { force, callback, updateSource } = setOptionParameters(
+      defaultOption,
+      option
+    );
     if (force || (await cahProduct.needsUpdate(package))) {
-      requestPuppet(package, callback);
+      requestPuppet(package, updateSource, callback);
     }
   } catch (e) {
     console.log(e);

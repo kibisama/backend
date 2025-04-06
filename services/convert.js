@@ -44,6 +44,27 @@ module.exports = {
     );
   },
   /**
+   * Returns a regExp of ndc11 from a gtin string.
+   * @param {string} gtin
+   * @returns {RegExp}
+   */
+  gtinToNDC11RegExp(gtin) {
+    const frag = [
+      gtin.slice(3, 7),
+      gtin[7],
+      gtin.slice(8, 11),
+      gtin[11],
+      gtin[12],
+    ];
+    return new RegExp(
+      String.raw`0${frag[0]}-${frag[1] + frag[2]}-${frag[3] + frag[4]}|${
+        frag[0] + frag[1]
+      }-${frag[2] + frag[3]}-0${frag[4]}|${frag[0] + frag[1]}-0${frag[2]}-${
+        frag[3] + frag[4]
+      }`
+    );
+  },
+  /**
    * Returns a regExp of 10-digit ndc from a gtin string.
    * @param {string} gtin
    * @returns {RegExp}
@@ -53,6 +74,42 @@ module.exports = {
       String.raw`${gtin.slice(3, 7)}-?${gtin[7]}-?${gtin.slice(8, 11)}-?${
         gtin[11]
       }-?${gtin[12]}`
+    );
+  },
+  /**
+   * Returns a regExp of 10-digit ndc from a 11-digit ndc string.
+   * @param {string} ndc11
+   * @returns {RegExp}
+   */
+  ndc11StringToNDCRegExp(ndc11) {
+    let raw = "";
+    if (ndc11[0] === "0") {
+      raw += ndc.substring(1);
+    }
+    if (ndc11[6] === "0") {
+      if (raw) {
+        raw += "|";
+      }
+      raw += ndc11.slice(0, 6).concat(ndc11.slice(7));
+    }
+    if (ndc11[11] === "0") {
+      if (raw) {
+        raw += "|";
+      }
+      raw += ndc11.substring(0, 11) + ndc11[12];
+    }
+    return new RegExp(raw);
+  },
+  /**
+   * Returns a regExp of gtin from a 11-digit ndc string.
+   * @param {string} ndc11
+   * @returns {RegExp}
+   */
+  ndc11StringToGTINRegExp(ndc11) {
+    return new RegExp(
+      String.raw`\d{3}(?:${module.exports
+        .ndc11StringToNDCRegExp(ndc11)
+        .source.replaceAll("-", "")})\d`
     );
   },
   /**

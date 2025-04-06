@@ -4,17 +4,19 @@ const alt = require("./alternative");
 const getNDCStatus = require("../rxnav/getNDCStatus");
 const getNDCProperties = require("../rxnav/getNDCProperties");
 const { setOptionParameters } = require("../common");
-
 const {
   gtinStringToNDCRegExp,
+  gtinToNDC11RegExp,
   ndcStringToGTINRegExp,
+  ndc11StringToGTINRegExp,
+  ndc11StringToNDCRegExp,
   ndcToNDC11,
 } = require("../convert");
 
 /**
  * @typedef {package.Package} Package
  * @typedef {typeof package.schema.obj} UpdateObj
- * @typedef {"gtin"|"ndc"} ArgType
+ * @typedef {"gtin"|"ndc"|"ndc11"} ArgType
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
  */
 
@@ -33,10 +35,16 @@ const createFilters = (arg, type) => {
   const filters = [createBase(arg, type)];
   switch (type) {
     case "gtin":
-      filters.push({ ndc: { $regex: gtinStringToNDCRegExp(arg) } });
+      filters[1] = { ndc: { $regex: gtinStringToNDCRegExp(arg) } };
+      filters[2] = { ndc11: { $regex: gtinToNDC11RegExp(arg) } };
       break;
     case "ndc":
-      filters.push({ gtin: { $regex: ndcStringToGTINRegExp(arg) } });
+      filters[1] = { gtin: { $regex: ndcStringToGTINRegExp(arg) } };
+      filters[2] = { ndc11: ndcToNDC11(arg) };
+      break;
+    case "ndc11":
+      filters[1] = { gtin: { $regex: ndc11StringToGTINRegExp(arg) } };
+      filters[2] = { ndc: { $regex: ndc11StringToNDCRegExp(arg) } };
       break;
     default:
   }
@@ -182,12 +190,16 @@ const selectArg = (pkg) => {
   const result = [];
   switch (true) {
     case !!pkg.ndc:
-      result.push(pkg.ndc);
-      result.push("ndc");
+      result[0] = pkg.ndc;
+      result[1] = "ndc";
+      break;
+    case !!pkg.ndc11:
+      result[0] = pkg.ndc11;
+      result[1] = "ndc11";
       break;
     case !!pkg.gtin:
-      result.push(pkg.gtin);
-      result.push("gtin");
+      result[0] = pkg.gtin;
+      result[1] = "gtin";
     default:
   }
   return result;

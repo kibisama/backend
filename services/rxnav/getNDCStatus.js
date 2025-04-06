@@ -21,6 +21,9 @@ const getQueries = (arg, type) => {
     case "ndc":
       queries[0] = arg;
       break;
+    case "ndc11":
+      queries[0] = arg;
+      break;
     case "gtin":
       queries = gtinToNDC(arg);
       break;

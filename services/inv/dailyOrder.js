@@ -101,7 +101,7 @@ const updateFilledItems = async (dO, gtin) => {
 const updateSources = (package) => {
   try {
     getSearchResults(package);
-    getProductDetails(package);
+    getProductDetails(package, { updateSource: true });
   } catch (e) {
     console.log(e);
   }

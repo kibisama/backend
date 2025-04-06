@@ -151,7 +151,7 @@ const handle200 = async (package, data) => {
       if (!ndc11) {
         // update package via ps
       }
-      await psPackage.handleResult(item);
+      await psPackage.handleResult(package, item);
     } else {
       await psPackage.voidItem(package);
     }
