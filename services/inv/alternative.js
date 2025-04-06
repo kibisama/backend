@@ -6,6 +6,7 @@ const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
 const { setOptionParameters } = require("../common");
 
 /**
+ * @typedef {import("mongoose").ObjectId} ObjectId
  * @typedef {alternative.Alternative} Alternative
  * @typedef {typeof alternative.schema.obj} UpdateObj
  * @typedef {package.Package} Package
@@ -242,5 +243,17 @@ const linkWithFamily = async (alt) => {
     console.log(e);
   }
 };
+/**
+ * @param {ObjectId} alt
+ * @param {ObjectId} cahProduct
+ * @returns {Promise<undefined>}
+ */
+const setCAHProduct = async (alt, cahProduct) => {
+  try {
+    await alternative.findByIdAndUpdate(alt, { $set: { cahProduct } });
+  } catch (e) {
+    console.log(e);
+  }
+};
 
-module.exports = { findAlternative, upsertAlternative };
+module.exports = { findAlternative, upsertAlternative, setCAHProduct };

@@ -4,6 +4,7 @@ const {
   interpretBooleanIcon,
   interpretBooleanText,
   interpretBooleanTextCaps,
+  IsProductEligible,
 } = require("./common");
 
 /**
@@ -130,7 +131,7 @@ const needsUpdate = async (package) => {
 /**
  * @param {Package} package
  * @param {import("./getProductDetails").Result} result
- * @returns {Promise<undefined>}
+ * @returns {Promise<CAHProduct|undefined>}
  */
 const handleResult = async (package, result) => {
   try {
@@ -139,15 +140,17 @@ const handleResult = async (package, result) => {
       const updateParam = createUpdateParam();
       const set = updateParam.$set;
       Object.assign(updateParam.$set, result);
-      result.stockStatus === "INELIGIBLE"
-        ? (set.active = fasle)
-        : (set.active = true);
+      set.active = IsProductEligible(result.stockStatus);
       set.rebateEligible = interpretBooleanIcon(result.rebateEligible);
       set.returnable = interpretBooleanIcon(result.returnable);
       set.rx = interpretBooleanText(result.rx);
       set.refrigerated = interpretBooleanText(result.refrigerated);
       set.serialized = interpretBooleanTextCaps(result.serialized);
-      await product.updateOne(updateParam);
+      return await cahProduct.findOneAndUpdate(
+        { _id: product._id },
+        updateParam,
+        { new: true }
+      );
     }
   } catch (e) {
     console.log(e);

@@ -33,14 +33,10 @@ const alternativeSchema = new Schema({
     type: ObjectId,
     ref: "Family",
   },
-  //   cardinalSource: {
-  //     type: ObjectId,
-  //     ref: "Cardinal Product",
-  //   },
-  //   sourcePackage: {
-  //     type: ObjectId,
-  //     ref: "Package",
-  //   },
+  cahProduct: {
+    type: ObjectId,
+    ref: "Cardinal Product",
+  },
   psAlternative: {
     type: ObjectId,
     ref: "PharmSaver Alternative",

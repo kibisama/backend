@@ -1,11 +1,11 @@
 const dayjs = require("dayjs");
-
 const { scheduleJob } = require("node-schedule");
 const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
+const alt = require("../inv/alternative");
 const { stringToNumber } = require("../convert");
 const { setOptionParameters, saveImg } = require("../common");
-const { formatCAHData } = require("./common");
+const { formatCAHData, IsProductInStock } = require("./common");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -131,14 +131,6 @@ const handle404 = async (package) => {
 };
 
 /**
- * @param {StockStatus} stockStatus
- * @returns {boolean}
- */
-const isInStock = (stockStatus) => {
-  return stockStatus === "IN STOCK" || stockStatus === "LOW STOCK";
-};
-
-/**
  * Returns itself if it is the best.
  * @param {Result} result
  * @returns {Result|Alt}
@@ -158,7 +150,7 @@ const selectSource = (result) => {
       }
       const numCost = stringToNumber(v.netUoiCost);
       if (v.contract) {
-        if (isInStock(v.stockStatus)) {
+        if (IsProductInStock(v.stockStatus)) {
           if (!cheapSrcInStock) {
             cheapSrcInStock = v;
           } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
@@ -176,7 +168,7 @@ const selectSource = (result) => {
       }
     });
     const numCost = stringToNumber(netUoiCost);
-    const inStock = isInStock(stockStatus);
+    const inStock = IsProductInStock(stockStatus);
     if (cheapSrcInStock) {
       if (contract && inStock) {
         if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
@@ -192,7 +184,7 @@ const selectSource = (result) => {
       }
       return cheapSrc;
     } else if (cheap) {
-      if (contract || stringToNumber(cheap.netUoiCost) > numCost) {
+      if (contract || (inStock && stringToNumber(cheap.netUoiCost) > numCost)) {
         return result;
       }
       return cheap;
@@ -260,12 +252,21 @@ const handle200 = async (package, data) => {
     if (histEval) {
       Object.assign(result, histEval);
     }
-    await cahProduct.handleResult(package, result);
-    const source = selectSource(result);
-    if (source === result) {
-      //
-    } else {
-      // upsert new pkg & module.exports()
+    const product = await cahProduct.handleResult(package, result);
+    if (product && alternative) {
+      const populated = await package.populate([
+        { path: "alternative", select: ["isBranded"] },
+      ]);
+      if (populated.alternative.isBranded) {
+        await alt.setCAHProduct(alternative, product._id);
+      } else {
+        const source = selectSource(result);
+        if (source === result) {
+          await alt.setCAHProduct(alternative, product._id);
+        } else {
+          // upsert new pkg & module.exports()
+        }
+      }
     }
   } catch (e) {
     console.log(e);

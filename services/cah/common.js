@@ -1,5 +1,6 @@
 /**
  * @typedef {import("../../schemas/cahProduct").CAHData} CAHData
+ * @typedef {import("../../schemas/cahProduct").StockStatus} StockStatus
  * @typedef {import("../../schemas/cahProduct").BooleanText} BooleanText
  * @typedef {import("../../schemas/cahProduct").BooleanIcon} BooleanIcon
  * @typedef {import("../../schemas/cahProduct").BooleanTextCaps} BooleanTextCaps
@@ -7,11 +8,11 @@
 
 /**
  * @param {CAHData} cahData
- * @returns {string|undefined}
+ * @returns {string|null}
  */
 const interpretCAHData = (cahData) => {
   if (cahData === "— —") {
-    return;
+    return null;
   } else {
     return cahData;
   }
@@ -60,6 +61,29 @@ const interpretBooleanIcon = (booleanIcon) => {
     return false;
   }
 };
+/**
+ * @param {StockStatus} status
+ * @returns {boolean}
+ */
+const IsProductEligible = (status) => {
+  switch (status) {
+    case "IN STOCK":
+      return true;
+    case "LOW STOCK":
+      return true;
+    case "OUT OF STOCK":
+      return true;
+    default:
+      return false;
+  }
+};
+/**
+ * @param {StockStatus} status
+ * @returns {boolean}
+ */
+const IsProductInStock = (status) => {
+  return status === "IN STOCK" || status === "LOW STOCK";
+};
 
 module.exports = {
   interpretCAHData,
@@ -67,4 +91,6 @@ module.exports = {
   interpretBooleanText,
   interpretBooleanTextCaps,
   interpretBooleanIcon,
+  IsProductEligible,
+  IsProductInStock,
 };
