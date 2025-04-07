@@ -2,6 +2,7 @@ const dayjs = require("dayjs");
 const { scheduleJob } = require("node-schedule");
 const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
+const searchProducts = require("./searchProducts");
 const { setCAHProduct } = require("../inv/alternative");
 const { upsertPackage } = require("../inv/package");
 const { stringToNumber } = require("../convert");
@@ -10,6 +11,7 @@ const {
   formatCAHData,
   isProductInStock,
   interpretCAHData,
+  selectAlt,
 } = require("./common");
 
 const defaultImgUrl =
@@ -140,7 +142,26 @@ const handle404 = async (package, updateSource, callback) => {
   try {
     await cahProduct.voidProduct(package);
     if (updateSource) {
-      //
+      const { alternative, ndc, ndc11 } = package;
+      if (alternative) {
+        const populated = await package.populate([
+          {
+            path: "alternative",
+            populate: [{ path: "cahProduct", select: ["ndc"] }],
+          },
+        ]);
+        if (populated.alternative.cahProduct?.ndc) {
+          return module.exports(await upsertPackage(ndc, "ndc11"), {
+            callback,
+          });
+        }
+      }
+      const q = ndc11 || ndc;
+      if (q) {
+        searchProducts(q, async (alts) => {
+          updateSrc(selectAlt(alts), callback);
+        });
+      }
     }
   } catch (e) {
     console.log(e);
@@ -155,56 +176,41 @@ const handle404 = async (package, updateSource, callback) => {
 const selectSource = (result) => {
   const { alts, contract, stockStatus, netUoiCost, orangeBookCode } = result;
   if (alts.length > 0) {
-    /** @type {Alt} */
-    let cheapSrcInStock;
-    /** @type {Alt} */
-    let cheapSrc;
-    /** @type {Alt} */
-    let cheap;
-    alts.forEach((v) => {
-      if (orangeBookCode && orangeBookCode !== v.orangeBookCode) {
-        return;
-      }
-      const numCost = stringToNumber(v.netUoiCost);
-      if (v.contract) {
-        if (isProductInStock(v.stockStatus)) {
-          if (!cheapSrcInStock) {
-            cheapSrcInStock = v;
-          } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
-            cheapSrcInStock = v;
+    if (interpretCAHData(orangeBookCode)) {
+      return;
+    }
+    const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
+      alts,
+      orangeBookCode
+    );
+    if (interpretCAHData(netUoiCost)) {
+      const numCost = stringToNumber(netUoiCost);
+      const inStock = isProductInStock(stockStatus);
+      if (cheapSrcInStock) {
+        if (contract && inStock) {
+          if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+            return result;
           }
-        } else if (!cheapSrc) {
-          cheapSrc = v;
-        } else if (stringToNumber(cheapSrc.netUoiCost) > numCost) {
-          cheapSrc = v;
         }
-      } else if (!cheap) {
-        cheap = v;
-      } else if (stringToNumber(cheap.netUoiCost) > numCost) {
-        cheap = v;
-      }
-    });
-    const numCost = stringToNumber(netUoiCost);
-    const inStock = isProductInStock(stockStatus);
-    if (cheapSrcInStock) {
-      if (contract && inStock) {
-        if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+        return cheapSrcInStock;
+      } else if (cheapSrc) {
+        if (contract) {
+          if (inStock || stringToNumber(cheapSrc.netUoiCost) > numCost) {
+            return result;
+          }
+        }
+        return cheapSrc;
+      } else if (cheap) {
+        if (
+          contract ||
+          (inStock && stringToNumber(cheap.netUoiCost) > numCost)
+        ) {
           return result;
         }
+        return cheap;
       }
-      return cheapSrcInStock;
-    } else if (cheapSrc) {
-      if (contract) {
-        if (inStock || stringToNumber(cheapSrc.netUoiCost) > numCost) {
-          return result;
-        }
-      }
-      return cheapSrc;
-    } else if (cheap) {
-      if (contract || (inStock && stringToNumber(cheap.netUoiCost) > numCost)) {
-        return result;
-      }
-      return cheap;
+    } else {
+      return cheapSrcInStock || cheapSrc || cheap;
     }
   }
   return result;

@@ -13,14 +13,14 @@ module.exports = {
         return e;
       }
     },
-    // async searchProducts({ queries }) {
-    //   try {
-    //     return await client.post(`${this.url}/searchProducts`, { queries });
-    //   } catch (e) {
-    //     console.log(e);
-    //     return e;
-    //   }
-    // },
+    async searchProducts(body) {
+      try {
+        return await client.post(`${this.url}/searchProducts`, body);
+      } catch (e) {
+        console.log(e);
+        return e;
+      }
+    },
   },
   ps: {
     url: "/pharmsaver",

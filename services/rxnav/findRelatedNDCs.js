@@ -1,10 +1,11 @@
 const rxnav = require("../../api/rxnav");
+const { hyphenateNDC11 } = require("../convert");
 
 /**
  * @typedef {object} NdcInfoList
  * @property {[NdcInfo]} ndcInfo
  * @typedef {object} NdcInfo
- * @property {string} ndc11 cms
+ * @property {string} ndc11 CMS
  * @property {rxnav.NdcStatus} status
  * @property {string} rxcui
  * @property {string} conceptName
@@ -13,7 +14,7 @@ const rxnav = require("../../api/rxnav");
 
 /**
  * @param {string} ndc
- * @returns {Promise<|undefined>}
+ * @returns {Promise<[string]|undefined>}
  */
 module.exports = async (ndc) => {
   try {
@@ -24,7 +25,10 @@ module.exports = async (ndc) => {
     /** @type {NdcInfoList|undefined} */
     const ndcInfoList = result.data.ndcInfoList;
     if (ndcInfoList) {
-      return ndcInfoList;
+      const ndcInfo = ndcInfoList.ndcInfo;
+      if (ndcInfo.length > 0) {
+        return ndcInfo.map((v) => hyphenateNDC11(v.ndc11));
+      }
     }
   } catch (e) {
     console.log(e);

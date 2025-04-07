@@ -4,6 +4,7 @@
  * @typedef {import("../../schemas/cahProduct").BooleanText} BooleanText
  * @typedef {import("../../schemas/cahProduct").BooleanIcon} BooleanIcon
  * @typedef {import("../../schemas/cahProduct").BooleanTextCaps} BooleanTextCaps
+ * @typedef {import("./getProductDetails").Alt} Alt
  */
 
 module.exports = {
@@ -84,5 +85,46 @@ module.exports = {
    */
   isProductInStock(status) {
     return status === "IN STOCK" || status === "LOW STOCK";
+  },
+  /**
+   * @typedef {object} SelectAlt
+   * @property {Alt} [cheapSrcInStock]
+   * @property {Alt} [cheapSrc]
+   * @property {Alt} [cheap]
+   * @param {[Alt]} alts
+   * @param {string} orangeBookCode
+   * @returns {SelectAlt}
+   */
+  selectAlt(alts, orangeBookCode) {
+    /** @type {Alt} */
+    let cheapSrcInStock;
+    /** @type {Alt} */
+    let cheapSrc;
+    /** @type {Alt} */
+    let cheap;
+    alts.forEach((v) => {
+      if (orangeBookCode !== v.orangeBookCode) {
+        return;
+      }
+      const numCost = stringToNumber(v.netUoiCost);
+      if (v.contract) {
+        if (isProductInStock(v.stockStatus)) {
+          if (!cheapSrcInStock) {
+            cheapSrcInStock = v;
+          } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+            cheapSrcInStock = v;
+          }
+        } else if (!cheapSrc) {
+          cheapSrc = v;
+        } else if (stringToNumber(cheapSrc.netUoiCost) > numCost) {
+          cheapSrc = v;
+        }
+      } else if (!cheap) {
+        cheap = v;
+      } else if (stringToNumber(cheap.netUoiCost) > numCost) {
+        cheap = v;
+      }
+    });
+    return { cheapSrcInStock, cheapSrc, cheap };
   },
 };
