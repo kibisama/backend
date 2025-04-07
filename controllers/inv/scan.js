@@ -8,6 +8,9 @@ module.exports = async (req, res, next) => {
     const scanReq = req.body;
     const { gtin, mode } = scanReq;
     const _item = await item.upsertItem(scanReq);
+    if (!_item) {
+      return res.sendStatus(500);
+    }
     if (!item.isDuplicateFill(_item, mode)) {
       await item.updateItem(scanReq);
     }

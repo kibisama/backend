@@ -118,7 +118,7 @@ const needsUpdate = async (package) => {
       const populated = await package.populate([
         { path: "cahProduct", select: ["lastUpdated"] },
       ]);
-      if (isOld(populated.psPackage.lastUpdated)) {
+      if (isOld(populated.cahProduct.lastUpdated)) {
         return true;
       }
       return false;

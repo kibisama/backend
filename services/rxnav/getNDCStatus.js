@@ -73,7 +73,7 @@ module.exports = async (arg, type) => {
       return;
     }
     /** @type {Output} */
-    const output = { rxcui, status, ndc11 };
+    const output = { rxcui, status, ndc11: hyphenateNDC11(ndc11) };
     if (type === "gtin" || type === "ndc") {
       output.ndc = query;
     }
