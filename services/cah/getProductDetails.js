@@ -304,10 +304,12 @@ const updateSrc = async (source, callback) => {
  */
 const isAltGeneric = (alt) => {
   const { name, genericName } = alt;
-  const index = genericName.indexOf(" ");
+  const _name = name.toLowerCase();
+  const _genericName = genericName.toLowerCase();
+  const index = _genericName.indexOf(" ");
   return new RegExp(
-    String.raw`${index > 0 ? genericName.substring(0, index) : genericName}`
-  ).test(name);
+    String.raw`${index > 0 ? _genericName.substring(0, index) : _genericName}`
+  ).test(_name);
 };
 
 /**
