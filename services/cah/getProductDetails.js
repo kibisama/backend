@@ -189,12 +189,12 @@ const handle404 = async (package, updateSource, callback) => {
 /**
  * Returns itself if it is the best.
  * @param {Result} result
- * @returns {Result|Alt}
+ * @returns {Result|Alt|undefined}
  */
 const selectSource = (result) => {
   const { alts, contract, stockStatus, netUoiCost, orangeBookCode } = result;
   if (alts.length > 0) {
-    if (interpretCAHData(orangeBookCode)) {
+    if (!interpretCAHData(orangeBookCode)) {
       return;
     }
     const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
@@ -335,16 +335,18 @@ const handle200 = async (package, data, updateSource, callback) => {
         { path: "alternative", select: ["isBranded"] },
       ]);
       const source = selectSource(result);
-      if (populated.alternative.isBranded) {
-        await setCAHProduct(alternative, product._id);
-        if (isAltGeneric(source)) {
-          return updateSrc(source, callback);
-        }
-      } else {
-        if (source === result) {
+      if (source) {
+        if (populated.alternative.isBranded) {
           await setCAHProduct(alternative, product._id);
-        } else if (updateSource) {
-          return updateSrc(source, callback);
+          if (isAltGeneric(source)) {
+            return updateSrc(source, callback);
+          }
+        } else {
+          if (source === result) {
+            await setCAHProduct(alternative, product._id);
+          } else if (updateSource) {
+            return updateSrc(source, callback);
+          }
         }
       }
     }
