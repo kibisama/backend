@@ -11,7 +11,7 @@ client.defaults.baseURL = "https://rxnav.nlm.nih.gov/REST";
  */
 
 /**
- * @param {"getNDCStatus"|"getNDCProperties"|"getAllHistoricalNDCs"|"getRxcuiHistoryStatus"|"getAllRelatedInfo"|"getTermTypes"} method
+ * @param {"getNDCStatus"|"getNDCProperties"|"findRelatedNDCs"|"getAllHistoricalNDCs"|"getRxcuiHistoryStatus"|"getAllRelatedInfo"|"getTermTypes"} method
  * @param {string} query
  * @returns {Promise<any|Error>}
  */
@@ -24,6 +24,9 @@ module.exports = async (method, query) => {
         break;
       case "getNDCProperties":
         _query = `ndcproperties.json?id=${query}&ndcstatus=ALL`;
+        break;
+      case "findRelatedNDCs":
+        _query = `relatedndc.json?ndc=${query}&relation=concept`;
         break;
       case "getAllHistoricalNDCs":
         _query = `rxcui/${query}/allhistoricalndcs.json`;

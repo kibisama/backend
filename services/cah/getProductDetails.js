@@ -6,7 +6,11 @@ const { setCAHProduct } = require("../inv/alternative");
 const { upsertPackage } = require("../inv/package");
 const { stringToNumber } = require("../convert");
 const { setOptionParameters, saveImg } = require("../common");
-const { formatCAHData, isProductInStock } = require("./common");
+const {
+  formatCAHData,
+  isProductInStock,
+  interpretCAHData,
+} = require("./common");
 
 const defaultImgUrl =
   "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
@@ -258,7 +262,7 @@ const updateSrc = async (source, callback) => {
         await cahProduct.handleResult(package, source);
         module.exports(
           package.cahProduct ? package : await upsertPackage(ndc, "ndc11"),
-          { callback }
+          { force: true, callback }
         );
       },
     });
@@ -291,10 +295,13 @@ const handle200 = async (package, data, updateSource, callback) => {
       const populated = await package.populate([
         { path: "alternative", select: ["isBranded"] },
       ]);
+      const source = selectSource(result);
       if (populated.alternative.isBranded) {
         await setCAHProduct(alternative, product._id);
+        if (!interpretCAHData(source.brandName)) {
+          return updateSrc(source, callback);
+        }
       } else {
-        const source = selectSource(result);
         if (source === result) {
           await setCAHProduct(alternative, product._id);
         } else if (updateSource) {

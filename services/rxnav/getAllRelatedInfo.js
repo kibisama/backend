@@ -1,6 +1,7 @@
 const rxnav = require("../../api/rxnav");
 
 /**
+ * @typedef {{sbd: number, scd: number, sbdf: number, scdf: number, bpck: number, gpck: number}} TermIndex
  * @typedef {object} allRelatedGroup
  * @property {[ConceptGroup]} conceptGroup
  * @typedef {object} ConceptGroup
@@ -17,9 +18,11 @@ const rxnav = require("../../api/rxnav");
  * @property {[ConceptProperties]} [scd]
  * @property {[ConceptProperties]} [sbdf]
  * @property {[ConceptProperties]} [scdf]
+ * @property {[ConceptProperties]} [bpck]
+ * @property {[ConceptProperties]} [gpck]
  */
 
-/** @type {{sbd: number, scd: number, sbdf: number, scdf: number}} */
+/** @type {TermIndex} */
 let termIndex;
 /** @returns {undefined} */
 const getTermType = async () => {
@@ -30,6 +33,7 @@ const getTermType = async () => {
   /** @type {[rxnav.TermType]} */
   const termType = result.data.termTypeList?.termType;
   if (termType) {
+    /** @type {TermIndex} */
     const _termIndex = {};
     termType.forEach((v, i) => {
       switch (v) {
@@ -45,6 +49,12 @@ const getTermType = async () => {
         case "SCDF":
           _termIndex.scdf = i;
           break;
+        case "BPCK":
+          _termIndex.bpck = i;
+          break;
+        case "GPCK":
+          _termIndex.gpck = i;
+          break;
         default:
       }
     });
@@ -52,7 +62,9 @@ const getTermType = async () => {
       _termIndex.sbd &&
       _termIndex.scd &&
       _termIndex.sbdf &&
-      _termIndex.scdf
+      _termIndex.scdf &&
+      _termIndex.bpck &&
+      _termIndex.gpck
     ) {
       termIndex = _termIndex;
     }
@@ -83,6 +95,12 @@ const mapOutput = (conceptGroup) => {
       case "SCDF":
         output.scdf = conceptProperties;
         break;
+      case "BPCK":
+        output.bpck = conceptProperties;
+        break;
+      case "GPCK":
+        output.gpck = conceptProperties;
+        break;
       default:
     }
   });
@@ -98,20 +116,26 @@ const quickMapOutput = (conceptGroup) => {
   const _scd = conceptGroup[termIndex.scd];
   const _sbdf = conceptGroup[termIndex.sbdf];
   const _scdf = conceptGroup[termIndex.scdf];
-  const sbd = _sbd.conceptProperties;
-  const scd = _scd.conceptProperties;
-  const sbdf = _sbdf.conceptProperties;
-  const scdf = _scdf.conceptProperties;
+  const _bpck = conceptGroup[termIndex.bpck];
+  const _gpck = conceptGroup[termIndex.gpck];
   if (
     _sbd.tty !== "SBD" ||
     _scd.tty !== "SCD" ||
     _sbdf.tty !== "SBDF" ||
-    _scdf.tty !== "SCDF"
+    _scdf.tty !== "SCDF" ||
+    _bpck.tty !== "BPCK" ||
+    _gpck.tty !== "GPCK"
   ) {
-    getTermType();
-    return;
+    return getTermType();
   }
-  return { sbd, scd, sbdf, scdf };
+  return {
+    sbd: _sbd.conceptProperties,
+    scd: _scd.conceptProperties,
+    sbdf: _sbdf.conceptProperties,
+    scdf: _scdf.conceptProperties,
+    bpck: _bpck.conceptProperties,
+    gpck: _gpck.conceptProperties,
+  };
 };
 
 /**

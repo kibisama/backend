@@ -104,6 +104,18 @@ const updateAlternative = async (alt, option) => {
     console.log(e);
   }
 };
+
+/**
+ * @param {import("../../api/rxnav").TermType} tty
+ * @returns {boolean}
+ */
+const isBranded = (tty) => {
+  if ((tty = "SBD" || tty === "BPCK")) {
+    return true;
+  }
+  return false;
+};
+
 /**
  * @param {Alternative} alt
  * @returns {Promise<UpdateObj|undefined>}
@@ -122,7 +134,7 @@ const updateViaRxNav = async (alt) => {
       await updateScd(alt, scdConcept);
     }
     const { name, tty } = attributes;
-    obj.isBranded = tty === "SBD" ? true : false;
+    obj.isBranded = isBranded(tty);
     const activeRxcui = getActiveRxcui(rxcuiStatus);
     if (!activeRxcui) {
       obj.defaultName = name;
@@ -130,11 +142,15 @@ const updateViaRxNav = async (alt) => {
     }
     const allRelatedInfo = await getAllRelatedInfo(activeRxcui);
     if (allRelatedInfo) {
-      const { sbd, scd, scdf } = allRelatedInfo;
+      const { sbd, scd, bpck, gpck, scdf } = allRelatedInfo;
       if (sbd && tty === "SBD") {
         obj.defaultName = selectName(sbd[0]);
       } else if (scd && tty === "SCD") {
         obj.defaultName = selectName(scd[0]);
+      } else if (bpck && tty === "BPCK") {
+        obj.defaultName = selectName(bpck[0]);
+      } else if (gpck && tty === "GPCK") {
+        obj.defaultName = selectName(gpck[0]);
       }
       if (scdf) {
         const fm = await family.upsertFamily(scdf[0].rxcui);
