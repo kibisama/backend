@@ -71,7 +71,7 @@ module.exports = async (ndc, callback) => {
       } else {
         /** @type {Data} */
         const data = result.data;
-        callback(data);
+        callback(data.results);
       }
     } catch (e) {
       console.log(e);

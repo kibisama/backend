@@ -158,9 +158,27 @@ const handle404 = async (package, updateSource, callback) => {
       }
       const q = ndc11 || ndc;
       if (q) {
-        searchProducts(q, async (alts) => {
-          updateSrc(selectAlt(alts), callback);
-        });
+        searchProducts(
+          q,
+          /**
+           * @param {[Alt]} alts
+           * @returns {undefined}
+           */
+          async (alts) => {
+            const orangeBookCode = interpretCAHData(
+              alts[alts.length - 1].orangeBookCode
+            );
+            if (!orangeBookCode) {
+              return;
+            }
+            const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
+              alts,
+              orangeBookCode
+            );
+            const alt = cheapSrcInStock || cheapSrc || cheap;
+            alt && updateSrc(alt, callback);
+          }
+        );
       }
     }
   } catch (e) {
@@ -210,7 +228,10 @@ const selectSource = (result) => {
         return cheap;
       }
     } else {
-      return cheapSrcInStock || cheapSrc || cheap;
+      const alt = cheapSrcInStock || cheapSrc || cheap;
+      if (alt) {
+        return alt;
+      }
     }
   }
   return result;
@@ -278,6 +299,18 @@ const updateSrc = async (source, callback) => {
 };
 
 /**
+ * @param {Alt} alt
+ * @returns {boolean}
+ */
+const isAltGeneric = (alt) => {
+  const { name, genericName } = alt;
+  const index = genericName.indexOf(" ");
+  return new RegExp(
+    String.raw`${index > 0 ? genericName.substring(0, index) : genericName}`
+  ).test(name);
+};
+
+/**
  * @param {Package} package
  * @param {Data} data
  * @param {boolean} updateSource
@@ -304,7 +337,7 @@ const handle200 = async (package, data, updateSource, callback) => {
       const source = selectSource(result);
       if (populated.alternative.isBranded) {
         await setCAHProduct(alternative, product._id);
-        if (!interpretCAHData(source.brandName)) {
+        if (isAltGeneric(source)) {
           return updateSrc(source, callback);
         }
       } else {

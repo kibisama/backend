@@ -110,7 +110,7 @@ const updateAlternative = async (alt, option) => {
  * @returns {boolean}
  */
 const isBranded = (tty) => {
-  if ((tty = "SBD" || tty === "BPCK")) {
+  if (tty === "SBD" || tty === "BPCK") {
     return true;
   }
   return false;

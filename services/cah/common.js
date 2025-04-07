@@ -1,3 +1,5 @@
+const { stringToNumber } = require("../convert");
+
 /**
  * @typedef {import("../../schemas/cahProduct").CAHData} CAHData
  * @typedef {import("../../schemas/cahProduct").StockStatus} StockStatus
@@ -108,7 +110,7 @@ module.exports = {
       }
       const numCost = stringToNumber(v.netUoiCost);
       if (v.contract) {
-        if (isProductInStock(v.stockStatus)) {
+        if (module.exports.isProductInStock(v.stockStatus)) {
           if (!cheapSrcInStock) {
             cheapSrcInStock = v;
           } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
