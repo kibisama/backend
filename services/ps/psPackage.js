@@ -13,7 +13,7 @@ const psPackage = require("../../schemas/psPackage");
  * @returns {boolean}
  */
 const isOld = (date) => {
-  return dayjs().startOf("day").isAfter(dayjs(date), "day");
+  return dayjs(date).isBefore(dayjs().startOf("day"));
 };
 
 /**

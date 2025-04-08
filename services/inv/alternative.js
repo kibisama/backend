@@ -131,7 +131,7 @@ const updateViaRxNav = async (alt) => {
     const obj = {};
     const { attributes, scdConcept } = rxcuiStatus;
     if (scdConcept) {
-      await updateScd(alt, scdConcept);
+      await setGenAlt(alt, scdConcept.scdConceptRxcui);
     }
     const { name, tty } = attributes;
     obj.isBranded = isBranded(tty);
@@ -148,6 +148,9 @@ const updateViaRxNav = async (alt) => {
       } else if (scd && tty === "SCD") {
         obj.defaultName = selectName(scd[0]);
       } else if (bpck && tty === "BPCK") {
+        if (gpck) {
+          await setGenAlt(alt, gpck[0].rxcui);
+        }
         obj.defaultName = selectName(bpck[0]);
       } else if (gpck && tty === "GPCK") {
         obj.defaultName = selectName(gpck[0]);
@@ -164,13 +167,17 @@ const updateViaRxNav = async (alt) => {
 };
 /**
  * @param {Alternative} alt
- * @param {getRxcuiHistoryStatus.ScdConcept}
+ * @param {string} rxcui
  * @returns {Promise<undefined>}
  */
-const updateScd = async (alt, scdConcept) => {
-  const scdAlt = await upsertAlternative(scdConcept.scdConceptRxcui);
-  if (scdAlt) {
-    await alt.updateOne({ scd: scdAlt._id });
+const setGenAlt = async (alt, rxcui) => {
+  try {
+    const genAlt = await upsertAlternative(rxcui);
+    if (genAlt) {
+      await alt.updateOne({ $set: { genAlt: genAlt._id } });
+    }
+  } catch (e) {
+    console.log(e);
   }
 };
 /**

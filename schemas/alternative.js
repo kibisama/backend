@@ -21,7 +21,7 @@ const alternativeSchema = new Schema({
   defaultName: { type: String, uppercase: true },
 
   /* Relational */
-  scd: {
+  genAlt: {
     type: ObjectId,
     ref: "Alternative",
   },

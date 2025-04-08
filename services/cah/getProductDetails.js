@@ -338,7 +338,7 @@ const handle200 = async (package, data, updateSource, callback) => {
       ]);
       const source = selectSource(result);
       if (source) {
-        if (populated.alternative.isBranded) {
+        if (populated.alternative.isBranded === true) {
           await setCAHProduct(alternative, product._id);
           if (isAltGeneric(source)) {
             return updateSrc(source, callback);

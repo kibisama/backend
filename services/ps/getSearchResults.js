@@ -179,6 +179,9 @@ const requestPuppet = (package, callback) => {
         switch (result.status) {
           case 404:
             await handle404(package);
+            if (callback instanceof Function) {
+              callback();
+            }
             break;
           case 500:
             if (count < maxCount) {
