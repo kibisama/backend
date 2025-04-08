@@ -1,14 +1,14 @@
 const dayjs = require("dayjs");
 const dailyOrder = require("../../schemas/dailyOrder");
 const item = require("../../schemas/item");
-const package = require("./package");
 const getSearchResults = require("../ps/getSearchResults");
 const getProductDetails = require("../cah/getProductDetails");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
- * @typedef {package.Package} Package
+ * @typedef {import("./package").Package} Package
  * @typedef {Parameters<dailyOrder["findOneAndUpdate"]>["1"]} UpdateParam
+ * @typedef {Parameters<dailyOrder["findOne"]>["0"]} Filter
  */
 
 /**
@@ -18,9 +18,16 @@ const createUpdateParam = () => {
   return { $set: { lastUpdated: new Date() } };
 };
 /**
+ * @param {Package} package
+ * @returns {Filter}
+ */
+const createFilter = (package) => {
+  return { package: package._id };
+};
+/**
  * @returns {dayjs.Dayjs}
  */
-const getToday = () => {
+const getTodayStart = () => {
   return dayjs().startOf("date");
 };
 /**
@@ -29,12 +36,11 @@ const getToday = () => {
  */
 const createDO = async (package) => {
   try {
+    const base = createFilter(package);
     const now = new Date();
-    return await dailyOrder.create({
-      lastUpdated: now,
-      date: now,
-      package: package._id,
-    });
+    base.lastUpdated = now;
+    base.date = now;
+    return await dailyOrder.create(base);
   } catch (e) {
     console.log(e);
   }
@@ -47,7 +53,7 @@ const upsertDO = async (package) => {
   try {
     let _dailyOrder = await dailyOrder.findOne({
       package: package._id,
-      date: { $gte: getToday() },
+      date: { $gte: getTodayStart() },
     });
     if (!_dailyOrder) {
       _dailyOrder = await createDO(package);
@@ -67,7 +73,7 @@ const findFilledItems = async (gtin) => {
   try {
     return await item.find({
       gtin,
-      dateFilled: { $gte: getToday() },
+      dateFilled: { $gte: getTodayStart() },
     });
   } catch (e) {
     console.log(e);
@@ -106,11 +112,14 @@ const updateSources = (package) => {
     console.log(e);
   }
 };
+
 /**
- *
+ * @param {Package} package
  */
-const updateDO = async () => {
-  //
+const updateDO = async (package) => {
+  const dO = await dailyOrder
+    .findOne(createFilter(package))
+    .populate([{ path: "" }]);
 };
 
 module.exports = {
