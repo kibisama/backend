@@ -152,7 +152,7 @@ const updateDO = async (package) => {
             populate: [
               "cahProduct",
               "psAlternative",
-              { path: "genAlt", populate: "cahProdcut" },
+              { path: "genAlt", populate: "cahProduct" },
             ],
           },
         ],
