@@ -287,8 +287,16 @@ const updateSrc = async (source, callback) => {
     await upsertPackage(ndc, "ndc11", {
       callback: async (package) => {
         await cahProduct.handleResult(package, source);
-        const pkg = await updatePackage(package);
-        module.exports(pkg, { force: true, callback });
+        module.exports(
+          package.cahProduct ? package : await updatePackage(package)
+        ),
+          {
+            force: true,
+            callback: () => {
+              updatePackage(package);
+              callback();
+            },
+          };
       },
     });
   } catch (e) {
