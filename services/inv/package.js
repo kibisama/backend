@@ -120,19 +120,30 @@ const upsertPackage = async (arg, type, option) => {
 /**
  * Determines if the Package document needs an update.
  * @param {Package} package
- * @returns {{rxNav: boolean, cah: boolean}}
+ * @returns {{rxNav: boolean, cah: boolean, name: boolean, mfrName: boolean, alt: boolean}}
  */
 const needsUpdate = (package) => {
   let rxNav = false;
   let cah = false;
-  //
+  let name = false;
+  let mfrName = false;
+  let alt = false;
   if (!package.rxcui) {
     rxNav = true;
   }
   if (!package.size) {
     cah = true;
   }
-  return { rxNav, cah };
+  if (!package.name) {
+    name = true;
+  }
+  if (!package.mfrName) {
+    mfrName = true;
+  }
+  if (!package.alternative) {
+    alt = true;
+  }
+  return { rxNav, cah, name, mfrName, alt };
 };
 /**
  * Updates a Package document.
@@ -149,8 +160,8 @@ const updatePackage = async (pkg, option) => {
     /** @type {Parameters<package["findOneAndUpdate"]>["1"]} */
     const update = { $set: {} };
     const [arg, type] = selectArg(_pkg);
-    const { rxNav, cah } = force
-      ? { rxNav: true, cah: true }
+    const { rxNav, cah, name, mfrName, alt } = force
+      ? { rxNav: true, cah: true, name: true, mfrName: true, alt: true }
       : needsUpdate(_pkg);
     if (rxNav) {
       const rxNavData = await updateViaRxNav(arg, type);
@@ -158,15 +169,23 @@ const updatePackage = async (pkg, option) => {
         Object.assign(update.$set, rxNavData);
       }
     }
-    if (cah) {
-      await updateViaCAH(_pkg);
-    }
     if (Object.keys(update.$set).length) {
       _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
         new: true,
       });
     }
-    _pkg = (await linkWithAlternative(_pkg)) || _pkg;
+    if (alt) {
+      _pkg = (await linkWithAlternative(_pkg)) || _pkg;
+    }
+    if (cah) {
+      _pkg = (await updateViaCAH(_pkg)) || _pkg;
+    }
+    if (name) {
+      _pkg = (await setName(_pkg)) || _pkg;
+    }
+    if (mfrName) {
+      _pkg = (await setMfrName(_pkg)) || _pkg;
+    }
     if (callback instanceof Function) {
       callback(_pkg);
     }
@@ -201,20 +220,73 @@ const updateViaRxNav = async (arg, type) => {
   }
 };
 /**
- * @param {Package} package
- * @returns {Promise<undefined>}
+ * @param {Package} pkg
+ * @returns {Promise<Package|undefined>}
  */
-const updateViaCAH = async (package) => {
+const updateViaCAH = async (pkg) => {
   try {
-    const { cahProduct } = await package.populate("cahProduct");
+    const { _id, cahProduct } = await pkg.populate("cahProduct");
     if (cahProduct) {
       const { size } = cahProduct;
       if (size) {
         const _size = calculateSize(size);
         if (_size) {
-          await package.updateOne({ $set: { size: _size } });
+          return await package.findByIdAndUpdate(
+            _id,
+            { $set: { size: _size } },
+            { new: true }
+          );
         }
       }
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} pkg
+ * @returns {Promise<Package|undefined>}
+ */
+const setName = async (pkg) => {
+  try {
+    const { _id, size, alternative } = await pkg.populate("alternative");
+    if (size && alternative?.defaultName) {
+      return await package.findByIdAndUpdate(
+        _id,
+        {
+          $set: { name: `${alternative.defaultName} (${size})` },
+        },
+        { new: true }
+      );
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} pkg
+ * @returns {Promise<Package|undefined>}
+ */
+const setMfrName = async (pkg) => {
+  try {
+    const { _id, mfr } = pkg;
+    if (mfr) {
+      let mfrName = "";
+      const match = mfr.match(/([^\s,]+)/);
+      if (match) {
+        if (match[0].length < 10) {
+          mfrName = match[0];
+        } else {
+          mfrName = mfr.substring(0, 9);
+        }
+      } else {
+        mfrName = mfr;
+      }
+      return await package.findByIdAndUpdate(
+        _id,
+        { $set: { mfrName } },
+        { new: true }
+      );
     }
   } catch (e) {
     console.log(e);

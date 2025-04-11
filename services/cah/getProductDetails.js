@@ -368,11 +368,17 @@ const handle200 = async (package, data, updateSource, callback) => {
 
 /**
  * @param {Package} package
+ * @param {boolean} force
  * @param {boolean} updateSource
  * @param {Function} [callback]
  * @returns {undefined}
  */
-const requestPuppet = async (package, updateSource, callback) => {
+const requestPuppet = async (package, force, updateSource, callback) => {
+  if (
+    !(force || (await cahProduct.needsUpdate(await updatePackage(package))))
+  ) {
+    return;
+  }
   const query = await selectQuery(package);
   let count = 0;
   const maxCount = 99;
@@ -424,9 +430,7 @@ module.exports = async (package, option) => {
       defaultOption,
       option
     );
-    if (force || (await cahProduct.needsUpdate(package))) {
-      requestPuppet(package, updateSource, callback);
-    }
+    requestPuppet(package, force, updateSource, callback);
   } catch (e) {
     console.log(e);
   }

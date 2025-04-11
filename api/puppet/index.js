@@ -21,6 +21,14 @@ module.exports = {
         return e;
       }
     },
+    async getDSCSAData(body) {
+      try {
+        return await client.post(`${this.url}/getDSCSAData`, body);
+      } catch (e) {
+        console.log(e);
+        return e;
+      }
+    },
   },
   ps: {
     url: "/pharmsaver",

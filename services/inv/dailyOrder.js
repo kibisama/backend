@@ -90,10 +90,12 @@ const upsertDO = async (package) => {
  */
 const findFilledItems = async (gtin) => {
   try {
-    return await item.find({
-      gtin,
-      dateFilled: { $gte: getTodayStart() },
-    });
+    return await item
+      .find({
+        gtin,
+        dateFilled: { $gte: getTodayStart() },
+      })
+      .sort({ dateFilled: 1 });
   } catch (e) {
     console.log(e);
   }
@@ -106,8 +108,10 @@ const findFilledItems = async (gtin) => {
 const updateFilledItems = async (dO, gtin) => {
   try {
     const items = await findFilledItems(gtin);
+    const date = items[items.length - 1].dateFilled;
     if (items?.length > 0) {
       const updateParam = createUpdateParam();
+      updateParam.$set = { date };
       updateParam.$addToSet = { items: items.map((v) => v._id) };
       return await dailyOrder.findOneAndUpdate({ _id: dO._id }, updateParam, {
         new: true,
@@ -208,11 +212,34 @@ const isSourceUpdated = (populatedDO) => {
   return false;
 };
 /**
+ * @typedef {object} Data
+ * @property {string} date
+ * @property {Column} package
+ * @typedef {object} Column
+ * @property {string} title
+ * @property {string} [subtitle]
+ * @property {TooltipData} [data]
+ * @typedef {object} TooltipData
+ * @property {string} lastUpdated
+ * @property {object} data
+ */
+
+/**
  * @param {DailyOrder} populatedDO
  * @returns {}
  */
 const generateData = (populatedDO) => {
-  //
+  const { date } = populatedDO;
+  /** @type {Data} */
+  const data = {};
+  data.date = dayjs(date).format("");
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {string}
+ */
+const getDate = (populatedDO) => {
+  return dayjs(populatedDO.date).format("hh:mm A");
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -220,15 +247,38 @@ const generateData = (populatedDO) => {
  */
 const getName = (populatedDO) => {
   const package = populatedDO.package;
-  const alt = package.alternative;
-  if (alt && alt.defaultName) {
-    if (package.size) {
-      return `${alt.defaultName} (${package.szie})`;
-    }
-    return alt.defaultName;
+  if (package.name) {
+    return package.name;
+  }
+  const name = package.cahProduct.name;
+  if (name) {
+    return name;
+  }
+  const description = package.psPackage.description;
+  if (description) {
+    return description;
   }
   const { ndc11, ndc, gtin } = package;
   return ndc11 || ndc || gtin;
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {string}
+ */
+const getMfrName = (populatedDO) => {
+  const package = populatedDO.package;
+  if (package.mfrName) {
+    return package.mfrName;
+  }
+  const mfr = package.cahProduct.mfr;
+  if (mfr) {
+    return mfr;
+  }
+  const manufacturer = package.psPackage.manufacturer;
+  if (manufacturer) {
+    return manufacturer;
+  }
+  return "";
 };
 
 module.exports = {
