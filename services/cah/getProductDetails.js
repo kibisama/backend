@@ -4,7 +4,7 @@ const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
 const searchProducts = require("./searchProducts");
 const { setCAHProduct } = require("../inv/alternative");
-const { upsertPackage } = require("../inv/package");
+const { upsertPackage, updatePackage } = require("../inv/package");
 const { stringToNumber } = require("../convert");
 const { setOptionParameters, saveImg } = require("../common");
 const {
@@ -287,10 +287,8 @@ const updateSrc = async (source, callback) => {
     await upsertPackage(ndc, "ndc11", {
       callback: async (package) => {
         await cahProduct.handleResult(package, source);
-        module.exports(
-          package.cahProduct ? package : await upsertPackage(ndc, "ndc11"),
-          { force: true, callback }
-        );
+        const pkg = await updatePackage(package);
+        module.exports(pkg, { force: true, callback });
       },
     });
   } catch (e) {

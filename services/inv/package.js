@@ -12,6 +12,7 @@ const {
   ndc11StringToNDCRegExp,
   ndcToNDC11,
 } = require("../convert");
+const { calculateSize } = require("../cah/common");
 
 /**
  * @typedef {package.Package} Package
@@ -53,12 +54,24 @@ const createFilters = (arg, type) => {
 /**
  * Finds a Package document.
  * @param {ArgType} type
- * @returns {Promise<Package|null>}
+ * @returns {Promise<Package|null|undefined>}
  */
 const findPackage = async (arg, type) => {
   try {
     const filters = { $or: createFilters(arg, type) };
     return await package.findOne(filters);
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * Finds a Package document by ObjectId.
+ * @param {import("mongoose").ObjectId} id
+ * @returns {Promise<Package|null|undefined>}
+ */
+const findPackageById = async (id) => {
+  try {
+    return await package.findById(id);
   } catch (e) {
     console.log(e);
   }
@@ -107,16 +120,19 @@ const upsertPackage = async (arg, type, option) => {
 /**
  * Determines if the Package document needs an update.
  * @param {Package} package
- * @returns {{rxNav: boolean, openFDA: boolean}}
+ * @returns {{rxNav: boolean, cah: boolean}}
  */
 const needsUpdate = (package) => {
   let rxNav = false;
-  let openFDA = false;
+  let cah = false;
   //
   if (!package.rxcui) {
     rxNav = true;
   }
-  return { rxNav, openFDA };
+  if (!package.size) {
+    cah = true;
+  }
+  return { rxNav, cah };
 };
 /**
  * Updates a Package document.
@@ -126,24 +142,24 @@ const needsUpdate = (package) => {
  */
 const updatePackage = async (pkg, option) => {
   try {
+    let _pkg = await findPackageById(pkg._id);
     /** @type {UpdateOption} */
-    let _pkg = pkg;
     const defaultOption = { force: false };
     const { force, callback } = setOptionParameters(defaultOption, option);
     /** @type {Parameters<package["findOneAndUpdate"]>["1"]} */
     const update = { $set: {} };
-
-    const { rxNav, openFDA } = force
-      ? { rxNav: true, openFDA: true }
+    const [arg, type] = selectArg(_pkg);
+    const { rxNav, cah } = force
+      ? { rxNav: true, cah: true }
       : needsUpdate(_pkg);
     if (rxNav) {
-      const rxNavData = await updateViaRxNav(_pkg);
+      const rxNavData = await updateViaRxNav(arg, type);
       if (rxNavData) {
         Object.assign(update.$set, rxNavData);
       }
     }
-    if (openFDA) {
-      //
+    if (cah) {
+      await updateViaCAH(_pkg);
     }
     if (Object.keys(update.$set).length) {
       _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
@@ -160,12 +176,12 @@ const updatePackage = async (pkg, option) => {
   }
 };
 /**
- * @param {Package} pkg
+ * @param {Package} arg
+ * @param {ArgType} type
  * @returns {Promise<UpdateObj|undefined>}
  */
-const updateViaRxNav = async (pkg) => {
+const updateViaRxNav = async (arg, type) => {
   try {
-    const [arg, type] = selectArg(pkg);
     const ndcStatus = await getNDCStatus(arg, type);
     if (!ndcStatus) {
       return;
@@ -180,6 +196,26 @@ const updateViaRxNav = async (pkg) => {
       }
     }
     return update;
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} package
+ * @returns {Promise<undefined>}
+ */
+const updateViaCAH = async (package) => {
+  try {
+    const { cahProduct } = await package.populate("cahProduct");
+    if (cahProduct) {
+      const { size } = cahProduct;
+      if (size) {
+        const _size = calculateSize(size);
+        if (_size) {
+          await package.updateOne({ $set: { size: _size } });
+        }
+      }
+    }
   } catch (e) {
     console.log(e);
   }
@@ -206,17 +242,7 @@ const selectArg = (pkg) => {
   }
   return result;
 };
-/**
- * @param {Package} pkg
- * @returns {Promise<|undefined>}
- */
-const updateViaOpenFDA = async (pkg) => {
-  try {
-    //
-  } catch (e) {
-    console.log(e);
-  }
-};
+
 /**
  * This upserts an Alternative document.
  * @param {Package} pkg

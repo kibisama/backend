@@ -24,9 +24,13 @@ const packageSchema = new Schema({
 
   upc: {
     type: String,
+    unique: true,
+    sparse: true,
   },
   mpn: {
     type: String,
+    unique: true,
+    sparse: true,
   },
 
   /* Package details */
@@ -39,6 +43,9 @@ const packageSchema = new Schema({
   shapeSize: String,
   color: String,
   imprint: String,
+  /* Updated via OpenFDA */
+  size: String,
+  unit: String,
 
   /* Internal data */
   name: String,

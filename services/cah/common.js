@@ -129,4 +129,14 @@ module.exports = {
     });
     return { cheapSrcInStock, cheapSrc, cheap };
   },
+  /**
+   * @param {string} size
+   * @returns {string}
+   */
+  calculateSize(size) {
+    const match = size.match(/[\d.]+/g);
+    if (match) {
+      return (Number(match[0]) * Number(match[1])).toString();
+    }
+  },
 };

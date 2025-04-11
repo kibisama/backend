@@ -1,6 +1,7 @@
 const dayjs = require("dayjs");
 const dailyOrder = require("../../schemas/dailyOrder");
 const item = require("../../schemas/item");
+const package = require("./package");
 const getSearchResults = require("../ps/getSearchResults");
 const getProductDetails = require("../cah/getProductDetails");
 
@@ -118,18 +119,18 @@ const updateFilledItems = async (dO, gtin) => {
   }
 };
 /**
- * @param {Package} package
+ * @param {Package} pkg
  * @param {} [psOption]
  * @param {} [cahOption]
  * @returns {Promise<undefined>}
  */
-const updateSources = (package) => {
+const updateSources = (pkg) => {
   try {
-    const callback = () => {
-      updateDO(package);
+    const callback = async () => {
+      updateDO(await package.updatePackage(pkg));
     };
-    getSearchResults(package, { callback });
-    getProductDetails(package, { updateSource: true, callback });
+    getSearchResults(pkg, { callback });
+    getProductDetails(pkg, { updateSource: true, callback });
   } catch (e) {
     console.log(e);
   }
@@ -141,33 +142,32 @@ const updateSources = (package) => {
  */
 const updateDO = async (package) => {
   try {
-    const dO = await dailyOrder.findOne(createFilter(package)).populate([
-      {
-        path: "package",
-        populate: [
-          "cahProduct",
-          "psPackage",
-          {
-            path: "alternative",
-            populate: [
-              "cahProduct",
-              "psAlternative",
-              { path: "genAlt", populate: "cahProduct" },
-            ],
-          },
-        ],
-      },
-    ]);
+    const dO = await dailyOrder.findOne(createFilter(package)).populate({
+      path: "package",
+      populate: [
+        { path: "cahProduct" },
+        { path: "psPackage" },
+        {
+          path: "alternative",
+          populate: [
+            { path: "cahProduct" },
+            { path: "psAlternative" },
+            { path: "genAlt", populate: "cahProduct" },
+          ],
+        },
+      ],
+    });
     if (!dO) {
       return;
     }
     switch (dO.status) {
       case "FILLED":
         if (isSourceUpdated(dO)) {
-          console.log(dO);
+          //
         } else {
           return;
         }
+      case "UPDATED":
       default:
     }
   } catch (e) {
@@ -181,8 +181,7 @@ const updateDO = async (package) => {
  */
 const isSourceUpdated = (populatedDO) => {
   /** @type {Package} */
-  const package = populatedDO.package;
-  const { cahProduct, psPackage, alternative } = package;
+  const { cahProduct, psPackage, alternative } = populatedDO.package;
   if (
     cahProduct &&
     psPackage &&
@@ -207,6 +206,29 @@ const isSourceUpdated = (populatedDO) => {
     }
   }
   return false;
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {}
+ */
+const generateData = (populatedDO) => {
+  //
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {string}
+ */
+const getName = (populatedDO) => {
+  const package = populatedDO.package;
+  const alt = package.alternative;
+  if (alt && alt.defaultName) {
+    if (package.size) {
+      return `${alt.defaultName} (${package.szie})`;
+    }
+    return alt.defaultName;
+  }
+  const { ndc11, ndc, gtin } = package;
+  return ndc11 || ndc || gtin;
 };
 
 module.exports = {

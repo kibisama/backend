@@ -44,7 +44,7 @@ const cahProductSchema = new Schema({
   //   /* More details */
   rx: Boolean,
   deaSchedule: String,
-  productType: String,
+  // productType: String,
   unit: String,
   refrigerated: Boolean,
   serialized: Boolean,
