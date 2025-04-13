@@ -4,7 +4,11 @@ const { cardinal } = require("../../api/puppet");
 const cahProduct = require("./cahProduct");
 const searchProducts = require("./searchProducts");
 const { setCAHProduct } = require("../inv/alternative");
-const { upsertPackage, updatePackage } = require("../inv/package");
+const {
+  upsertPackage,
+  updatePackage,
+  refreshPackage,
+} = require("../inv/package");
 const { stringToNumber } = require("../convert");
 const { setOptionParameters, saveImg } = require("../common");
 const {
@@ -147,13 +151,16 @@ const handle404 = async (package, updateSource, callback) => {
         const populated = await package.populate([
           {
             path: "alternative",
-            populate: [{ path: "cahProduct", select: ["ndc"] }],
+            populate: [{ path: "cahProduct", select: ["package"] }],
           },
         ]);
-        if (populated.alternative.cahProduct?.ndc) {
-          return module.exports(await upsertPackage(ndc, "ndc11"), {
-            callback,
-          });
+        if (populated.alternative.cahProduct) {
+          return module.exports(
+            await refreshPackage({
+              _id: populated.alternative.cahProduct.package,
+            }),
+            { callback }
+          );
         }
       }
       const q = ndc11 || ndc;
@@ -288,7 +295,7 @@ const updateSrc = async (source, callback) => {
       callback: async (package) => {
         await cahProduct.handleResult(package, source);
         module.exports(
-          package.cahProduct ? package : await updatePackage(package)
+          package.cahProduct ? package : await refreshPackage(package)
         ),
           {
             force: true,
@@ -343,6 +350,7 @@ const handle200 = async (package, data, updateSource, callback) => {
         { path: "alternative", select: ["isBranded"] },
       ]);
       const source = selectSource(result);
+      console.log("SOURCE", source);
       if (source) {
         if (populated.alternative.isBranded === true) {
           await setCAHProduct(alternative, product._id);
@@ -374,17 +382,16 @@ const handle200 = async (package, data, updateSource, callback) => {
  * @returns {undefined}
  */
 const requestPuppet = async (package, force, updateSource, callback) => {
-  if (
-    !(force || (await cahProduct.needsUpdate(await updatePackage(package))))
-  ) {
-    return;
-  }
-  const query = await selectQuery(package);
   let count = 0;
   const maxCount = 99;
   async function request() {
     try {
-      const result = await cardinal.getProductDetails(query);
+      if (!(force || (await cahProduct.needsUpdate(package)))) {
+        return;
+      }
+      const result = await cardinal.getProductDetails(
+        await selectQuery(package)
+      );
       if (result instanceof Error) {
         switch (result.status) {
           case 404:

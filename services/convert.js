@@ -84,7 +84,7 @@ module.exports = {
   ndc11StringToNDCRegExp(ndc11) {
     let raw = "";
     if (ndc11[0] === "0") {
-      raw += ndc.substring(1);
+      raw += ndc11.substring(1);
     }
     if (ndc11[6] === "0") {
       if (raw) {

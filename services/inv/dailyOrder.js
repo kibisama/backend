@@ -4,6 +4,7 @@ const item = require("../../schemas/item");
 const package = require("./package");
 const getSearchResults = require("../ps/getSearchResults");
 const getProductDetails = require("../cah/getProductDetails");
+const { interpretCAHData } = require("../cah/common");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
@@ -64,6 +65,22 @@ const createDO = async (package) => {
 const findDO = async (package) => {
   try {
     return (await dailyOrder.findOne(createFilter(package))) ?? undefined;
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {string} date
+ * @returns {Promise<[DailyOrder]|undefined>}
+ */
+const findDOByDateString = async (date) => {
+  try {
+    const day = dayjs(date, "MM-DD-YYYY");
+    return await dailyOrder
+      .find({
+        date: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+      })
+      .sort({ date: 1 });
   } catch (e) {
     console.log(e);
   }
@@ -139,14 +156,13 @@ const updateSources = (pkg) => {
     console.log(e);
   }
 };
-
 /**
- * @param {Package} package
- * @returns {Promise<|undefined>}
+ * @param {DailyOrder} dO
+ * @returns {Promise<ReturnType<dailyOrder["findOne"]>|undefined>}
  */
-const updateDO = async (package) => {
+const populateDO = async (dO) => {
   try {
-    const dO = await dailyOrder.findOne(createFilter(package)).populate({
+    return await dailyOrder.findById(dO._id).populate({
       path: "package",
       populate: [
         { path: "cahProduct" },
@@ -161,6 +177,17 @@ const updateDO = async (package) => {
         },
       ],
     });
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} package
+ * @returns {Promise<|undefined>}
+ */
+const updateDO = async (package) => {
+  try {
+    const dO = await populateDO(package);
     if (!dO) {
       return;
     }
@@ -212,34 +239,54 @@ const isSourceUpdated = (populatedDO) => {
   return false;
 };
 /**
- * @typedef {object} Data
- * @property {string} date
- * @property {Column} package
- * @typedef {object} Column
+ * @typedef {object} ColumnData
  * @property {string} title
  * @property {string} [subtitle]
- * @property {TooltipData} [data]
- * @typedef {object} TooltipData
+ * @property {Data} [data]
+ * @typedef {"NA"|"PENDING"|"ERROR"} ColumnStatus
+ * @typedef {ColumnData|ColumnStatus} Column
+ * @typedef {object} Row
+ * @property {ColumnData} date
+ * @property {ColumnData} package
+ * @property {ColumnData} qty
+ * @property {Column} cahPrd
+ * @property {Column} cahSrc
+ * @property {Column} psPkg
+ * @property {Column} psAlt
+ * @typedef {object} Data
  * @property {string} lastUpdated
- * @property {object} data
+ * @property {object|"PENDING"} data
  */
 
 /**
  * @param {DailyOrder} populatedDO
- * @returns {}
+ * @returns {Row}
  */
 const generateData = (populatedDO) => {
-  const { date } = populatedDO;
-  /** @type {Data} */
+  /** @type {Row} */
   const data = {};
-  data.date = dayjs(date).format("");
+  data.date = getDate(populatedDO);
+  data.package = getPackage(populatedDO);
+  data.qty = getQty(populatedDO);
+  data.cahPrd = getCAHPrd(populatedDO);
+  data.cahSrc = getCAHSrc(populatedDO);
+  data.psPkg = getPSPkg(populatedDO);
+  data.psAlt = getPSAlt(populatedDO);
+  return data;
 };
 /**
  * @param {DailyOrder} populatedDO
- * @returns {string}
+ * @returns {ColumnData}
  */
 const getDate = (populatedDO) => {
-  return dayjs(populatedDO.date).format("hh:mm A");
+  return { title: dayjs(populatedDO.date).format("hh:mm A") };
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {ColumnData}
+ */
+const getPackage = (populatedDO) => {
+  return { title: getName(populatedDO), subtitle: getMfrName(populatedDO) };
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -249,6 +296,9 @@ const getName = (populatedDO) => {
   const package = populatedDO.package;
   if (package.name) {
     return package.name;
+  }
+  if (package.alternative?.defaultName) {
+    return package.alternative.defaultName;
   }
   const name = package.cahProduct.name;
   if (name) {
@@ -280,7 +330,129 @@ const getMfrName = (populatedDO) => {
   }
   return "";
 };
-
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {string}
+ */
+const getQty = (populatedDO) => {
+  return { title: populatedDO.items.length.toString() };
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {Column}
+ */
+const getCAHPrd = (populatedDO) => {
+  const cahPrd = populatedDO.package.cahProduct;
+  if (!cahPrd) {
+    return "PENDING";
+  } else if (!cahPrd.active) {
+    return "NA";
+  }
+  return {
+    title: cahPrd.estNetCost,
+    subtitle: cahPrd.netUoiCost,
+    data: getCAHData(cahPrd),
+  };
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {ColumnData}
+ */
+const getCAHSrc = (populatedDO) => {
+  const cahPrd = populatedDO.package.cahProduct;
+  const alt = populatedDO.package.alternative;
+  const cahSrc = alt?.cahProduct;
+  if (!cahSrc) {
+    if (alt) {
+      return "PENDING";
+    } else {
+      return "ERROR";
+    }
+  }
+  if (cahPrd) {
+    if (cahPrd._id.equals(cahSrc._id)) {
+      if (cahPrd.contract) {
+        return { title: cahPrd.contract };
+      } else if (interpretCAHData(cahPrd.brandName) || alt.isBranded === true) {
+        if (alt.genAlt?.cahProduct) {
+          // tooltip generic
+          return { title: "BRAND*", data: getCAHData(cahPrd) };
+        } else {
+          return { title: "BRNAD" };
+        }
+      } else {
+        return "NA";
+      }
+    }
+  } else {
+    //
+  }
+  // return { title: cahPrd.estNetCost, subtitle: cahPrd.netUoiCost, data: {} };
+};
+/**
+ * @param {import("../cah/cahProduct").CAHProduct} cahProduct
+ * @returns {Data}
+ */
+const getCAHData = (cahProduct) => {
+  const {
+    mfr,
+    contract,
+    stockStatus,
+    stock,
+    ndc,
+    lastCost,
+    lastOrdered,
+    histLow,
+    lastSFDCCost,
+    lastSFDCDate,
+    rebateEligible,
+    returnable,
+    avlAlertExpected,
+    avlAlertUpdated,
+    avlAlertAddMsg,
+  } = cahProduct;
+  /** @type {Data} */
+  return {
+    lastUpdated: dayjs(cahProduct.lastUpdated).format("MM/DD/YYYY HH:mm:ss"),
+    data: { name: cahProduct.name, cin: cahProduct.cin },
+  };
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {ColumnData}
+ */
+const getPSPkg = (populatedDO) => {
+  const package = populatedDO.package.psPackage;
+  if (!package) {
+    return "PENDING";
+  }
+  if (!package.acitve) {
+    return "NA";
+  }
+  return { title: package.pkgPrice, subtitle: package.unitPrice, data: {} };
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {ColumnData}
+ */
+const getPSAlt = (populatedDO) => {
+  const alt = populatedDO.package.alternative;
+  const psAlt = alt?.psAlternative;
+  if (!psAlt) {
+    if (alt) {
+      return "PENDING";
+    } else {
+      return "ERROR";
+    }
+  }
+  if (!psAlt.active) {
+    return "NA";
+  }
+  return { title: psAlt.items[0].pkgPrice, subtitle: psAlt.items[0].unitPrice };
+};
 module.exports = {
   upsertDO,
+  findDOByDateString,
+  populateDO,
+  generateData,
 };

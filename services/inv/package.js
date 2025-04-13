@@ -65,13 +65,13 @@ const findPackage = async (arg, type) => {
   }
 };
 /**
- * Finds a Package document by ObjectId.
- * @param {import("mongoose").ObjectId} id
- * @returns {Promise<Package|null|undefined>}
+ * Refreshes a Package documnet.
+ * @param {Package} pkg
+ * @returns {Promise<Package|undefined>}
  */
-const findPackageById = async (id) => {
+const refreshPackage = async (pkg) => {
   try {
-    return await package.findById(id);
+    return await package.findById(pkg._id);
   } catch (e) {
     console.log(e);
   }
@@ -153,7 +153,7 @@ const needsUpdate = (package) => {
  */
 const updatePackage = async (pkg, option) => {
   try {
-    let _pkg = await findPackageById(pkg._id);
+    let _pkg = await refreshPackage(pkg);
     /** @type {UpdateOption} */
     const defaultOption = { force: false };
     const { force, callback } = setOptionParameters(defaultOption, option);
@@ -274,10 +274,10 @@ const setMfrName = async (pkg) => {
       let mfrName = "";
       const match = mfr.match(/([^\s,]+)/);
       if (match) {
-        if (match[0].length < 10) {
+        if (match[0].length < 17) {
           mfrName = match[0];
         } else {
-          mfrName = mfr.substring(0, 9);
+          mfrName = mfr.substring(0, 16);
         }
       } else {
         mfrName = mfr;
@@ -406,6 +406,7 @@ const updateInventories = async (item, mode) => {
 };
 module.exports = {
   findPackage,
+  refreshPackage,
   upsertPackage,
   updateInventories,
   updatePackage,

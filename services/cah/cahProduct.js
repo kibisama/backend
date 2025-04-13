@@ -1,5 +1,6 @@
 const dayjs = require("dayjs");
 const cahProduct = require("../../schemas/cahProduct");
+const { refreshPackage } = require("../inv/package");
 const {
   interpretBooleanIcon,
   interpretBooleanText,
@@ -109,11 +110,12 @@ const upsertProduct = async (package) => {
 };
 
 /**
- * @param {Package} package
+ * @param {Package} pkg
  * @returns {Promise<boolean|undefined>}
  */
-const needsUpdate = async (package) => {
+const needsUpdate = async (pkg) => {
   try {
+    const package = await refreshPackage(pkg);
     if (package.cahProduct) {
       const populated = await package.populate([
         { path: "cahProduct", select: ["lastUpdated"] },

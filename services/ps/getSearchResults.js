@@ -5,7 +5,6 @@ const psPackage = require("./psPackage");
 const psAlt = require("./psAlternative");
 const { ndcToCMSNDC11, stringToNumber } = require("../convert");
 const { setOptionParameters } = require("../common");
-const { updatePackage } = require("../inv/package");
 
 /**
  * @typedef {psPackage.Package} Package
@@ -171,15 +170,14 @@ const handle200 = async (package, data) => {
  * @returns {undefined}
  */
 const requestPuppet = async (package, force, callback) => {
-  if (!(force || (await psPackage.needsUpdate(await updatePackage(package))))) {
-    return;
-  }
-  const query = selectQuery(package);
   let count = 0;
   const maxCount = 99;
   async function request() {
     try {
-      const result = await ps.getSearchResults(query);
+      if (!(force || (await psPackage.needsUpdate(package)))) {
+        return;
+      }
+      const result = await ps.getSearchResults(selectQuery(package));
       if (result instanceof Error) {
         switch (result.status) {
           case 404:

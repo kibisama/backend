@@ -1,5 +1,6 @@
 const dayjs = require("dayjs");
 const psPackage = require("../../schemas/psPackage");
+const { refreshPackage } = require("../inv/package");
 
 /**
  * @typedef {psPackage.PSPackage} PSPackage
@@ -103,11 +104,12 @@ const upsertItem = async (package) => {
 };
 
 /**
- * @param {Package} package
+ * @param {Package} pkg
  * @returns {Promise<boolean|undefined>}
  */
-const needsUpdate = async (package) => {
+const needsUpdate = async (pkg) => {
   try {
+    const package = await refreshPackage(pkg);
     if (package.psPackage) {
       const populated = await package.populate([
         { path: "psPackage", select: ["lastUpdated"] },
