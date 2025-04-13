@@ -385,7 +385,6 @@ const requestPuppet = async (package, force, updateSource, callback) => {
   const maxCount = 99;
   async function request() {
     try {
-      console.log("force", force);
       if (!(force || (await cahProduct.needsUpdate(package)))) {
         return;
       }
