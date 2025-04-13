@@ -272,9 +272,11 @@ const setMfrName = async (pkg) => {
     const { _id, mfr } = pkg;
     if (mfr) {
       let mfrName = "";
-      const match = mfr.match(/([^\s,]+)/);
+      const match = mfr.match(/([^\s,]+)/g);
       if (match) {
-        if (match[0].length < 17) {
+        if (match[0].length < 4) {
+          mfrName = match[0] + match[1];
+        } else if (match[0].length < 17) {
           mfrName = match[0];
         } else {
           mfrName = mfr.substring(0, 16);

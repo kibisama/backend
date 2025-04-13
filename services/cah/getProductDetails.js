@@ -295,15 +295,15 @@ const updateSrc = async (source, callback) => {
       callback: async (package) => {
         await cahProduct.handleResult(package, source);
         module.exports(
-          package.cahProduct ? package : await refreshPackage(package)
-        ),
+          package.cahProduct ? package : await refreshPackage(package),
           {
             force: true,
             callback: () => {
               updatePackage(package);
               callback();
             },
-          };
+          }
+        );
       },
     });
   } catch (e) {
@@ -350,7 +350,6 @@ const handle200 = async (package, data, updateSource, callback) => {
         { path: "alternative", select: ["isBranded"] },
       ]);
       const source = selectSource(result);
-      console.log("SOURCE", source);
       if (source) {
         if (populated.alternative.isBranded === true) {
           await setCAHProduct(alternative, product._id);
@@ -386,6 +385,7 @@ const requestPuppet = async (package, force, updateSource, callback) => {
   const maxCount = 99;
   async function request() {
     try {
+      console.log("force", force);
       if (!(force || (await cahProduct.needsUpdate(package)))) {
         return;
       }
