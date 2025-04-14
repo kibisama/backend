@@ -147,9 +147,9 @@ const upsertPackage = async (arg, type, option) => {
 const crossUpsertPackage = async (arg, option) => {
   try {
     const { gtin, ndc11 } = arg;
-    const pkg = await package.findOne({ $or: [{ gtin }, { ndc11 }] });
+    let pkg = await package.findOne({ $or: [{ gtin }, { ndc11 }] });
     if (pkg === null) {
-      return await package.create(arg);
+      pkg = await package.create(arg);
     }
     pkg && updatePackage(pkg, option);
     return pkg;

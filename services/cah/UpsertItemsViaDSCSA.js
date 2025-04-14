@@ -104,6 +104,7 @@ const handleResults = async (results, date) => {
   try {
     let number = 0;
     if (results.length > 0) {
+      const table = {};
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
         const { NDC, GTIN } = result;
@@ -114,13 +115,15 @@ const handleResults = async (results, date) => {
           if (!_item.dateReceived) {
             await item.updateItem(scanReq, date);
           }
-          await package.crossUpsertPackage({
-            ndc11: hyphenateNDC11(cms),
-            gtin: GTIN,
-          });
+          !table[GTIN] &&
+            (await package.crossUpsertPackage({
+              ndc11: hyphenateNDC11(cms),
+              gtin: GTIN,
+            }));
           if (!_item.dateFilled) {
             await package.updateInventories(_item, "RECEIVE");
           }
+          table[GTIN] = true;
           number++;
         }
       }
