@@ -42,7 +42,7 @@ const requestPuppet = (date, callback) => {
           //
         }
       } else {
-        handleResults(result.data.results);
+        handleResults(result.data.results, getDate(date));
         if (callback instanceof Function) {
           callback();
         }
@@ -53,7 +53,17 @@ const requestPuppet = (date, callback) => {
   }
   request();
 };
-
+/**
+ * Returns a Date of the date string if it is not today.
+ * @param {string} date "MM/DD/YYYY"
+ * @returns {Date|undefined}
+ */
+const getDate = (date) => {
+  const day = dayjs(date, "MM/DD/YYYY");
+  return dayjs().isSame(day, "day")
+    ? undefined
+    : day.set("hour", 8).set("minute", 0).set("second", 0).toDate();
+};
 /**
  * Formats a Date or a Dayjs object to a query date string.
  * Returns today's if the date is undefined.
@@ -87,9 +97,10 @@ const createVirtualScanReq = (result) => {
 };
 /**
  * @param {} results
+ * @param {Date} date
  * @returns {Promise<number|undefined>}
  */
-const handleResults = async (results) => {
+const handleResults = async (results, date) => {
   try {
     let number = 0;
     if (results.length > 0) {
@@ -101,9 +112,9 @@ const handleResults = async (results) => {
           const scanReq = createVirtualScanReq(result);
           const _item = await item.upsertItem(scanReq, "DSCSA");
           if (!_item.dateReceived) {
-            await item.updateItem(scanReq);
+            await item.updateItem(scanReq, date);
           }
-          let pkg = await package.crossUpsertPackage({
+          await package.crossUpsertPackage({
             ndc11: hyphenateNDC11(cms),
             gtin: GTIN,
           });
@@ -145,4 +156,4 @@ const scheduleUpsert = () => {
   });
 };
 
-module.exports = { scheduleUpsert, handleResults };
+module.exports = { scheduleUpsert, handleResults, getDate };

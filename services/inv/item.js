@@ -107,12 +107,13 @@ const upsertItem = async (dm, method) => {
 /**
  * Updates an Item document.
  * @param {ScanReq} scanReq
+ * @param {Date} [date]
  * @returns {Promise<Item|undefined>}
  */
-const updateItem = async (scanReq) => {
+const updateItem = async (scanReq, date) => {
   try {
     const { mode, source, cost } = scanReq;
-    const now = new Date();
+    const now = date instanceof Date ? date : new Date();
     const filter = createFilter(scanReq);
     /** @type {Parameters<item["findOneAndUpdate"]>["1"]} */
     const update = {};
