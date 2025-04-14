@@ -1,5 +1,4 @@
 const alternative = require("../../schemas/alternative");
-const package = require("./package");
 const family = require("./family");
 const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
@@ -9,7 +8,7 @@ const { setOptionParameters } = require("../common");
  * @typedef {import("mongoose").ObjectId} ObjectId
  * @typedef {alternative.Alternative} Alternative
  * @typedef {typeof alternative.schema.obj} UpdateObj
- * @typedef {package.Package} Package
+ * @typedef {import("./package").Package} Package
  */
 /**
  * Finds an Alternative document.

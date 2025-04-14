@@ -17,7 +17,7 @@ const { calculateSize } = require("../cah/common");
 /**
  * @typedef {package.Package} Package
  * @typedef {typeof package.schema.obj} UpdateObj
- * @typedef {"gtin"|"ndc"|"ndc11"} ArgType
+ * @typedef {"gtin"|"ndc"|"ndc11"} ArgType either gtin or ndc11 preferred
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
  */
 
@@ -29,23 +29,35 @@ const createBase = (arg, type) => {
   return { [type]: arg };
 };
 /**
+ * Finds a Package document.
+ * @param {ArgType} type
+ * @returns {Promise<Package|null|undefined>}
+ */
+const findCrossPackage = async (arg, type) => {
+  try {
+    return await package.findOne({ $or: createCrossFilters(arg, type) });
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
  * @param {ArgType} type
  * @return {[Filter]}
  */
-const createFilters = (arg, type) => {
-  const filters = [createBase(arg, type)];
+const createCrossFilters = (arg, type) => {
+  const filters = [];
   switch (type) {
     case "gtin":
-      filters[1] = { ndc: { $regex: gtinStringToNDCRegExp(arg) } };
-      filters[2] = { ndc11: { $regex: gtinToNDC11RegExp(arg) } };
+      filters[0] = { ndc: { $regex: gtinStringToNDCRegExp(arg) } };
+      filters[1] = { ndc11: { $regex: gtinToNDC11RegExp(arg) } };
       break;
     case "ndc":
-      filters[1] = { gtin: { $regex: ndcStringToGTINRegExp(arg) } };
-      filters[2] = { ndc11: ndcToNDC11(arg) };
+      filters[0] = { gtin: { $regex: ndcStringToGTINRegExp(arg) } };
+      filters[1] = { ndc11: ndcToNDC11(arg) };
       break;
     case "ndc11":
-      filters[1] = { gtin: { $regex: ndc11StringToGTINRegExp(arg) } };
-      filters[2] = { ndc: { $regex: ndc11StringToNDCRegExp(arg) } };
+      filters[0] = { gtin: { $regex: ndc11StringToGTINRegExp(arg) } };
+      filters[1] = { ndc: { $regex: ndc11StringToNDCRegExp(arg) } };
       break;
     default:
   }
@@ -58,8 +70,7 @@ const createFilters = (arg, type) => {
  */
 const findPackage = async (arg, type) => {
   try {
-    const filters = { $or: createFilters(arg, type) };
-    return await package.findOne(filters);
+    return await package.findOne(createBase(arg, type));
   } catch (e) {
     console.log(e);
   }
@@ -94,18 +105,80 @@ const createPackage = async (arg, type) => {
  * @param {string} arg
  * @param {ArgType} type
  * @param {UpdateOption} [option]
- * @returns {Promise<Package|undefined>}
+ * @returns {Promise<Package|null|undefined>}
  */
 const upsertPackage = async (arg, type, option) => {
   try {
     let pkg = await findPackage(arg, type);
     if (pkg === null) {
-      pkg = await createPackage(arg, type);
+      const crossPackage = await findCrossPackage(arg, type);
+      if (
+        crossPackage === null ||
+        (crossPackage[type] && crossPackage[type] !== arg)
+      ) {
+        pkg = await createPackage(arg, type);
+      } else {
+        const updateObj = await updateViaRxNav(arg, type);
+        if (updateObj) {
+          const { ndc, ndc11 } = updateObj;
+          const filter = { $or: [] };
+          ndc && filter.$or.push({ ndc });
+          ndc11 && filter.$or.push({ ndc11 });
+          if (filter.$or.length > 0) {
+            pkg = await package.findOne(filter);
+          }
+        }
+      }
     }
     if (pkg) {
+      type === "gtin" && !pkg.gtin && (await updateGTIN(pkg, arg));
       updatePackage(pkg, option);
     }
     return pkg;
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {{gtin: string, ndc11: string}} arg
+ * @param {UpdateOption} [option]
+ * @returns {Promise<Package|null|undefined>}
+ */
+const crossUpsertPackage = async (arg, option) => {
+  try {
+    const { gtin, ndc11 } = arg;
+    const pkg = await package.findOne({ $or: [{ gtin }, { ndc11 }] });
+    if (pkg === null) {
+      return await package.create(arg);
+    }
+    pkg && updatePackage(pkg, option);
+    return pkg;
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} pkg
+ * @param {string} gtin
+ * @returns {Promise<void>}
+ */
+const updateGTIN = async (pkg, gtin) => {
+  try {
+    await pkg.updateOne({ gtin });
+    updatePackage(pkg);
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * Merges Package documents.
+ * @param {Package} pkg1
+ * @param {Package} pkg2
+ * @returns {Promise<Package|undefined>}
+ */
+const mergePackage = async (pkg1, pkg2) => {
+  try {
+    //
   } catch (e) {
     console.log(e);
   }
@@ -178,13 +251,16 @@ const updatePackage = async (pkg, option) => {
       _pkg = (await linkWithAlternative(_pkg)) || _pkg;
     }
     if (cah) {
-      _pkg = (await updateViaCAH(_pkg)) || _pkg;
+      _pkg = (await updateSizeViaCAH(_pkg)) || _pkg;
     }
     if (name) {
       _pkg = (await setName(_pkg)) || _pkg;
     }
     if (mfrName) {
       _pkg = (await setMfrName(_pkg)) || _pkg;
+    }
+    if (!_pkg.ndc || !_pkg.ndc11) {
+      //
     }
     if (callback instanceof Function) {
       callback(_pkg);
@@ -195,7 +271,7 @@ const updatePackage = async (pkg, option) => {
   }
 };
 /**
- * @param {Package} arg
+ * @param {string} arg
  * @param {ArgType} type
  * @returns {Promise<UpdateObj|undefined>}
  */
@@ -223,11 +299,11 @@ const updateViaRxNav = async (arg, type) => {
  * @param {Package} pkg
  * @returns {Promise<Package|undefined>}
  */
-const updateViaCAH = async (pkg) => {
+const updateSizeViaCAH = async (pkg) => {
   try {
     const { _id, cahProduct } = await pkg.populate("cahProduct");
     if (cahProduct) {
-      const { size } = cahProduct;
+      const { size, ndc } = cahProduct;
       if (size) {
         const _size = calculateSize(size);
         if (_size) {
@@ -406,10 +482,24 @@ const updateInventories = async (item, mode) => {
     console.log(e);
   }
 };
+/**
+ *
+ */
+const findIncompletePackage = async () => {
+  try {
+    await package.find({
+      $or: [{ ndc: { $exists: false } }, { ndc11: { $exists: false } }],
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
 module.exports = {
   findPackage,
   refreshPackage,
   upsertPackage,
+  crossUpsertPackage,
   updateInventories,
   updatePackage,
+  updateGTIN,
 };

@@ -24,10 +24,10 @@ const { gtinToNDC, hyphenateNDC11 } = require("../convert");
 const getQueries = (arg, type) => {
   let queries = [];
   switch (type) {
-    case "ndc":
+    case "ndc11":
       queries[0] = arg;
       break;
-    case "ndc11":
+    case "ndc":
       queries[0] = arg;
       break;
     case "gtin":

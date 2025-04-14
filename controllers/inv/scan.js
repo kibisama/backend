@@ -19,7 +19,11 @@ module.exports = async (req, res, next) => {
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }
       : undefined;
-    await package.upsertPackage(gtin, "gtin", option);
+    const pkg = await package.upsertPackage(gtin, "gtin", option);
+    if (!pkg) {
+      //
+      return res.sendStatus(500);
+    }
     await package.updateInventories(_item, mode);
     return res.sendStatus(200);
   } catch (e) {

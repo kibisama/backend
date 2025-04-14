@@ -4,6 +4,7 @@ const item = require("../inv/item");
 const package = require("../inv/package");
 const { scheduleJob } = require("node-schedule");
 const { isStoreOpen } = require("../common");
+const { hyphenateNDC11 } = require("../convert");
 
 /**
  * Returns a native Date object indicating m minutes from now.
@@ -94,14 +95,18 @@ const handleResults = async (results) => {
     if (results.length > 0) {
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        const ndc = result.NDC.replaceAll("-", "");
-        if (ndc.length === 11) {
+        const { NDC, GTIN } = result;
+        const cms = NDC.replaceAll("-", ""); // NDC can be either CMS or with hyphens
+        if (cms.length === 11) {
           const scanReq = createVirtualScanReq(result);
           const _item = await item.upsertItem(scanReq, "DSCSA");
           if (!_item.dateReceived) {
             await item.updateItem(scanReq);
           }
-          await package.upsertPackage(result.GTIN, "gtin");
+          let pkg = await package.crossUpsertPackage({
+            ndc11: hyphenateNDC11(cms),
+            gtin: GTIN,
+          });
           if (!_item.dateFilled) {
             await package.updateInventories(_item, "RECEIVE");
           }
@@ -116,7 +121,6 @@ const handleResults = async (results) => {
     console.log(e);
   }
 };
-
 /**
  * @returns {Date}
  */
