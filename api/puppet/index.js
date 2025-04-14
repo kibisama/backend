@@ -23,7 +23,7 @@ module.exports = {
     },
     async getDSCSAData(body) {
       try {
-        return await client.post(`${this.url}/getDSCSAData`, body);
+        return await client.post(`${this.url}/getDSCSAData`, body); // { date: "MM/DD/YYYY" }
       } catch (e) {
         console.log(e);
         return e;

@@ -8,8 +8,9 @@ module.exports = async (req, res, next) => {
       if (result.status === 503) {
         return res.sendStatus(503);
       }
-    } else if (await handleResults(result.results)) {
-      //
+    } else {
+      const number = await handleResults(result.data.results);
+      console.log(number);
       return res.sendStatus(200);
     }
     return res.sendStatus(500);

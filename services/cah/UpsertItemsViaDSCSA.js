@@ -2,7 +2,6 @@ const dayjs = require("dayjs");
 const { cardinal } = require("../../api/puppet");
 const item = require("../inv/item");
 const package = require("../inv/package");
-const { hyphenateNDC11 } = require("../convert");
 const { scheduleJob } = require("node-schedule");
 const { isStoreOpen } = require("../common");
 
@@ -102,7 +101,7 @@ const handleResults = async (results) => {
           if (!_item.dateReceived) {
             await item.updateItem(scanReq);
           }
-          await package.upsertPackage(hyphenateNDC11(result.GTIN), "gtin");
+          await package.upsertPackage(result.GTIN, "gtin");
           if (!_item.dateFilled) {
             await package.updateInventories(_item, "RECEIVE");
           }
