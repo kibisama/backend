@@ -9,7 +9,6 @@ const findRelatedNDCs = require("../rxnav/findRelatedNDCs");
  * @property {[Alt]} results
  * @typedef {object} Body
  * @property {[string]} queries
- *
  */
 
 /**

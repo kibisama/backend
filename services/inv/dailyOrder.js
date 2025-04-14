@@ -374,9 +374,9 @@ const getCAHSrc = (populatedDO) => {
       if (cahPrd.contract) {
         return { title: cahPrd.contract };
       } else if (interpretCAHData(cahPrd.brandName) || alt.isBranded === true) {
-        if (alt.genAlt?.cahProduct) {
-          // tooltip generic
-          return { title: "BRAND*", data: getCAHData(cahPrd) };
+        const genAltCAHPrd = alt.genAlt?.cahProduct;
+        if (genAltCAHPrd) {
+          return { title: "BRAND*", data: getCAHData(genAltCAHPrd) };
         } else {
           return { title: "BRNAD" };
         }
@@ -384,21 +384,23 @@ const getCAHSrc = (populatedDO) => {
         return "NA";
       }
     }
-  } else {
-    //
   }
-  // return { title: cahPrd.estNetCost, subtitle: cahPrd.netUoiCost, data: {} };
+  return {
+    title: cahSrc.estNetCost,
+    subtitle: cahSrc.netUoiCost,
+    data: getCAHData(cahSrc),
+  };
 };
 /**
  * @param {import("../cah/cahProduct").CAHProduct} cahProduct
  * @returns {Data}
  */
 const getCAHData = (cahProduct) => {
+  if (!cahProduct.gtin) {
+    return "PENDING";
+  }
   const {
     mfr,
-    contract,
-    stockStatus,
-    stock,
     ndc,
     lastCost,
     lastOrdered,
@@ -407,14 +409,20 @@ const getCAHData = (cahProduct) => {
     lastSFDCDate,
     rebateEligible,
     returnable,
-    avlAlertExpected,
-    avlAlertUpdated,
-    avlAlertAddMsg,
   } = cahProduct;
   /** @type {Data} */
   return {
     lastUpdated: dayjs(cahProduct.lastUpdated).format("MM/DD/YYYY HH:mm:ss"),
-    data: { name: cahProduct.name, cin: cahProduct.cin },
+    data: {
+      name: cahProduct.name,
+      cin: cahProduct.cin,
+      contract: cahProduct.contract,
+      stockStatus: cahProduct.stockStatus,
+      stock: cahProduct.stock,
+      avlAlertUpdated: cahProduct.avlAlertUpdated,
+      avlAlertExpected: cahProduct.avlAlertExpected,
+      avlAlertAddMsg: cahProduct.avlAlertAddMsg,
+    },
   };
 };
 /**

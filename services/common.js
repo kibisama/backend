@@ -1,4 +1,5 @@
 const fs = require("fs");
+const dayjs = require("dayjs");
 const axios = require("axios");
 const { stringToNumber } = require("./convert");
 
@@ -77,5 +78,13 @@ module.exports = {
     } catch (e) {
       console.log(e);
     }
+  },
+  /**
+   * Returns true if today is between Mon-Fri.
+   * @returns {boolean}
+   */
+  isStoreOpen() {
+    const day = dayjs().day();
+    return day === 0 || day === 6 ? false : true;
   },
 };

@@ -5,6 +5,7 @@ const ItemSchema = new Schema({
   lot: { type: String, required: true, maxLength: 20 },
   sn: { type: String, required: true, maxLength: 20 },
   exp: { type: Date, required: true, minLength: 6, maxLength: 6 },
+  method: { type: String, required: true },
   cost: String,
   dateReceived: Date,
   source: { type: String, uppercase: true },
@@ -18,5 +19,7 @@ const model = mongoose.model(
 );
 /**
  * @typedef {Awaited<ReturnType<model["create"]>>[0]} Item
+ * @typedef {"SCAN"|"DSCSA"} Method
+ * @typedef {"CARDINAL"|"SECONDARY"} Source
  */
 module.exports = model;

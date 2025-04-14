@@ -5,13 +5,14 @@ const item = require("../../schemas/item");
 
 /**
  * @typedef {item.Item} Item
+ * @typedef {item.Method} Method
  * @typedef {object} DataMatrix
  * @property {string} gtin
  * @property {string} lot
  * @property {string} sn
  * @property {string} exp
  * @typedef {"RECEIVE"|"FILL"|"REVERSE"|"RETURN"} Mode
- * @typedef {"CARDINAL"|"PHARMSAVER"} Source
+ * @typedef {item.Source} Source
  * @typedef {object} ScanReqProp
  * @property {Mode} mode
  * @property {Source} [source]
@@ -75,12 +76,13 @@ const isNewFill = (item, mode) => {
 /**
  * Creates an Item document.
  * @param {DataMatrix} dm
+ * @param {Method} method
  * @returns {Promise<Item|undefined>}
  */
-const createItem = async (dm) => {
+const createItem = async (dm, method) => {
   try {
     const exp = convertExpToDate(dm.exp);
-    return await item.create({ ...dm, exp });
+    return await item.create({ ...dm, method, exp });
   } catch (e) {
     console.log(e);
   }
@@ -88,13 +90,14 @@ const createItem = async (dm) => {
 /**
  * Upserts an Item document.
  * @param {DataMatrix} dm
+ * @param {Method} method
  * @returns {Promise<Item|undefined>}
  */
-const upsertItem = async (dm) => {
+const upsertItem = async (dm, method) => {
   try {
     const item = await findItem(dm);
     if (item === null) {
-      return await createItem(dm);
+      return await createItem(dm, method);
     }
     return item;
   } catch (e) {
