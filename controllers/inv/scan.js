@@ -15,6 +15,7 @@ module.exports = async (req, res, next) => {
       return res.sendStatus(208);
     }
     await item.updateItem(scanReq);
+    await item.setMethod(_item, "SCAN");
     /** @type {package.UpdateOption} */
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }

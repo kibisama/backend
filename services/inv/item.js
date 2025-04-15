@@ -138,10 +138,23 @@ const updateItem = async (scanReq, date) => {
     console.log(e);
   }
 };
+/**
+ * @param {Item} item
+ * @param {Method} method
+ * @returns {Promise<void>}
+ */
+const setMethod = async (item, method) => {
+  try {
+    await item.updateOne({ $set: { method } });
+  } catch (e) {
+    console.log(e);
+  }
+};
 module.exports = {
   findItem,
   isDuplicateFill,
   isNewFill,
   upsertItem,
   updateItem,
+  setMethod,
 };

@@ -9,6 +9,9 @@ const { interpretCAHData } = require("../cah/common");
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
  * @typedef {import("./package").Package} Package
+ * @typedef {import("../cah/cahProduct").CAHProduct} CAHProduct
+ * @typedef {import("../ps/psPackage").PSPackage} PSPackage
+ * @typedef {import("../ps/psAlternative").PSAlternative} PSAlternative
  * @typedef {Parameters<dailyOrder["findOneAndUpdate"]>["1"]} UpdateParam
  * @typedef {Parameters<dailyOrder["findOne"]>["0"]} Filter
  */
@@ -221,7 +224,7 @@ const isSourceUpdated = (populatedDO) => {
   ) {
     if (alternative) {
       const source = alternative.cahProduct;
-      if (source && isNew(source.lastUpdated)) {
+      if (source && source.invoiceCost && isNew(source.lastUpdated)) {
         if (alternative.isBranded === true) {
           const genSource = alternative.genAlt?.cahProduct;
           if (genSource) {
@@ -255,7 +258,7 @@ const isSourceUpdated = (populatedDO) => {
  * @property {Column} psAlt
  * @typedef {object} Data
  * @property {string} lastUpdated
- * @property {object|"PENDING"} data
+ * @property {object} data
  */
 
 /**
@@ -332,10 +335,22 @@ const getMfrName = (populatedDO) => {
 };
 /**
  * @param {DailyOrder} populatedDO
- * @returns {string}
+ * @returns {ColumnData}
  */
 const getQty = (populatedDO) => {
   return { title: populatedDO.items.length.toString() };
+};
+/**
+ * @param {Row} row
+ * @param {Package} pkg
+ * @returns {Promise<void>}
+ */
+const getAllInStock = async (row, pkg) => {
+  try {
+    row.qty.data = await package.getAllInStock(pkg);
+  } catch (e) {
+    console.log(e);
+  }
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -351,7 +366,6 @@ const getCAHPrd = (populatedDO) => {
   return {
     title: cahPrd.estNetCost,
     subtitle: cahPrd.netUoiCost,
-    data: getCAHData(cahPrd),
   };
 };
 /**
@@ -388,17 +402,21 @@ const getCAHSrc = (populatedDO) => {
   return {
     title: cahSrc.estNetCost,
     subtitle: cahSrc.netUoiCost,
-    data: getCAHData(cahSrc),
   };
+};
+/**
+ * @param {CAHProduct|PSPackage|PSAlternative} doc
+ * @param {object} data
+ * @returns {Data}
+ */
+const getData = (doc, data) => {
+  return { lastUpdated: doc.lastUpdated, data };
 };
 /**
  * @param {import("../cah/cahProduct").CAHProduct} cahProduct
  * @returns {Data}
  */
 const getCAHData = (cahProduct) => {
-  if (!cahProduct.gtin) {
-    return "PENDING";
-  }
   const {
     mfr,
     ndc,
@@ -426,6 +444,19 @@ const getCAHData = (cahProduct) => {
   };
 };
 /**
+ * @param {import("../ps/psPackage").PSPackage} psPackage
+ * @returns {object}
+ */
+const getPSPkgData = (psPackage) => {
+  return {
+    description: psPackage.description,
+    ndc: psPackage.ndc,
+    manufacturer: psPackage.manufacturer,
+    pkgPrice: psPackage.pkgPrice,
+    unitPrice: psPackage.unitPrice,
+  };
+};
+/**
  * @param {DailyOrder} populatedDO
  * @returns {ColumnData}
  */
@@ -437,7 +468,11 @@ const getPSPkg = (populatedDO) => {
   if (!package.acitve) {
     return "NA";
   }
-  return { title: package.pkgPrice, subtitle: package.unitPrice, data: {} };
+  return {
+    title: package.pkgPrice,
+    subtitle: package.unitPrice,
+    data: getPSPkgData(package),
+  };
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -456,11 +491,37 @@ const getPSAlt = (populatedDO) => {
   if (!psAlt.active) {
     return "NA";
   }
-  return { title: psAlt.items[0].pkgPrice, subtitle: psAlt.items[0].unitPrice };
+  const index = selectPSAlt(populatedDO);
+  return {
+    title: psAlt.items[index].pkgPrice,
+    subtitle: psAlt.items[index].unitPrice,
+  };
+};
+/**
+ * @param {DailyOrder} populatedDO
+ * @returns {number}
+ */
+const selectPSAlt = (populatedDO) => {
+  const package = populatedDO.package;
+  const size = package.size;
+  const ndc = package.ndc11.replaceAll("-", "");
+  const items = package.alternative.psAlternative.items;
+  let sameNDC = 0;
+  let sameSize = 0;
+  items.forEach((v, i) => {
+    if (v.ndc === ndc) {
+      sameNDC = i;
+    }
+    if (v.pkg === size) {
+      sameSize = i;
+    }
+  });
+  return sameNDC || sameSize || 0;
 };
 module.exports = {
   upsertDO,
   findDOByDateString,
   populateDO,
   generateData,
+  getAllInStock,
 };

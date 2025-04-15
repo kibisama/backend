@@ -348,14 +348,12 @@ const setMfrName = async (pkg) => {
     const { _id, mfr } = pkg;
     if (mfr) {
       let mfrName = "";
-      const match = mfr.match(/([^\s,]+)/g);
+      const match = mfr.match(/[^\s,]+/g);
       if (match) {
-        if (match[0].length < 4) {
-          mfrName = match[0] + match[1];
-        } else if (match[0].length < 17) {
+        if (match[0].match(/[a-zA-Z0-9]{3,}/g)) {
           mfrName = match[0];
         } else {
-          mfrName = mfr.substring(0, 16);
+          mfrName = mfr.substring(0, mfr.indexOf(match[1])) + match[1];
         }
       } else {
         mfrName = mfr;
@@ -483,11 +481,49 @@ const updateInventories = async (item, mode) => {
   }
 };
 /**
+ * @param {Package} pkg
+ * @returns {number}
+ */
+const getNumberInStock = (pkg) => {
+  return pkg.inventories.length;
+};
+/**
+ * @typedef {object} Stock
+ * @property {string} ndc
+ * @property {string} [mfr]
+ * @property {string} [size]
+ * @property {number} stock
+ * @param {Package} pkg
+ * @returns {Promise<[Stock]|undefined>}
+ */
+const getAllInStock = async (pkg) => {
+  try {
+    /** @type {[Stock]} */
+    const stock = [];
+    /** @type {Filter} */
+    const filter = { active: true, $or: [] };
+    pkg.alternative && filter.$or.push({ alternative: pkg.alternative });
+    pkg.rxcui && filter.$or.push({ rxcui: pkg.rxcui });
+    const pkgs = await package.find(filter);
+    pkgs.forEach((v) => {
+      stock.push({
+        ndc: v.ndc11 || v.ndc || v.gtin,
+        mfr: v.mfrName || v.mfr,
+        size: v.size,
+        stock: getNumberInStock(v),
+      });
+    });
+    return stock;
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
  *
  */
 const findIncompletePackage = async () => {
   try {
-    await package.find({
+    const packages = await package.find({
       $or: [{ ndc: { $exists: false } }, { ndc11: { $exists: false } }],
     });
   } catch (e) {
@@ -502,4 +538,5 @@ module.exports = {
   updateInventories,
   updatePackage,
   updateGTIN,
+  getAllInStock,
 };
