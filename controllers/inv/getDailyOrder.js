@@ -12,7 +12,7 @@ module.exports = async (req, res, next) => {
       const results = [];
       for (let i = 0; i < populatedDOs.length; i++) {
         results[i] = dailyOrder.generateData(populatedDOs[i]);
-        await dailyOrder.getAllInStock(results[i], populatedDOs[i].package);
+        // await dailyOrder.getAllInStock(results[i], populatedDOs[i].package);
       }
       return res.send({ results });
     }

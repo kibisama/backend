@@ -454,6 +454,9 @@ const getPSPkgData = (psPackage) => {
     manufacturer: psPackage.manufacturer,
     pkgPrice: psPackage.pkgPrice,
     unitPrice: psPackage.unitPrice,
+    qtyAvl: psPackage.qtyAvl,
+    lotExpDate: psPackage.lotExpDate,
+    wholesaler: psPackage.wholesaler,
   };
 };
 /**
@@ -465,13 +468,13 @@ const getPSPkg = (populatedDO) => {
   if (!package) {
     return "PENDING";
   }
-  if (!package.acitve) {
+  if (!package.active) {
     return "NA";
   }
   return {
     title: package.pkgPrice,
     subtitle: package.unitPrice,
-    data: getPSPkgData(package),
+    data: getData(package, getPSPkgData(package)),
   };
 };
 /**
@@ -495,6 +498,10 @@ const getPSAlt = (populatedDO) => {
   return {
     title: psAlt.items[index].pkgPrice,
     subtitle: psAlt.items[index].unitPrice,
+    data: getData(
+      psAlt,
+      psAlt.items.map((v) => getPSPkgData(v))
+    ),
   };
 };
 /**
