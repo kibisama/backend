@@ -172,18 +172,22 @@ const handle404 = async (package, updateSource, callback) => {
            * @returns {undefined}
            */
           async (alts) => {
-            const orangeBookCode = interpretCAHData(
-              alts[alts.length - 1].orangeBookCode
-            );
-            if (!orangeBookCode) {
-              return;
+            try {
+              const orangeBookCode = interpretCAHData(
+                alts[alts.length - 1].orangeBookCode
+              );
+              if (!orangeBookCode) {
+                return;
+              }
+              const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
+                alts,
+                orangeBookCode
+              );
+              const alt = cheapSrcInStock || cheapSrc || cheap;
+              alt && updateSrc(alt, callback);
+            } catch (e) {
+              console.log(e);
             }
-            const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
-              alts,
-              orangeBookCode
-            );
-            const alt = cheapSrcInStock || cheapSrc || cheap;
-            alt && updateSrc(alt, callback);
           }
         );
       }
@@ -293,17 +297,21 @@ const updateSrc = async (source, callback) => {
     const { ndc } = source;
     await upsertPackage(ndc, "ndc11", {
       callback: async (package) => {
-        await cahProduct.handleResult(package, source);
-        module.exports(
-          package.cahProduct ? package : await refreshPackage(package),
-          {
-            force: true,
-            callback: () => {
-              updatePackage(package);
-              callback();
-            },
-          }
-        );
+        try {
+          await cahProduct.handleResult(package, source);
+          module.exports(
+            package.cahProduct ? package : await refreshPackage(package),
+            {
+              force: true,
+              callback: () => {
+                updatePackage(package);
+                callback();
+              },
+            }
+          );
+        } catch (e) {
+          console.log(e);
+        }
       },
     });
   } catch (e) {

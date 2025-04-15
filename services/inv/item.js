@@ -95,9 +95,14 @@ const createItem = async (dm, method) => {
  */
 const upsertItem = async (dm, method) => {
   try {
-    const item = await findItem(dm);
+    const { gtin, sn, lot, exp } = dm;
+    if (!gtin || !sn || !lot || !exp) {
+      return;
+    }
+    const _dm = { gtin, sn, lot, exp };
+    const item = await findItem(_dm);
     if (item === null) {
-      return await createItem(dm, method);
+      return await createItem(_dm, method);
     }
     return item;
   } catch (e) {
