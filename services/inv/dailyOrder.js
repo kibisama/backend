@@ -294,7 +294,7 @@ const getPackage = (populatedDO) => {
   return {
     title: getName(populatedDO),
     subtitle: getMfrName(populatedDO),
-    data: { data: { ndc: package.ndc11, size: package.size } },
+    data: { data: { ndc11: package.ndc11, size: package.size } },
   };
 };
 /**
