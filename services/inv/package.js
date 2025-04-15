@@ -330,7 +330,7 @@ const setName = async (pkg) => {
       return await package.findByIdAndUpdate(
         _id,
         {
-          $set: { name: `${alternative.defaultName} (${size})` },
+          $set: { name: `${alternative.defaultName.toUpperCase()} (${size})` },
         },
         { new: true }
       );
@@ -358,6 +358,7 @@ const setMfrName = async (pkg) => {
       } else {
         mfrName = mfr;
       }
+      mfrName = mfrName.toUpperCase();
       return await package.findByIdAndUpdate(
         _id,
         { $set: { mfrName } },
