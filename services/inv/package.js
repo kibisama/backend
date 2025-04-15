@@ -283,7 +283,10 @@ const updateViaRxNav = async (arg, type) => {
     }
     const { ndc, ndc11, rxcui } = ndcStatus;
     /** @type {UpdateObj} */
-    let update = { ndc, ndc11, rxcui };
+    let update = {};
+    ndc && (update.ndc = ndc);
+    ndc11 && (update.ndc11 = ndc11);
+    rxcui && (update.rxcui = rxcui);
     if (ndc11) {
       const output = await getNDCProperties(ndc11, rxcui);
       if (output) {

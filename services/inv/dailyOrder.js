@@ -5,6 +5,7 @@ const package = require("./package");
 const getSearchResults = require("../ps/getSearchResults");
 const getProductDetails = require("../cah/getProductDetails");
 const { interpretCAHData } = require("../cah/common");
+const { hyphenateNDC11 } = require("../convert");
 
 /**
  * @typedef {dailyOrder.DailyOrder} DailyOrder
@@ -257,7 +258,7 @@ const isSourceUpdated = (populatedDO) => {
  * @property {Column} psPkg
  * @property {Column} psAlt
  * @typedef {object} Data
- * @property {string} lastUpdated
+ * @property {Date} lastUpdated
  * @property {object} data
  */
 
@@ -289,7 +290,12 @@ const getDate = (populatedDO) => {
  * @returns {ColumnData}
  */
 const getPackage = (populatedDO) => {
-  return { title: getName(populatedDO), subtitle: getMfrName(populatedDO) };
+  const package = populatedDO.package;
+  return {
+    title: getName(populatedDO),
+    subtitle: getMfrName(populatedDO),
+    data: { data: { ndc: package.ndc11, size: package.size } },
+  };
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -410,7 +416,10 @@ const getCAHSrc = (populatedDO) => {
  * @returns {Data}
  */
 const getData = (doc, data) => {
-  return { lastUpdated: doc.lastUpdated, data };
+  return {
+    lastUpdated: doc.lastUpdated,
+    data,
+  };
 };
 /**
  * @param {import("../cah/cahProduct").CAHProduct} cahProduct
@@ -430,17 +439,14 @@ const getCAHData = (cahProduct) => {
   } = cahProduct;
   /** @type {Data} */
   return {
-    lastUpdated: dayjs(cahProduct.lastUpdated).format("MM/DD/YYYY HH:mm:ss"),
-    data: {
-      name: cahProduct.name,
-      cin: cahProduct.cin,
-      contract: cahProduct.contract,
-      stockStatus: cahProduct.stockStatus,
-      stock: cahProduct.stock,
-      avlAlertUpdated: cahProduct.avlAlertUpdated,
-      avlAlertExpected: cahProduct.avlAlertExpected,
-      avlAlertAddMsg: cahProduct.avlAlertAddMsg,
-    },
+    name: cahProduct.name,
+    cin: cahProduct.cin,
+    contract: cahProduct.contract,
+    stockStatus: cahProduct.stockStatus,
+    stock: cahProduct.stock,
+    avlAlertUpdated: cahProduct.avlAlertUpdated,
+    avlAlertExpected: cahProduct.avlAlertExpected,
+    avlAlertAddMsg: cahProduct.avlAlertAddMsg,
   };
 };
 /**
@@ -450,13 +456,14 @@ const getCAHData = (cahProduct) => {
 const getPSPkgData = (psPackage) => {
   return {
     description: psPackage.description,
-    ndc: psPackage.ndc,
+    ndc: hyphenateNDC11(psPackage.ndc),
     manufacturer: psPackage.manufacturer,
     pkgPrice: psPackage.pkgPrice,
     unitPrice: psPackage.unitPrice,
     qtyAvl: psPackage.qtyAvl,
     lotExpDate: psPackage.lotExpDate,
     wholesaler: psPackage.wholesaler,
+    pkg: psPackage.pkg,
   };
 };
 /**
