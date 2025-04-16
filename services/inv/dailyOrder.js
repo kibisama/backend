@@ -371,7 +371,7 @@ const getQty = (populatedDO) => {
   //
   return {
     title: populatedDO.items.length.toString(),
-    data: { data: package.getStock(populatedDO.pkg) },
+    data: { data: package.getStock(populatedDO.package) },
   };
 };
 /**
