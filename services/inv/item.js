@@ -81,8 +81,9 @@ const isNewFill = (item, mode) => {
  */
 const createItem = async (dm, method) => {
   try {
+    const { gtin, sn, lot } = dm;
     const exp = convertExpToDate(dm.exp);
-    return await item.create({ ...dm, method, exp });
+    return await item.create({ gtin, sn, lot, exp, method });
   } catch (e) {
     console.log(e);
   }
@@ -95,14 +96,9 @@ const createItem = async (dm, method) => {
  */
 const upsertItem = async (dm, method) => {
   try {
-    const { gtin, sn, lot, exp } = dm;
-    if (!gtin || !sn || !lot || !exp) {
-      return;
-    }
-    const _dm = { gtin, sn, lot, exp };
-    const item = await findItem(_dm);
+    const item = await findItem(dm);
     if (item === null) {
-      return await createItem(_dm, method);
+      return await createItem(dm, method);
     }
     return item;
   } catch (e) {
@@ -135,6 +131,7 @@ const updateItem = async (scanReq, date) => {
         break;
       case "RETURN":
         update.$set = { dateReturned: now };
+        update.$unset = { dateFilled: 1 };
         break;
       default:
     }

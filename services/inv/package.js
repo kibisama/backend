@@ -13,6 +13,7 @@ const {
   ndcToNDC11,
 } = require("../convert");
 const { calculateSize } = require("../cah/common");
+const { isObjectIdOrHexString } = require("mongoose");
 
 /**
  * @typedef {package.Package} Package
@@ -77,11 +78,14 @@ const findPackage = async (arg, type) => {
 };
 /**
  * Refreshes a Package documnet.
- * @param {Package} pkg
+ * @param {Package|import("mongoose").ObjectId} pkg
  * @returns {Promise<Package|undefined>}
  */
 const refreshPackage = async (pkg) => {
   try {
+    if (isObjectIdOrHexString(pkg)) {
+      return await package.findById(pkg);
+    }
     return await package.findById(pkg._id);
   } catch (e) {
     console.log(e);
@@ -498,24 +502,32 @@ const getNumberInStock = (pkg) => {
  * @property {string} [size]
  * @property {number} stock
  * @param {Package} pkg
+ * @returns {Promise<Stock|undefined>}
+ */
+const getStock = (pkg) => {
+  return {
+    ndc: pkg.ndc11 || pkg.ndc || pkg.gtin,
+    mfr: pkg.mfrName || pkg.mfr,
+    size: pkg.size,
+    stock: getNumberInStock(pkg),
+  };
+};
+
+/**
+ * @param {Package} pkg
  * @returns {Promise<[Stock]|undefined>}
  */
-const getAllInStock = async (pkg) => {
+const getAltStocks = async (pkg) => {
   try {
     /** @type {[Stock]} */
     const stock = [];
     /** @type {Filter} */
-    const filter = { active: true, $or: [] };
+    const filter = { active: true, _id: { $not: pkg._id }, $or: [] };
     pkg.alternative && filter.$or.push({ alternative: pkg.alternative });
     pkg.rxcui && filter.$or.push({ rxcui: pkg.rxcui });
     const pkgs = await package.find(filter);
     pkgs.forEach((v) => {
-      stock.push({
-        ndc: v.ndc11 || v.ndc || v.gtin,
-        mfr: v.mfrName || v.mfr,
-        size: v.size,
-        stock: getNumberInStock(v),
-      });
+      stock.push(getStock(v));
     });
     return stock;
   } catch (e) {
@@ -542,5 +554,6 @@ module.exports = {
   updateInventories,
   updatePackage,
   updateGTIN,
-  getAllInStock,
+  getStock,
+  getAltStocks,
 };

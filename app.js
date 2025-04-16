@@ -41,5 +41,4 @@ const createServer = async () => {
   });
 };
 createServer();
-const { scheduleUpsert } = require("./services/cah/UpsertItemsViaDSCSA");
-scheduleUpsert();
+require("./services/schedule")();
