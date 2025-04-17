@@ -461,6 +461,7 @@ const getData = (doc, data) => {
 const getCAHData = (cahProduct) => {
   return {
     brandName: interpretCAHData(cahProduct.brandName),
+    amu: cahProduct.amu,
     name: cahProduct.name,
     mfr: cahProduct.mfr,
     cin: cahProduct.cin,
