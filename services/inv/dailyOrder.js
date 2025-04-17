@@ -400,6 +400,7 @@ const getCAHPrd = (populatedDO) => {
   return {
     title: cahPrd.estNetCost,
     subtitle: cahPrd.netUoiCost,
+    data: getData(cahPrd, getCAHData(cahPrd)),
   };
 };
 /**
@@ -424,7 +425,10 @@ const getCAHSrc = (populatedDO) => {
       } else if (interpretCAHData(cahPrd.brandName) || alt.isBranded === true) {
         const genAltCAHPrd = alt.genAlt?.cahProduct;
         if (genAltCAHPrd) {
-          return { title: "BRAND*", data: getCAHData(genAltCAHPrd) };
+          return {
+            title: "BRAND*",
+            data: getData(genAltCAHPrd, getCAHData(genAltCAHPrd)),
+          };
         } else {
           return { title: "BRNAD" };
         }
@@ -436,6 +440,7 @@ const getCAHSrc = (populatedDO) => {
   return {
     title: cahSrc.estNetCost,
     subtitle: cahSrc.netUoiCost,
+    data: getData(cahSrc, getCAHData(cahSrc)),
   };
 };
 /**
@@ -451,30 +456,28 @@ const getData = (doc, data) => {
 };
 /**
  * @param {import("../cah/cahProduct").CAHProduct} cahProduct
- * @returns {Data}
+ * @returns {object}
  */
 const getCAHData = (cahProduct) => {
-  const {
-    mfr,
-    ndc,
-    lastCost,
-    lastOrdered,
-    histLow,
-    lastSFDCCost,
-    lastSFDCDate,
-    rebateEligible,
-    returnable,
-  } = cahProduct;
-  /** @type {Data} */
   return {
+    brandName: interpretCAHData(cahProduct.brandName),
     name: cahProduct.name,
+    mfr: cahProduct.mfr,
     cin: cahProduct.cin,
+    ndc: cahProduct.ndc,
     contract: cahProduct.contract,
     stockStatus: cahProduct.stockStatus,
     stock: cahProduct.stock,
     avlAlertUpdated: cahProduct.avlAlertUpdated,
     avlAlertExpected: cahProduct.avlAlertExpected,
     avlAlertAddMsg: cahProduct.avlAlertAddMsg,
+    rebateEligible: cahProduct.rebateEligible,
+    returnable: cahProduct.returnable,
+    histLow: cahProduct.histLow,
+    lastOrdered: cahProduct.lastOrdered,
+    lastCost: cahProduct.lastCost,
+    lastSFDCDate: cahProduct.lastSFDCDate,
+    lastSFDCCost: cahProduct.lastSFDCCost,
   };
 };
 /**
