@@ -122,7 +122,7 @@ const updateAltDOs = async (pkg) => {
       if (dOs?.length > 0) {
         for (let i = 0; i < dOs.length; i++) {
           const populatedDO = await populateDO(dOs[i]);
-          await updateQty(populatedDO);
+          await updateStocks(populatedDO);
         }
       }
     }
@@ -153,7 +153,7 @@ const findFilledItems = async (gtin) => {
  */
 const updateFilledItems = async (dO, gtin) => {
   try {
-    await updateQty(await populateDO(dO));
+    await updateStocks(await populateDO(dO));
     const items = await findFilledItems(gtin);
     if (items) {
       const updateParam = createUpdateParam();
@@ -314,23 +314,19 @@ const isSourceUpdated = (populatedDO) => {
 
 /**
  * @param {DailyOrder} populatedDO
- * @returns {Promise<Row|undefined>}
+ * @returns {Row>}
  */
-const generateData = async (populatedDO) => {
-  try {
-    /** @type {Row} */
-    const data = {};
-    data.date = getDate(populatedDO);
-    data.package = getPackage(populatedDO);
-    data.qty = await getQty(populatedDO);
-    data.cahPrd = getCAHPrd(populatedDO);
-    data.cahSrc = getCAHSrc(populatedDO);
-    data.psPkg = getPSPkg(populatedDO);
-    data.psAlt = getPSAlt(populatedDO);
-    return data;
-  } catch (e) {
-    console.log(e);
-  }
+const generateData = (populatedDO) => {
+  /** @type {Row} */
+  const data = {};
+  data.date = getDate(populatedDO);
+  data.package = getPackage(populatedDO);
+  data.qty = getQty(populatedDO);
+  data.cahPrd = getCAHPrd(populatedDO);
+  data.cahSrc = getCAHSrc(populatedDO);
+  data.psPkg = getPSPkg(populatedDO);
+  data.psAlt = getPSAlt(populatedDO);
+  return data;
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -344,11 +340,17 @@ const getDate = (populatedDO) => {
  * @returns {ColumnData}
  */
 const getPackage = (populatedDO) => {
-  const package = populatedDO.package;
+  const pkg = populatedDO.package;
   return {
     title: getName(populatedDO),
     subtitle: getMfrName(populatedDO),
-    data: { data: { ndc11: package.ndc11, size: package.size } },
+    data: {
+      data: {
+        ndc11: pkg.ndc11,
+        size: pkg.size,
+        stock: package.getNumberInStock(pkg),
+      },
+    },
   };
 };
 /**
@@ -395,36 +397,22 @@ const getMfrName = (populatedDO) => {
 };
 /**
  * @param {DailyOrder} populatedDO
- * @returns {Promise<ColumnData|undefined>}
+ * @returns {ColumnData}
  */
-const getQty = async (populatedDO) => {
-  try {
-    const altStocks = await package.getAltStocks(populatedDO.package);
-    return {
-      title:
-        altStocks && altStocks.length > 0
-          ? `${populatedDO.items.length.toString()} | ${
-              package.getStock(populatedDO.package).stock
-            }*`
-          : `${populatedDO.items.length.toString()} | ${
-              package.getStock(populatedDO.package).stock
-            }`,
-      data: { data: altStocks },
-    };
-  } catch (e) {
-    console.log(e);
-  }
+const getQty = (populatedDO) => {
+  return {
+    title: populatedDO.items.length.toString(),
+  };
 };
 /**
  * @param {DailyOrder} populatedDO
  * @returns {Promise<void>}
  */
-const updateQty = async (populatedDO) => {
+const updateStocks = async (populatedDO) => {
   try {
-    const { title, data } = await getQty(populatedDO);
     await populatedDO.updateOne({
-      "data.qty.title": title,
-      "data.qty.data.data": data.data,
+      "data.package.data.data.stock": package.getNumberInStock(pkg).toString(),
+      "data.package.data.altStocks": await package.getAltStocks(pkg),
     });
   } catch (e) {
     console.log(e);

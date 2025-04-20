@@ -500,7 +500,7 @@ const getNumberInStock = (pkg) => {
  * @property {string} ndc
  * @property {string} [mfr]
  * @property {string} [size]
- * @property {number} stock
+ * @property {string} stock
  * @param {Package} pkg
  * @returns {Promise<Stock|undefined>}
  */
@@ -509,7 +509,7 @@ const getStock = (pkg) => {
     ndc: pkg.ndc11 || pkg.ndc || pkg.gtin,
     mfr: pkg.mfrName || pkg.mfr,
     size: pkg.size,
-    stock: getNumberInStock(pkg),
+    stock: getNumberInStock(pkg).toString(),
   };
 };
 /**
