@@ -100,8 +100,32 @@ const upsertDO = async (package) => {
       _dailyOrder = await createDO(package);
       updateSources(package);
     }
-    // refresh stocks of alts here
+    await updateAltDOs(package);
     return await updateFilledItems(_dailyOrder, package.gtin);
+  } catch (e) {
+    console.log(e);
+  }
+};
+/**
+ * @param {Package} pkg
+ * @returns {Promise<void>}
+ */
+const updateAltDOs = async (pkg) => {
+  try {
+    const altPkgs = await package.findAltPackages(pkg);
+    if (altPkgs?.length > 0) {
+      const dOs = await dailyOrder.find({
+        status: { $ne: "FILLED" },
+        package: { $in: altPkgs.map((v) => v._id) },
+        date: { $gte: getTodayStart() },
+      });
+      if (dOs?.length > 0) {
+        for (let i = 0; i < dOs.length; i++) {
+          const populatedDO = await populateDO(dOs[i]);
+          await updateQty(populatedDO);
+        }
+      }
+    }
   } catch (e) {
     console.log(e);
   }
@@ -129,34 +153,35 @@ const findFilledItems = async (gtin) => {
  */
 const updateFilledItems = async (dO, gtin) => {
   try {
+    await updateQty(await populateDO(dO));
     const items = await findFilledItems(gtin);
-    const date = items[items.length - 1].dateFilled;
-    if (items?.length > 0) {
+    if (items) {
       const updateParam = createUpdateParam();
-      updateParam.$set = { date };
-      updateParam.$addToSet = { items: items.map((v) => v._id) };
+      if (items.length > 0) {
+        const date = items[items.length - 1].dateFilled;
+        updateParam.$set.date = date;
+      }
+      updateParam.$set.items = items.map((v) => v._id);
       return await dailyOrder.findOneAndUpdate({ _id: dO._id }, updateParam, {
         new: true,
       });
     }
-    return dO;
   } catch (e) {
     console.log(e);
   }
 };
 /**
  * @param {Package} pkg
- * @param {} [psOption]
- * @param {} [cahOption]
+ * @param {boolean} [force]
  * @returns {Promise<undefined>}
  */
-const updateSources = (pkg) => {
+const updateSources = (pkg, force) => {
   try {
     const callback = async () => {
       updateDO(await package.updatePackage(pkg));
     };
-    getSearchResults(pkg, { callback });
-    getProductDetails(pkg, { updateSource: true, callback });
+    getSearchResults(pkg, { callback, force });
+    getProductDetails(pkg, { updateSource: true, callback, force });
   } catch (e) {
     console.log(e);
   }
@@ -167,7 +192,7 @@ const updateSources = (pkg) => {
  */
 const populateDO = async (dO) => {
   try {
-    return await dailyOrder.findById(dO._id).populate({
+    return await dO.populate({
       path: "package",
       populate: [
         { path: "cahProduct" },
@@ -192,15 +217,16 @@ const populateDO = async (dO) => {
  */
 const updateDO = async (package) => {
   try {
-    const dO = await populateDO(package);
-    if (!dO) {
+    const _dO = await dailyOrder.findOne(createFilter(package));
+    if (!_dO) {
       return;
     }
+    const dO = await populateDO(_dO);
     switch (dO.status) {
       case "FILLED":
         if (isSourceUpdated(dO)) {
+          await dO.updateOne({ $set: { data: await generateData(dO) } });
           await updateStatus(dO);
-          // save data
         } else {
           return;
         }
@@ -228,7 +254,7 @@ const updateStatus = async (dO) => {
         break;
       default:
     }
-    await dO.updateOne({ status: _status });
+    await dO.updateOne({ $set: { status: _status } });
   } catch (e) {
     console.log(e);
   }
@@ -288,19 +314,23 @@ const isSourceUpdated = (populatedDO) => {
 
 /**
  * @param {DailyOrder} populatedDO
- * @returns {Row}
+ * @returns {Promise<Row|undefined>}
  */
-const generateData = (populatedDO) => {
-  /** @type {Row} */
-  const data = {};
-  data.date = getDate(populatedDO);
-  data.package = getPackage(populatedDO);
-  data.qty = getQty(populatedDO);
-  data.cahPrd = getCAHPrd(populatedDO);
-  data.cahSrc = getCAHSrc(populatedDO);
-  data.psPkg = getPSPkg(populatedDO);
-  data.psAlt = getPSAlt(populatedDO);
-  return data;
+const generateData = async (populatedDO) => {
+  try {
+    /** @type {Row} */
+    const data = {};
+    data.date = getDate(populatedDO);
+    data.package = getPackage(populatedDO);
+    data.qty = await getQty(populatedDO);
+    data.cahPrd = getCAHPrd(populatedDO);
+    data.cahSrc = getCAHSrc(populatedDO);
+    data.psPkg = getPSPkg(populatedDO);
+    data.psAlt = getPSAlt(populatedDO);
+    return data;
+  } catch (e) {
+    console.log(e);
+  }
 };
 /**
  * @param {DailyOrder} populatedDO
@@ -365,27 +395,41 @@ const getMfrName = (populatedDO) => {
 };
 /**
  * @param {DailyOrder} populatedDO
- * @returns {ColumnData}
+ * @returns {Promise<ColumnData|undefined>}
  */
-const getQty = (populatedDO) => {
-  //
-  return {
-    title: populatedDO.items.length.toString(),
-    data: { data: package.getStock(populatedDO.package) },
-  };
+const getQty = async (populatedDO) => {
+  try {
+    const altStocks = await package.getAltStocks(populatedDO.package);
+    return {
+      title:
+        altStocks && altStocks.length > 0
+          ? `${populatedDO.items.length.toString()} | ${
+              package.getStock(populatedDO.package).stock
+            }*`
+          : `${populatedDO.items.length.toString()} | ${
+              package.getStock(populatedDO.package).stock
+            }`,
+      data: { data: altStocks },
+    };
+  } catch (e) {
+    console.log(e);
+  }
 };
 /**
- * @param {Row} row
- * @param {Package} pkg
+ * @param {DailyOrder} populatedDO
  * @returns {Promise<void>}
  */
-// const getAllInStock = async (row, pkg) => {
-//   try {
-//     row.qty.data = await package.getAllInStock(pkg);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+const updateQty = async (populatedDO) => {
+  try {
+    const { title, data } = await getQty(populatedDO);
+    await populatedDO.updateOne({
+      "data.qty.title": title,
+      "data.qty.data.data": data.data,
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
 /**
  * @param {DailyOrder} populatedDO
  * @returns {Column}
@@ -576,7 +620,7 @@ const scheduleUpdateSources = async () => {
     if (dailyOrders.length > 0) {
       for (let i = 0; i < dailyOrders.length; i++) {
         const pkg = await package.refreshPackage(dailyOrders[i].package);
-        pkg && updateSources(pkg);
+        pkg && updateSources(pkg, true);
       }
     }
   } catch (e) {
@@ -584,10 +628,12 @@ const scheduleUpdateSources = async () => {
   }
 };
 module.exports = {
+  findDO,
   upsertDO,
+  updateAltDOs,
+  updateFilledItems,
   findDOByDateString,
   populateDO,
   generateData,
-  // getAllInStock,
   scheduleUpdateSources,
 };

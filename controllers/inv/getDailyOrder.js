@@ -4,15 +4,17 @@ module.exports = async (req, res, next) => {
   try {
     const dailyOrders = await dailyOrder.findDOByDateString(req.params.date);
     if (dailyOrders.length > 0) {
-      const populatedDOs = [];
-      for (let i = 0; i < dailyOrders.length; i++) {
-        const popDO = await dailyOrder.populateDO(dailyOrders[i]);
-        populatedDOs.push(popDO);
-      }
       const results = [];
-      for (let i = 0; i < populatedDOs.length; i++) {
-        results[i] = dailyOrder.generateData(populatedDOs[i]);
-        // await dailyOrder.getAllInStock(results[i], populatedDOs[i].package);
+      for (let i = 0; i < dailyOrders.length; i++) {
+        if (dailyOrders[i].status !== "FILLED") {
+          results.push(dailyOrders[i].data);
+        } else {
+          results.push(
+            await dailyOrder.generateData(
+              await dailyOrder.populateDO(dailyOrders[i])
+            )
+          );
+        }
       }
       return res.send({ results });
     }

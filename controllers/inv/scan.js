@@ -19,6 +19,14 @@ module.exports = async (req, res, next) => {
     /** @type {package.UpdateOption} */
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }
+      : mode === "REVERSE" || mode === "RECEIVE"
+      ? {
+          callback: async (package) => {
+            await dailyOrder.updateAltDOs(package);
+            const dO = await dailyOrder.findDO(package);
+            dO && (await dailyOrder.updateFilledItems(dO, gtin));
+          },
+        }
       : undefined;
     const pkg = await package.upsertPackage(gtin, "gtin", option);
     if (!pkg) {

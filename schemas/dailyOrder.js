@@ -11,9 +11,7 @@ const dailyOrderSchema = new Schema({
   status: { type: String, uppercase: true, default: "FILLED" },
   items: { type: [ObjectId], ref: "Item" },
   orderedQty: { type: Number, default: 0 },
-  data: {
-    //
-  },
+  data: Object,
 });
 
 const model = mongoose.model("Daily Order", dailyOrderSchema);

@@ -512,24 +512,37 @@ const getStock = (pkg) => {
     stock: getNumberInStock(pkg),
   };
 };
-
+/**
+ * @param {Package} pkg
+ * @param {boolean} [active]
+ * @returns {Promise<[Package]|undefined>}
+ */
+const findAltPackages = async (pkg, active) => {
+  try {
+    if (pkg.alternative) {
+      const filter = {
+        _id: { $ne: pkg._id },
+        alternative: pkg.alternative,
+      };
+      if (typeof active === "boolean") {
+        filter.active = active;
+      }
+      return await package.find(filter);
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
 /**
  * @param {Package} pkg
  * @returns {Promise<[Stock]|undefined>}
  */
 const getAltStocks = async (pkg) => {
   try {
-    /** @type {[Stock]} */
-    const stock = [];
-    /** @type {Filter} */
-    const filter = { active: true, _id: { $not: pkg._id }, $or: [] };
-    pkg.alternative && filter.$or.push({ alternative: pkg.alternative });
-    pkg.rxcui && filter.$or.push({ rxcui: pkg.rxcui });
-    const pkgs = await package.find(filter);
-    pkgs.forEach((v) => {
-      stock.push(getStock(v));
-    });
-    return stock;
+    const altPkgs = await findAltPackages(pkg, true);
+    if (altPkgs) {
+      return altPkgs.map((v) => getStock(v));
+    }
   } catch (e) {
     console.log(e);
   }
@@ -554,6 +567,8 @@ module.exports = {
   updateInventories,
   updatePackage,
   updateGTIN,
+  getNumberInStock,
   getStock,
   getAltStocks,
+  findAltPackages,
 };

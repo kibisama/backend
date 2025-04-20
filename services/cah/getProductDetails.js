@@ -298,7 +298,9 @@ const updateSrc = async (source, callback) => {
     await upsertPackage(ndc, "ndc11", {
       callback: async (package) => {
         try {
-          await cahProduct.handleResult(package, source);
+          const product = await cahProduct.handleResult(package, source);
+          package.alternative &&
+            (await setCAHProduct(package.alternative, product._id));
           module.exports(
             package.cahProduct ? package : await refreshPackage(package),
             {
