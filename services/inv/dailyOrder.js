@@ -225,7 +225,8 @@ const updateDO = async (package) => {
     switch (dO.status) {
       case "FILLED":
         if (isSourceUpdated(dO)) {
-          await dO.updateOne({ $set: { data: await generateData(dO) } });
+          await dO.updateOne({ $set: { data: generateData(dO) } });
+          await updateStocks(dO);
           await updateStatus(dO);
         } else {
           return;
@@ -314,7 +315,7 @@ const isSourceUpdated = (populatedDO) => {
 
 /**
  * @param {DailyOrder} populatedDO
- * @returns {Row>}
+ * @returns {Row}
  */
 const generateData = (populatedDO) => {
   /** @type {Row} */
@@ -410,9 +411,10 @@ const getQty = (populatedDO) => {
  */
 const updateStocks = async (populatedDO) => {
   try {
+    const pkg = populatedDO.package;
     await populatedDO.updateOne({
       "data.package.data.data.stock": package.getNumberInStock(pkg).toString(),
-      "data.package.data.altStocks": await package.getAltStocks(pkg),
+      "data.package.data.data.altStocks": await package.getAltStocks(pkg),
     });
   } catch (e) {
     console.log(e);

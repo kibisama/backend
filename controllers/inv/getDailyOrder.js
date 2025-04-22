@@ -10,9 +10,7 @@ module.exports = async (req, res, next) => {
           results.push(dailyOrders[i].data);
         } else {
           results.push(
-            await dailyOrder.generateData(
-              await dailyOrder.populateDO(dailyOrders[i])
-            )
+            dailyOrder.generateData(await dailyOrder.populateDO(dailyOrders[i]))
           );
         }
       }
