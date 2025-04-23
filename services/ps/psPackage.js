@@ -73,15 +73,14 @@ const voidItem = async (package) => {
     const item = await findItem(package);
     if (!item) {
       return await createItem(package);
-    } else if (item.active) {
-      const updateParam = createUpdateParam();
-      updateParam.$set.active = false;
-      return await psPackage.findOneAndUpdate(
-        createFilter(package),
-        updateParam,
-        { new: true }
-      );
     }
+    const updateParam = createUpdateParam();
+    updateParam.$set.active = false;
+    return await psPackage.findOneAndUpdate(
+      createFilter(package),
+      updateParam,
+      { new: true }
+    );
     return item;
   } catch (e) {
     console.log(e);
