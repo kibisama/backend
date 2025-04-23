@@ -19,7 +19,7 @@ module.exports = async (req, res, next) => {
     /** @type {package.UpdateOption} */
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }
-      : mode === "REVERSE" || mode === "RECEIVE"
+      : mode !== "RETURN"
       ? {
           callback: async (package) => {
             await dailyOrder.updateAltDOs(package);

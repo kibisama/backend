@@ -153,7 +153,7 @@ const findFilledItems = async (gtin) => {
  */
 const updateFilledItems = async (dO, gtin) => {
   try {
-    await updateStocks(await populateDO(dO));
+    let _dO = dO;
     const items = await findFilledItems(gtin);
     if (items) {
       const updateParam = createUpdateParam();
@@ -162,10 +162,12 @@ const updateFilledItems = async (dO, gtin) => {
         updateParam.$set.date = date;
       }
       updateParam.$set.items = items.map((v) => v._id);
-      return await dailyOrder.findOneAndUpdate({ _id: dO._id }, updateParam, {
+      _dO = await dailyOrder.findOneAndUpdate({ _id: dO._id }, updateParam, {
         new: true,
       });
     }
+    await updateStocks(await populateDO(_dO));
+    return _dO;
   } catch (e) {
     console.log(e);
   }
@@ -413,6 +415,8 @@ const updateStocks = async (populatedDO) => {
   try {
     const pkg = populatedDO.package;
     await populatedDO.updateOne({
+      "data.date.title": dayjs(populatedDO.date).format("hh:mm A"),
+      "data.qty.title": populatedDO.items.length.toString(),
       "data.package.data.data.stock": package.getNumberInStock(pkg).toString(),
       "data.package.data.data.altStocks": await package.getAltStocks(pkg),
     });
