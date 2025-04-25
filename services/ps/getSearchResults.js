@@ -4,7 +4,7 @@ const { ps } = require("../../api/puppet");
 const psPackage = require("./psPackage");
 const psAlt = require("./psAlternative");
 const { ndcToCMSNDC11, stringToNumber } = require("../convert");
-const { setOptionParameters } = require("../common");
+const { setOptionParameters, isShortDated } = require("../common");
 
 /**
  * @typedef {psPackage.Package} Package
@@ -25,10 +25,10 @@ const setDelay = (m) => {
 
 /**
  * @param {string} lotExpDate
- * @returns {dayjs.Dayjs}
+ * @returns {boolean}
  */
-const isShortDated = (lotExpDate) => {
-  return dayjs(lotExpDate, "MM/YY").isBefore(dayjs().add(11, "month"));
+const _isShortDated = (lotExpDate) => {
+  return isShortDated(dayjs(lotExpDate, "MM/YY"));
 };
 
 /**
@@ -93,7 +93,7 @@ const filterResult = (results, cms) => {
       table[description] = v;
     }
     if (ndc === cms) {
-      if (isShortDated(lotExpDate)) {
+      if (_isShortDated(lotExpDate)) {
         if (!cheapestSameNdcShort) {
           cheapestSameNdcShort = v;
         } else if (

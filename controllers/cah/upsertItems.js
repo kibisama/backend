@@ -2,7 +2,7 @@ const { cardinal } = require("../../api/puppet");
 const {
   handleResults,
   getDate,
-} = require("../../services/cah/UpsertItemsViaDSCSA");
+} = require("../../services/cah/upsertItemsViaDSCSA");
 
 module.exports = async (req, res, next) => {
   try {

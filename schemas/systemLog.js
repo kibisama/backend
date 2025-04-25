@@ -8,6 +8,7 @@ const systemLogSchema = new Schema({
   active: { type: Boolean, required: true, default: true },
   date: String,
   status: String,
+  url: String,
 });
 
 const model = mongoose.model("System Log", systemLogSchema);
