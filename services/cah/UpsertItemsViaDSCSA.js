@@ -3,7 +3,7 @@ const { cardinal } = require("../../api/puppet");
 const item = require("../inv/item");
 const package = require("../inv/package");
 const { scheduleJob } = require("node-schedule");
-const { isStoreOpen } = require("../common");
+const { isStoreOpen, isShortDated } = require("../common");
 const { hyphenateNDC11 } = require("../convert");
 
 /**
@@ -154,9 +154,7 @@ const scheduleUpsert = () => {
   if (isStoreOpen()) {
     requestPuppet(formatDateQuery());
   }
-  scheduleJob(nextScheduleDate, () => {
-    requestPuppet(formatDateQuery(nextScheduleDate));
-  });
+  scheduleJob(nextScheduleDate, scheduleUpsert);
 };
 
 module.exports = { scheduleUpsert, handleResults, getDate };

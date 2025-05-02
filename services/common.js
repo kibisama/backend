@@ -87,4 +87,12 @@ module.exports = {
     const day = dayjs().day();
     return day === 0 || day === 6 ? false : true;
   },
+  /**
+   * @param {string} exp
+   * @param {string} format
+   * @returns {boolean}
+   */
+  isShortDated(exp, format) {
+    return dayjs(exp, format).isBefore(dayjs().add(12, "month"));
+  },
 };

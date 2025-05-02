@@ -104,6 +104,7 @@ const gtinToQuery = (gtin) => {
  * @typedef {object} Body
  * @property {string} [cin]
  * @property {string} [query]
+ * @property {} type
  */
 
 /**
