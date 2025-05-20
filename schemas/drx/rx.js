@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const {
+  Types: { ObjectId },
+} = Schema;
 
 const digitalRxSchema = new Schema({
   rxID: { type: String, required: true, unique: true },
   createdDate: Date,
   createdBy: String,
-  /* Rx Info */
   rxNumber: String,
   fillNo: String,
   rxDateWritten: Date,
@@ -13,10 +15,6 @@ const digitalRxSchema = new Schema({
   nextFillDate: Date,
   rxDate: Date,
   deliveredDate: Date,
-  patientName: String,
-  patientDOB: Date,
-  doctorName: String,
-  drugName: String,
   daw: String,
   sig: String,
   qtyWritten: String,
@@ -29,32 +27,25 @@ const digitalRxSchema = new Schema({
   rxStatus: String,
   rxStatusFin: String,
   /* Patient Info */
-  patientID: String,
-  patientSex: String,
-  patientStreet: String,
-  patientZip: String,
-  patientPhone: String,
-  paientSSN: String,
-  patNotes: String,
+  patient: { type: ObjectId, ref: "Patient" },
   /* Doctor Info */
+  doctorName: String,
   doctorNPI: String,
   doctorDEA: String,
   /* Drug Info */
+  drugName: String,
   drugNDC: String,
   drugDEA: String,
   drugRxOTC: String,
   bG: String,
   genericFor: String,
   /* Insurance & Payment Info */
+  plan: { type: ObjectId, ref: "Plan" },
   totalPaid: String,
   patPay: String,
   insPaid: String,
   dispFeePaid: String,
   insuredID: String,
-  planID: String,
-  planName: String,
-  ansiBin: String,
-  pcn: String,
   cardNumber: String,
   groupNumber: String,
 });
