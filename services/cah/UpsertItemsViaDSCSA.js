@@ -154,9 +154,7 @@ const scheduleUpsert = () => {
   if (isStoreOpen()) {
     requestPuppet(formatDateQuery());
   }
-  scheduleJob(nextScheduleDate, () => {
-    requestPuppet(formatDateQuery(nextScheduleDate));
-  });
+  scheduleJob(nextScheduleDate, scheduleUpsert);
 };
 
 module.exports = { scheduleUpsert, handleResults, getDate };
