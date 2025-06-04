@@ -88,10 +88,19 @@ module.exports = {
     return day === 0 || day === 6 ? false : true;
   },
   /**
+<<<<<<< HEAD
    * @param {dayjs.Dayjs} exp
    * @returns {boolean}
    */
   isShortDated(exp) {
     return exp.isBefore(dayjs().add(11, "month"));
+=======
+   * @param {string} exp
+   * @param {string} format
+   * @returns {boolean}
+   */
+  isShortDated(exp, format) {
+    return dayjs(exp, format).isBefore(dayjs().add(12, "month"));
+>>>>>>> 6cc3b70e4fb2aac141650a3374c7a4c617510873
   },
 };
