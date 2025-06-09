@@ -6,11 +6,12 @@ module.exports = async (req, res, next) => {
     if (dailyOrders.length > 0) {
       const results = [];
       for (let i = 0; i < dailyOrders.length; i++) {
-        if (dailyOrders[i].status !== "FILLED") {
-          results.push(dailyOrders[i].data);
+        const dO = dailyOrders[i];
+        if (dO.status !== "FILLED") {
+          results.push(dO.data);
         } else {
           results.push(
-            dailyOrder.generateData(await dailyOrder.populateDO(dailyOrders[i]))
+            dailyOrder.generateData(await dailyOrder.populateDO(dO))
           );
         }
       }

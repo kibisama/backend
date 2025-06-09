@@ -368,11 +368,11 @@ const getName = (populatedDO) => {
   if (package.alternative?.defaultName) {
     return package.alternative.defaultName;
   }
-  const name = package.cahProduct.name;
+  const name = package.cahProduct?.name;
   if (name) {
     return name;
   }
-  const description = package.psPackage.description;
+  const description = package.psPackage?.description;
   if (description) {
     return description;
   }

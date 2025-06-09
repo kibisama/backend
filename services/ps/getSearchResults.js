@@ -28,7 +28,11 @@ const setDelay = (m) => {
  * @returns {boolean}
  */
 const _isShortDated = (lotExpDate) => {
+<<<<<<< HEAD
+  return isShortDated(dayjs(lotExpDate, "MM/YY"));
+=======
   return isShortDated(lotExpDate, "MM/YY");
+>>>>>>> 6cc3b70e4fb2aac141650a3374c7a4c617510873
 };
 
 /**
