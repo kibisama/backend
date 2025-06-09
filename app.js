@@ -34,11 +34,10 @@ app.use((err, req, res, next) => {
   res.sendStatus(err.status || 500);
 });
 
-const createServer = async () => {
-  const port = app.get("port");
-  app.listen(port, () => {
-    console.log(port, "번 포트에서 대기 중");
-  });
-};
-createServer();
+const server = app.listen(app.get("port"), () => {
+  console.log("Listening on port", app.get("port"));
+});
 // require("./services/schedule")();
+
+const io = require("./socket");
+io(server, app);
