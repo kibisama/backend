@@ -1,6 +1,24 @@
+const PICKUP = require("../../schemas/apps/pickup");
 let items = [];
 let relation = "self";
+let date = null;
 
+exports.clear = async (req, res, next) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    items = [];
+    relation = "self";
+    date = null;
+    req.app.set("apps_pickup_canvas", "");
+    pickup.emit("get", items);
+    pickup.emit("relation", relation);
+    pickup.emit("clear-canvas");
+    // emit date
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
 exports.get = async (req, res, next) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
@@ -47,3 +65,46 @@ exports.getCanvas = async (req, res, next) => {
     console.log(e);
   }
 };
+exports.getRelation = async (req, res, next) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    pickup.emit("relation", relation);
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
+exports.selectRelation = async (req, res, next) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    relation = req.body.relation;
+    pickup.emit("relation", relation);
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
+exports.submit = async (req, res, next) => {
+  try {
+    await PICKUP.create({
+      rxNumber: items,
+      relation,
+      dateSaved: new Date(),
+      deliveryDate: date ? date : new Date(),
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};
+// exports.findByDeliveryDate = async (req, res, next) => {
+//   try {
+//   } catch (e) {
+//     console.log(e);
+//   }
+// };
+// exports.findByUpdateDate = async (req, res, next) => {
+//   try {
+//   } catch (e) {
+//     console.log(e);
+//   }
+// };
