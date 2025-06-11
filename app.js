@@ -13,7 +13,7 @@ const app = express();
 app.set("port", process.env.PORT || 3001);
 connect();
 
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(morgan("dev"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
@@ -21,6 +21,9 @@ app.use(express.urlencoded({ extended: false }));
 
 const router = require("./routes");
 app.use("/", router);
+
+const timeEvent = require("./sse/time");
+app.get("/time", timeEvent);
 
 app.use((req, res, next) => {
   const error = new Error(`${req.method} ${req.url} 라우터가 없습니다.`);

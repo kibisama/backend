@@ -3,7 +3,7 @@ const SocketIO = require("socket.io");
 module.exports = (server, app) => {
   const io = SocketIO(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: "*",
     },
   });
   app.set("io", io);
