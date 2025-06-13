@@ -2,6 +2,62 @@ const PICKUP = require("../../schemas/apps/pickup");
 let items = [];
 let relation = "self";
 let date = null;
+let notes = "";
+
+exports.get = (req, res) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    const { type } = req.params;
+    switch (type) {
+      case "items":
+        pickup.emit("items", items);
+        break;
+      case "canvas":
+        pickup.emit("canvas", req.app.get("apps_pickup_canvas"));
+        break;
+      case "relation":
+        pickup.emit("relation", relation);
+        break;
+      case "notes":
+        break;
+      case "date":
+        break;
+
+      default:
+    }
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
+exports.add = (req, res) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    const item = req.body.item;
+    if (!items.includes(item)) {
+      items.push(item);
+      pickup.emit("items", items);
+    }
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
+exports.remove = (req, res) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    const i = items.indexOf(req.body.item);
+    if (i === 0) {
+      items.shift();
+    } else if (i > -1) {
+      items.splice(i, i);
+    }
+    pickup.emit("items", items);
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
 
 exports.clear = (req, res) => {
   try {
@@ -17,30 +73,6 @@ exports.clear = (req, res) => {
     console.log(e);
   }
 };
-exports.get = (req, res) => {
-  try {
-    const pickup = req.app.get("io").of("/pickup");
-    pickup.emit("get", items);
-    res.sendStatus(200);
-  } catch (e) {
-    console.log(e);
-  }
-};
-exports.remove = (req, res) => {
-  try {
-    const pickup = req.app.get("io").of("/pickup");
-    const i = items.indexOf(req.body.item);
-    if (i === 0) {
-      items.shift();
-    } else if (i > -1) {
-      items.splice(i, i);
-      res.sendStatus(200);
-    }
-    pickup.emit("get", items);
-  } catch (e) {
-    console.log(e);
-  }
-};
 exports.clearCanvas = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
@@ -51,38 +83,8 @@ exports.clearCanvas = (req, res) => {
     console.log(e);
   }
 };
-exports.add = (req, res) => {
-  try {
-    const pickup = req.app.get("io").of("/pickup");
-    const item = req.body.item;
-    if (!items.includes(item)) {
-      items.push(item);
-      pickup.emit("get", items);
-    }
-    res.sendStatus(200);
-  } catch (e) {
-    console.log(e);
-  }
-};
-exports.getCanvas = (req, res) => {
-  try {
-    const pickup = req.app.get("io").of("/pickup");
-    pickup.emit("canvas", req.app.get("apps_pickup_canvas"));
-    res.sendStatus(200);
-  } catch (e) {
-    console.log(e);
-  }
-};
-exports.getRelation = (req, res) => {
-  try {
-    const pickup = req.app.get("io").of("/pickup");
-    pickup.emit("relation", relation);
-    res.sendStatus(200);
-  } catch (e) {
-    console.log(e);
-  }
-};
-exports.selectRelation = (req, res) => {
+
+exports.setRelation = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     relation = req.body.relation;
@@ -92,6 +94,7 @@ exports.selectRelation = (req, res) => {
     console.log(e);
   }
 };
+
 exports.submit = async (req, res, next) => {
   try {
     await PICKUP.create({
@@ -104,6 +107,7 @@ exports.submit = async (req, res, next) => {
     console.log(e);
   }
 };
+
 // exports.findByDeliveryDate = async (req, res, next) => {
 //   try {
 //   } catch (e) {

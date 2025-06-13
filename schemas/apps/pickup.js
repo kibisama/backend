@@ -21,5 +21,6 @@ const pickupSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  notes: String,
 });
 module.exports = mongoose.model("Pickup", pickupSchema);
