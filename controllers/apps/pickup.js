@@ -3,23 +3,21 @@ let items = [];
 let relation = "self";
 let date = null;
 
-exports.clear = async (req, res, next) => {
+exports.clear = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     items = [];
     relation = "self";
     date = null;
-    req.app.set("apps_pickup_canvas", "");
     pickup.emit("get", items);
     pickup.emit("relation", relation);
-    pickup.emit("clear-canvas");
-    // emit date
-    res.sendStatus(200);
+    // init date
+    exports.clearCanvas(req, res);
   } catch (e) {
     console.log(e);
   }
 };
-exports.get = async (req, res, next) => {
+exports.get = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     pickup.emit("get", items);
@@ -28,7 +26,7 @@ exports.get = async (req, res, next) => {
     console.log(e);
   }
 };
-exports.remove = async (req, res, next) => {
+exports.remove = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     const i = items.indexOf(req.body.item);
@@ -43,7 +41,17 @@ exports.remove = async (req, res, next) => {
     console.log(e);
   }
 };
-exports.add = async (req, res, next) => {
+exports.clearCanvas = (req, res) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    req.app.set("apps_pickup_canvas", "");
+    pickup.emit("clear-canvas");
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
+exports.add = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     const item = req.body.item;
@@ -56,7 +64,7 @@ exports.add = async (req, res, next) => {
     console.log(e);
   }
 };
-exports.getCanvas = async (req, res, next) => {
+exports.getCanvas = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     pickup.emit("canvas", req.app.get("apps_pickup_canvas"));
@@ -65,7 +73,7 @@ exports.getCanvas = async (req, res, next) => {
     console.log(e);
   }
 };
-exports.getRelation = async (req, res, next) => {
+exports.getRelation = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     pickup.emit("relation", relation);
@@ -74,7 +82,7 @@ exports.getRelation = async (req, res, next) => {
     console.log(e);
   }
 };
-exports.selectRelation = async (req, res, next) => {
+exports.selectRelation = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     relation = req.body.relation;
