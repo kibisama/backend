@@ -1,14 +1,20 @@
 const PICKUP = require("../../schemas/apps/pickup");
+const fs = require("fs");
+
 let items = [];
 let relation = "self";
-let date = null;
+let deliveryDate = null;
 let notes = "";
+let state = "standby";
 
 exports.get = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     const { type } = req.params;
     switch (type) {
+      case "state":
+        pickup.emit("state", state);
+        break;
       case "items":
         pickup.emit("items", items);
         break;
@@ -19,6 +25,7 @@ exports.get = (req, res) => {
         pickup.emit("relation", relation);
         break;
       case "notes":
+        pickup.emit("notes", notes);
         break;
       case "date":
         break;
@@ -58,14 +65,24 @@ exports.remove = (req, res) => {
     console.log(e);
   }
 };
-
+exports.notes = (req, res) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    notes = req.body.notes;
+    pickup.emit("notes", notes);
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
 exports.clear = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     items = [];
     relation = "self";
     date = null;
-    pickup.emit("get", items);
+    state = "standby";
+    pickup.emit("items", items);
     pickup.emit("relation", relation);
     // init date
     exports.clearCanvas(req, res);
@@ -94,21 +111,46 @@ exports.setRelation = (req, res) => {
     console.log(e);
   }
 };
-
-exports.submit = async (req, res, next) => {
+exports.preSubmit = async (req, res) => {
   try {
-    await PICKUP.create({
-      rxNumber: items,
-      relation,
-      dateSaved: new Date(),
-      deliveryDate: date ? date : new Date(),
-    });
+    const pickup = req.app.get("io").of("/pickup");
+    state = "pre-submit";
+    pickup.emit("state", "pre-submit");
+    res.sendStatus(200);
   } catch (e) {
     console.log(e);
   }
 };
+exports.submit = async (req, res, next) => {
+  const pickup = req.app.get("io").of("/pickup");
+  try {
+    state = "submit";
+    const date = new Date();
+    const { _id } = await PICKUP.create({
+      rxNumber: items,
+      relation,
+      date,
+      notes,
+      deliveryDate: deliveryDate ? deliveryDate : date,
+    });
 
-// exports.findByDeliveryDate = async (req, res, next) => {
+    const base64Data = req.app
+      .get("apps_pickup_canvas")
+      .replace(/^data:image\/png;base64,/, "");
+    const binaryData = Buffer.from(base64Data, "base64");
+    const path = process.env.PICKUP_IMG_LOCATION || `D:\\`;
+    const fileName = _id + ".png";
+    fs.writeFileSync(path + "/" + fileName, binaryData);
+    exports.clear(req, res);
+    pickup.emit("state", "submit");
+  } catch (e) {
+    state = "error";
+    pickup.emit("state", "error");
+    console.log(e);
+  }
+};
+
+// exports.findByRxNumber = async (req, res, next) => {
 //   try {
 //   } catch (e) {
 //     console.log(e);
