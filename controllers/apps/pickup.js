@@ -1,9 +1,12 @@
 const PICKUP = require("../../schemas/apps/pickup");
 const fs = require("fs");
+const dayjs = require("dayjs");
+
+const path = process.env.PICKUP_IMG_LOCATION || `D:\\pickup`;
 
 let items = [];
 let relation = "self";
-let deliveryDate = null;
+let deliveryDate = undefined;
 let notes = "";
 let state = "standby";
 
@@ -28,8 +31,8 @@ exports.get = (req, res) => {
         pickup.emit("notes", notes);
         break;
       case "date":
+        //
         break;
-
       default:
     }
     res.sendStatus(200);
@@ -75,16 +78,23 @@ exports.notes = (req, res) => {
     console.log(e);
   }
 };
+exports.date = (req, res) => {
+  try {
+    deliveryDate = dayjs(req.body.date);
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};
 exports.clear = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     items = [];
     relation = "self";
-    date = null;
+    deliveryDate = undefined;
     state = "standby";
     pickup.emit("items", items);
     pickup.emit("relation", relation);
-    // init date
     exports.clearCanvas(req, res);
   } catch (e) {
     console.log(e);
@@ -138,27 +148,49 @@ exports.submit = async (req, res, next) => {
       .get("apps_pickup_canvas")
       .replace(/^data:image\/png;base64,/, "");
     const binaryData = Buffer.from(base64Data, "base64");
-    const path = process.env.PICKUP_IMG_LOCATION || `D:\\`;
     const fileName = _id + ".png";
+    if (!fs.existsSync(path)) {
+      fs.mkdirSync(path);
+    }
     fs.writeFileSync(path + "/" + fileName, binaryData);
-    exports.clear(req, res);
     pickup.emit("state", "submit");
+    exports.clear(req, res);
   } catch (e) {
-    state = "error";
     pickup.emit("state", "error");
+    state = "standby";
     console.log(e);
   }
 };
 
-// exports.findByRxNumber = async (req, res, next) => {
-//   try {
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// exports.findByUpdateDate = async (req, res, next) => {
-//   try {
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+exports.find = async (req, res) => {
+  try {
+    const { rxNumber } = req.body;
+    switch (true) {
+      case !!rxNumber:
+        const _results = await PICKUP.find({ rxNumber: { $in: rxNumber } });
+        if (_results.length > 0) {
+          const results = _results.map((v) => {
+            return {
+              _id: v._id,
+              deliveryDate: dayjs(v.deliveryDate).format("M/DD/YYYY HH:mm"),
+              rxNumber,
+              notes: v.notes,
+            };
+          });
+          return res.send({ results });
+        }
+      default:
+        res.sendStatus(404);
+    }
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+exports.png = async (req, res) => {
+  try {
+    res.sendFile(path + `/${req.params._id}.png`);
+  } catch (e) {
+    console.log(e);
+  }
+};
