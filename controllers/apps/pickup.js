@@ -97,6 +97,7 @@ exports.clear = (req, res) => {
     pickup.emit("items", items);
     pickup.emit("relation", relation);
     pickup.emit("notes", notes);
+    pickup.emit("date", deliveryDate);
     exports.clearCanvas(req, res);
   } catch (e) {
     console.log(e);
