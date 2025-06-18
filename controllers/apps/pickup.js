@@ -6,7 +6,7 @@ const path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
 
 let items = [];
 let relation = "self";
-let deliveryDate = undefined;
+let deliveryDate = null;
 let notes = "";
 let state = "standby";
 
@@ -31,7 +31,7 @@ exports.get = (req, res) => {
         pickup.emit("notes", notes);
         break;
       case "date":
-        //
+        pickup.emit("date", deliveryDate);
         break;
       default:
     }
