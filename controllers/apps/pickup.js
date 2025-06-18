@@ -2,7 +2,7 @@ const PICKUP = require("../../schemas/apps/pickup");
 const fs = require("fs");
 const dayjs = require("dayjs");
 
-const path = process.env.PICKUP_IMG_LOCATION || `D:\\pickup`;
+const path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
 
 let items = [];
 let relation = "self";
@@ -93,8 +93,10 @@ exports.clear = (req, res) => {
     relation = "self";
     deliveryDate = undefined;
     state = "standby";
+    notes = "";
     pickup.emit("items", items);
     pickup.emit("relation", relation);
+    pickup.emit("notes", notes);
     exports.clearCanvas(req, res);
   } catch (e) {
     console.log(e);
@@ -136,6 +138,14 @@ exports.submit = async (req, res, next) => {
   try {
     state = "submit";
     const date = new Date();
+    const day = dayjs(deliveryDate || date);
+    const existingDoc = await PICKUP.find({
+      rxNumber: { $in: items },
+      deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+    });
+    if (existingDoc.length > 0) {
+      throw new Error();
+    }
     const { _id } = await PICKUP.create({
       rxNumber: items,
       relation,
@@ -143,7 +153,6 @@ exports.submit = async (req, res, next) => {
       notes,
       deliveryDate: deliveryDate ? deliveryDate : date,
     });
-
     const base64Data = req.app
       .get("apps_pickup_canvas")
       .replace(/^data:image\/png;base64,/, "");
@@ -156,9 +165,10 @@ exports.submit = async (req, res, next) => {
     pickup.emit("state", "submit");
     exports.clear(req, res);
   } catch (e) {
+    console.log(e);
     pickup.emit("state", "error");
     state = "standby";
-    console.log(e);
+    next(e);
   }
 };
 
@@ -167,7 +177,7 @@ exports.find = async (req, res) => {
     const { rxNumber } = req.body;
     switch (true) {
       case !!rxNumber:
-        const _results = await PICKUP.find({ rxNumber: { $in: rxNumber } });
+        const _results = await PICKUP.find({ rxNumber });
         if (_results.length > 0) {
           const results = _results.map((v) => {
             return {
