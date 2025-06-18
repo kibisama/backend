@@ -175,10 +175,10 @@ exports.submit = async (req, res, next) => {
 
 exports.find = async (req, res) => {
   try {
-    const { rxNumber } = req.body;
+    const { rxNumber, deliveryDate } = req.body;
     switch (true) {
       case !!rxNumber:
-        const _results = await PICKUP.find({ rxNumber });
+        var _results = await PICKUP.find({ rxNumber });
         if (_results.length > 0) {
           const results = _results.map((v) => {
             return {
@@ -190,9 +190,30 @@ exports.find = async (req, res) => {
           });
           return res.send({ results });
         }
+        break;
+      case !!deliveryDate:
+        var day = dayjs(deliveryDate);
+        var _results = await PICKUP.find({
+          deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+        });
+        if (_results.length > 0) {
+          const results = [];
+          _results.forEach((v) => {
+            v.rxNumber.forEach((w) => {
+              results.push({
+                _id: v._id,
+                deliveryDate: dayjs(v.deliveryDate).format("M/DD/YYYY HH:mm"),
+                rxNumber: w,
+                notes: v.notes,
+              });
+            });
+          });
+          return res.send({ results });
+        }
+        break;
       default:
-        res.sendStatus(404);
     }
+    res.sendStatus(404);
   } catch (e) {
     console.log(e);
   }
