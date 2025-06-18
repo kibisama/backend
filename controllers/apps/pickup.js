@@ -185,6 +185,7 @@ exports.find = async (req, res) => {
               _id: v._id,
               deliveryDate: dayjs(v.deliveryDate).format("M/DD/YYYY HH:mm"),
               rxNumber,
+              relation: v.relation,
               notes: v.notes,
             };
           });
@@ -204,6 +205,7 @@ exports.find = async (req, res) => {
                 _id: v._id,
                 deliveryDate: dayjs(v.deliveryDate).format("M/DD/YYYY HH:mm"),
                 rxNumber: w,
+                relation: v.relation,
                 notes: v.notes,
               });
             });

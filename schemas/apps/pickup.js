@@ -9,6 +9,10 @@ const pickupSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  relation: {
+    type: String,
+    required: true,
+  },
   notes: String,
   deliveryDate: {
     type: Date,
