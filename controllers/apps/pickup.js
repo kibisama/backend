@@ -117,7 +117,8 @@ exports.clearCanvas = (req, res) => {
 exports.setRelation = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
-    const { relation } = req.body;
+    const _relation = req.body.relation;
+    relation = _relation;
     pickup.emit("relation", relation);
     res.sendStatus(200);
   } catch (e) {
@@ -136,6 +137,7 @@ exports.preSubmit = async (req, res) => {
 };
 exports.submit = async (req, res, next) => {
   const pickup = req.app.get("io").of("/pickup");
+  let reason = "";
   try {
     const _notes = req.body.notes;
     if (notes !== _notes) {
@@ -171,6 +173,9 @@ exports.submit = async (req, res, next) => {
     exports.clear(req, res);
   } catch (e) {
     console.log(e);
+    if (reason) {
+      pickup.emit("error", reason);
+    }
     pickup.emit("state", "error");
     state = "standby";
     next(e);
