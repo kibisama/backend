@@ -24,7 +24,7 @@ router.get("/clear-canvas", clearCanvas);
 router.get("/clear", clear);
 router.post("/relation", setRelation);
 router.get("/pre-submit", preSubmit);
-router.get("/submit", submit);
+router.post("/submit", submit);
 router.post("/find", find);
 router.get("/png/:_id", png);
 

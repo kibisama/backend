@@ -117,7 +117,7 @@ exports.clearCanvas = (req, res) => {
 exports.setRelation = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
-    relation = req.body.relation;
+    const { relation } = req.body;
     pickup.emit("relation", relation);
     res.sendStatus(200);
   } catch (e) {
@@ -137,6 +137,10 @@ exports.preSubmit = async (req, res) => {
 exports.submit = async (req, res, next) => {
   const pickup = req.app.get("io").of("/pickup");
   try {
+    const _notes = req.body.notes;
+    if (notes !== _notes) {
+      notes = _notes;
+    }
     state = "submit";
     const date = new Date();
     const day = dayjs(deliveryDate || date);
