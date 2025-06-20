@@ -43,8 +43,8 @@ exports.get = (req, res) => {
 exports.add = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
-    const item = req.body.item;
-    if (!items.includes(item)) {
+    const { item } = req.body;
+    if (item && !items.includes(item)) {
       items.push(item);
       pickup.emit("items", items);
     }
