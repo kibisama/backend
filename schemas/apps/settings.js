@@ -33,9 +33,19 @@ const appSettingsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  storeManager: {
+  storeManagerLN: {
+    type: String,
+    required: true,
+  },
+  storeManagerFN: {
     type: String,
     required: true,
   },
 });
-module.exports = mongoose.model("App Settings", appSettingsSchema);
+
+const model = mongoose.model("App Settings", appSettingsSchema);
+/**
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} Settings
+ */
+
+module.exports = model;
