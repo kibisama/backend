@@ -13,6 +13,7 @@ const {
   submit,
   find,
   png,
+  proof,
 } = require("../../controllers/apps/pickup");
 
 router.get("/get/:type", get);
@@ -27,5 +28,6 @@ router.get("/pre-submit", preSubmit);
 router.post("/submit", submit);
 router.post("/find", find);
 router.get("/png/:_id", png);
+router.post("/proof", proof);
 
 module.exports = router;

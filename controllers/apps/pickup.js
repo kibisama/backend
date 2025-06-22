@@ -237,3 +237,17 @@ exports.png = async (req, res) => {
     console.log(e);
   }
 };
+
+exports.proof = async (req, res) => {
+  try {
+    const { _id, rxNumber } = req.body;
+    const { deliveryDate, relation, notes } = await PICKUP.findById(_id);
+    res.send({
+      deliveryDate: dayjs(deliveryDate).format("M/DD/YYYY HH:mm"),
+      relation,
+      notes,
+    });
+  } catch (e) {
+    console.log(e);
+  }
+};

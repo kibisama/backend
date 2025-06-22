@@ -1,7 +1,7 @@
 const SETTINGS = require("../../schemas/apps/settings");
 
 const preset = {
-  storeName: "El Camino Pharmacy",
+  storeName: "El Camino Pharmacy Inc.",
   storeAddress: "10940 Victory Blvd.",
   storeCity: "North Hollywood",
   storeState: "CA",
