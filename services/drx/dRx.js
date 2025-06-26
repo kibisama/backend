@@ -10,7 +10,7 @@ const plan = require("./plan");
  * @typedef {typeof DRX.schema.obj} DRxObj
  */
 
-const mapIndex = (csvHeader) => {
+const _mapIndex = (csvHeader) => {
   const table = {};
   csvHeader.forEach((v, i) => {
     table[v] = i;
@@ -66,7 +66,7 @@ const mapIndex = (csvHeader) => {
  * @param {[string]} rxReportRow
  * @returns {DRxObj}
  */
-const createDRxObj = (indexTable, rxReportRow) => {
+const _createDRxObj = (indexTable, rxReportRow) => {
   const dRxObj = {};
   Object.keys(indexTable).forEach((v) => {
     ptObj[v] = rxReportRow[indexTable[v]];
@@ -105,7 +105,7 @@ const _createDRx = async (dRxObj) => {
  * @param {DRx} dRx
  * @return {Promise<DRx|undefined>}
  */
-const updateDRx = async (dRxObj, dRx) => {
+const _updateDRx = async (dRxObj, dRx) => {
   try {
     let change = false;
     const keys = Object.keys(dRxObj);
@@ -130,13 +130,13 @@ const updateDRx = async (dRxObj, dRx) => {
  * @param {DRxObj} dRxObj
  * @returns {Promise<DRx|undefined>}
  */
-const upsertDRx = async (dRxObj) => {
+const _upsertDRx = async (dRxObj) => {
   try {
     const dRx = await _findDRx(dRxObj);
     if (!dRx) {
       return await _createDRx(dRxObj);
     }
-    return await updateDRx(dRxObj, dRx);
+    return await _updateDRx(dRxObj, dRx);
   } catch (e) {
     console.log(e);
   }
@@ -147,9 +147,31 @@ const upsertDRx = async (dRxObj) => {
  * @param {[[string]]} csvData
  * @returns {Promise<|undefined>}
  */
-exports.upsertRx = async (csvData) => {
+exports.upsertManyRx = async (csvData) => {
   try {
-    //
+    const csvHeader = csvData[0];
+    const dRxMap = _mapIndex(csvHeader);
+    const ptMap = pt.mapIndex(csvHeader);
+    const planMap = plan.mapIndex(csvHeader);
+    /** @type {Object<string, pt.Patient>} */
+    const ptTable = {};
+    /** @type {Object<string, plan.Plan>} */
+    const planTable = {};
+    for (let i = 1; i < csvData.length - 1; i++) {
+      const data = csvData[i];
+      const dRxObj = _createDRxObj(dRxMap, data);
+      const dRx = await _upsertDRx(dRxObj);
+      const ptObj = pt.createPtObj(ptMap, data);
+      if (!ptTable[ptObj.patientID]) {
+        ptTable[ptObj.patientID] = await pt.upsertPatient(ptObj);
+      }
+      await dRx.updateOne({ patient: ptTable[ptObj.patientID]._id });
+      const planObj = plan.createPlanObj(planMap, data);
+      if (!planTable[planObj.planID]) {
+        planTable[planObj.planID] = await plan.upsertPlan(planObj);
+      }
+      await dRx.updateOne({ plan: planTable[planObj.planID]._id });
+    }
   } catch (e) {
     console.log(e);
   }
@@ -172,78 +194,33 @@ exports.isFileOnly = (dRx) => {
       return false;
   }
 };
-
-module.exports = {
-  /**
-   * @param {DigitalRx} drx
-   * @returns {Boolean}
-   */
-  isBilled(drx) {
-    if (drx.rxStatusFin === "BILLED") {
-      return true;
-    }
-    return false;
-  },
-  /**
-   * @param {DigitalRx} drx
-   * @returns {Boolean}
-   */
-  hasNoCopay(drx) {
-    if (drx.patPay === "0") {
-      return true;
-    }
-    return false;
-  },
-  /**
-   * @param {DigitalRx} drx
-   * @returns {Boolean}
-   */
-  isRxOnly(drx) {
-    if (drx.drugRxOTC === "RX") {
-      return true;
-    }
-    return false;
-  },
-
-  /**
-   * @returns {}
-   */
-  async checkPackage() {
-    //
-  },
-  /**
-   * @param {[[string]]} csvData
-   * @returns {Promise<[RxObj]|undefined>}
-   */
-  async mapData(csvData) {
-    try {
-      const table = mapIndexTable(csvData[0]);
-      const pts = {};
-      const plans = {};
-      /** @type {[RxObj]} */
-      const rxObj = [];
-      for (let i = 1; i < csvData.length - 1; i++) {
-        const data = csvData[i];
-        const rx = {};
-        for (const key in table) {
-          rx[key] = data[table[key]];
-        }
-        const patientID = rx.patientID;
-        if (!patientID) {
-          continue;
-        }
-        rx.patient =
-          pts[patientID] || (pts[patientID] = (await pt.upsertPt(rx))._id);
-        const planID = rx.planID;
-        if (planID) {
-          rx.plan =
-            plans[planID] || (plans[planID] = (await plan.upsertPlan(rx))._id);
-        }
-        rxObj.push(rx);
-      }
-      return rxObj;
-    } catch (e) {
-      console.log(e);
-    }
-  },
+/**
+ * @param {DigitalRx} dRx
+ * @returns {Boolean}
+ */
+exports.isBilled = (dRx) => {
+  if (dRx.rxStatusFin === "BILLED") {
+    return true;
+  }
+  return false;
+};
+/**
+ * @param {DigitalRx} dRx
+ * @returns {Boolean}
+ */
+exports.hasNoCopay = (dRx) => {
+  if (dRx.patPay === "0") {
+    return true;
+  }
+  return false;
+};
+/**
+ * @param {DigitalRx} dRx
+ * @returns {Boolean}
+ */
+exports.isRxOnly = (dRx) => {
+  if (dRx.drugRxOTC === "RX") {
+    return true;
+  }
+  return false;
 };

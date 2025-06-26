@@ -74,7 +74,7 @@ const _createPatient = async (ptObj) => {
  * @param {Patient} pt
  * @return {Promise<Patient|undefined>}
  */
-const updatePatient = async (ptObj, pt) => {
+const _updatePatient = async (ptObj, pt) => {
   try {
     let change = false;
     const keys = Object.keys(ptObj);
@@ -105,7 +105,7 @@ exports.upsertPatient = async (ptObj) => {
     if (!pt) {
       return await _createPatient(ptObj);
     }
-    return await updatePatient(ptObj, pt);
+    return await _updatePatient(ptObj, pt);
   } catch (e) {
     console.log(e);
   }
