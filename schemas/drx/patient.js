@@ -3,12 +3,13 @@ const { Schema } = mongoose;
 
 const patientSchema = new Schema({
   patientID: { type: String, required: true, unique: true },
-  patientName: String,
   patientFirstName: String,
   patientLastName: String,
   patientDOB: String,
   patientSex: String,
   patientStreet: String,
+  patientCity: String,
+  patientState: String,
   patientZip: String,
   patientPhone: String,
   patientSSN: String,
