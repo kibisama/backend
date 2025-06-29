@@ -27,7 +27,7 @@ const digitalRxSchema = new Schema({
   rxStatus: String,
   rxStatusFin: String,
   /* Patient Info */
-  patient: { type: ObjectId, ref: "Patient" },
+  patient: { type: ObjectId, ref: "DRx Patient" },
   /* Doctor Info */
   doctorName: String,
   doctorNPI: String,
@@ -40,7 +40,7 @@ const digitalRxSchema = new Schema({
   bG: String,
   genericFor: String,
   /* Insurance & Payment Info */
-  plan: { type: ObjectId, ref: "Plan" },
+  plan: { type: ObjectId, ref: "DRx Plan" },
   totalPaid: String,
   patPay: String,
   insPaid: String,
@@ -50,7 +50,7 @@ const digitalRxSchema = new Schema({
   groupNumber: String,
 });
 
-const model = mongoose.model("Digital Rx", digitalRxSchema);
+const model = mongoose.model("DRx Rx", digitalRxSchema);
 /**
  * @typedef {Awaited<ReturnType<model["create"]>>[0]} DigitalRx
  * @typedef {"DC-FILEONLY"|"DISCONTINUED"|"FILEONLY"|"FO-TRANSFERRED"|"FUTURE BILL"|"RENEWED"|"TRANSFERRED"|"TYPED"} RxStatus

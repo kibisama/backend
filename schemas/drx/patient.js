@@ -16,7 +16,7 @@ const patientSchema = new Schema({
   patNotes: String,
 });
 
-const model = mongoose.model("Patient", patientSchema);
+const model = mongoose.model("DRx Patient", patientSchema);
 /**
  * @typedef {Awaited<ReturnType<model["create"]>>[0]} Patient
  */

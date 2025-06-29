@@ -40,6 +40,7 @@ exports.createPtObj = (indexTable, rxReportRow) => {
   Object.keys(indexTable).forEach((v) => {
     ptObj[v] = rxReportRow[indexTable[v]];
   });
+  return ptObj;
 };
 
 /**
@@ -51,7 +52,7 @@ const _findPatient = async (ptObj) => {
     if (!ptObj.patientID) {
       throw new Error();
     }
-    return await PT.find({ patientID: ptObj.patientID });
+    return await PT.findOne({ patientID: ptObj.patientID });
   } catch (e) {
     console.log(e);
   }

@@ -8,7 +8,7 @@ const planSchema = new Schema({
   pcn: String,
 });
 
-const model = mongoose.model("Plan", planSchema);
+const model = mongoose.model("DRx Plan", planSchema);
 /**
  * @typedef {Awaited<ReturnType<model["create"]>>[0]} Plan
  */

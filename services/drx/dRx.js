@@ -62,15 +62,16 @@ const _mapIndex = (csvHeader) => {
 };
 
 /**
- * @param {ReturnType<mapIndex>} indexTable
+ * @param {ReturnType<_mapIndex>} indexTable
  * @param {[string]} rxReportRow
  * @returns {DRxObj}
  */
 const _createDRxObj = (indexTable, rxReportRow) => {
   const dRxObj = {};
   Object.keys(indexTable).forEach((v) => {
-    ptObj[v] = rxReportRow[indexTable[v]];
+    dRxObj[v] = rxReportRow[indexTable[v]];
   });
+  return dRxObj;
 };
 
 /**
@@ -82,7 +83,7 @@ const _findDRx = async (dRxObj) => {
     if (!dRxObj.rxID) {
       throw new Error();
     }
-    return await DRX.find({ rxID: dRxObj.rxID });
+    return await DRX.findOne({ rxID: dRxObj.rxID });
   } catch (e) {
     console.log(e);
   }
@@ -157,20 +158,20 @@ exports.upsertManyRx = async (csvData) => {
     const ptTable = {};
     /** @type {Object<string, plan.Plan>} */
     const planTable = {};
-    for (let i = 1; i < csvData.length - 1; i++) {
+    for (let i = 1; i < csvData.length; i++) {
       const data = csvData[i];
       const dRxObj = _createDRxObj(dRxMap, data);
       const dRx = await _upsertDRx(dRxObj);
       const ptObj = pt.createPtObj(ptMap, data);
       if (!ptTable[ptObj.patientID]) {
         ptTable[ptObj.patientID] = await pt.upsertPatient(ptObj);
+        await dRx.updateOne({ patient: ptTable[ptObj.patientID]._id });
       }
-      await dRx.updateOne({ patient: ptTable[ptObj.patientID]._id });
       const planObj = plan.createPlanObj(planMap, data);
-      if (!planTable[planObj.planID]) {
+      if (planObj.planID && !planTable[planObj.planID]) {
         planTable[planObj.planID] = await plan.upsertPlan(planObj);
+        await dRx.updateOne({ plan: planTable[planObj.planID]._id });
       }
-      await dRx.updateOne({ plan: planTable[planObj.planID]._id });
     }
   } catch (e) {
     console.log(e);

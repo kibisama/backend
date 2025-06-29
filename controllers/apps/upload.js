@@ -10,3 +10,12 @@ exports.checkDRxCSV = async (req, res) => {
     console.log(e);
   }
 };
+
+exports.uploadDRxCSV = async (req, res) => {
+  try {
+    await dRx.upsertManyRx(req.body.data);
+    res.sendStatus(200);
+  } catch (e) {
+    console.log(e);
+  }
+};

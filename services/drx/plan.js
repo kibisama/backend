@@ -32,21 +32,7 @@ exports.createPlanObj = (indexTable, rxReportRow) => {
   Object.keys(indexTable).forEach((v) => {
     planObj[v] = rxReportRow[indexTable[v]];
   });
-};
-
-/**
- * @param {PlanObj} planObj
- * @return {Promise<Plan|undefined>}
- */
-const _findPlan = async (planObj) => {
-  try {
-    if (!planObj.planID) {
-      throw new Error();
-    }
-    return await PLAN.find({ planID: planObj.planID });
-  } catch (e) {
-    console.log(e);
-  }
+  return planObj;
 };
 
 /**
@@ -67,7 +53,13 @@ const _createPlan = async (planObj) => {
  */
 exports.upsertPlan = async (planObj) => {
   try {
-    const plan = await _findPlan(planObj);
+    const planID = planObj.planID;
+    if (!planID) {
+      throw new Error();
+    }
+    const plan = await PLAN.findOneAndUpdate({ planID }, planObj, {
+      new: true,
+    });
     if (!plan) {
       return await _createPlan(planObj);
     }
