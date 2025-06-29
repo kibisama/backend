@@ -1,7 +1,7 @@
-const dayjs = require("dajys");
 const DRX = require("../../schemas/dRx/dRx");
 const pt = require("./patient");
 const plan = require("./plan");
+const { hasUndefinedProperties } = require("../common");
 
 /**
  * @typedef {DRX.DigitalRx} DRx
@@ -175,6 +175,25 @@ exports.upsertManyRx = async (csvData) => {
   } catch (e) {
     console.log(e);
   }
+};
+
+/**
+ * Checks if the CSV header contains all required.
+ * @param {[string]} csvHeader
+ * @returns {boolean}
+ */
+exports.checkCSVHeader = (csvHeader) => {
+  const maps = [
+    _mapIndex(csvHeader),
+    pt.mapIndex(csvHeader),
+    plan.mapIndex(csvHeader),
+  ];
+  for (let i = 0; i < maps.length; i++) {
+    if (hasUndefinedProperties(maps[i])) {
+      return false;
+    }
+  }
+  return true;
 };
 
 /**
