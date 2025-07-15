@@ -69,7 +69,7 @@ const _mapIndex = (csvHeader) => {
 const _createDRxObj = (indexTable, rxReportRow) => {
   const dRxObj = {};
   Object.keys(indexTable).forEach((v) => {
-    dRxObj[v] = rxReportRow[indexTable[v]];
+    dRxObj[v] = rxReportRow[indexTable[v]].trim();
   });
   return dRxObj;
 };

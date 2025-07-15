@@ -30,7 +30,7 @@ exports.mapIndex = (csvHeader) => {
 exports.createPlanObj = (indexTable, rxReportRow) => {
   const planObj = {};
   Object.keys(indexTable).forEach((v) => {
-    planObj[v] = rxReportRow[indexTable[v]];
+    planObj[v] = rxReportRow[indexTable[v]].trim();
   });
   return planObj;
 };

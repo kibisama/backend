@@ -38,7 +38,7 @@ exports.mapIndex = (csvHeader) => {
 exports.createPtObj = (indexTable, rxReportRow) => {
   const ptObj = {};
   Object.keys(indexTable).forEach((v) => {
-    ptObj[v] = rxReportRow[indexTable[v]];
+    ptObj[v] = rxReportRow[indexTable[v]].trim();
   });
   return ptObj;
 };
