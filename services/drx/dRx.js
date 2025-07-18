@@ -1,7 +1,9 @@
 const DRX = require("../../schemas/dRx/dRx");
 const pt = require("./patient");
 const plan = require("./plan");
+const { upsertPackage } = require("../inv/package");
 const { hasUndefinedProperties } = require("../common");
+const { hyphenateNDC11 } = require("../convert");
 
 /**
  * @typedef {DRX.DigitalRx} DRx
@@ -144,6 +146,16 @@ const _upsertDRx = async (dRxObj) => {
 };
 
 /**
+ * @param {DRxObj} dRxObj
+ * @returns {undefined}
+ */
+const _upsertPackage = (dRxObj) => {
+  !exports.isFileOnly(dRxObj) &&
+    exports.isRxOnly(dRxObj) &&
+    upsertPackage(hyphenateNDC11(dRxObj.drugNDC), "ndc11");
+};
+
+/**
  * Upserts & updates dRx documents thoroughly from the whole CSV Json.
  * @param {[[string]]} csvData
  * @returns {Promise<|undefined>}
@@ -158,6 +170,8 @@ exports.upsertManyRx = async (csvData) => {
     const ptTable = {};
     /** @type {Object<string, plan.Plan>} */
     const planTable = {};
+    /** @type {Object<string, string>} */
+    const packageTable = {};
     for (let i = 1; i < csvData.length; i++) {
       const data = csvData[i];
       const dRxObj = _createDRxObj(dRxMap, data);
@@ -171,6 +185,10 @@ exports.upsertManyRx = async (csvData) => {
       if (planObj.planID && !planTable[planObj.planID]) {
         planTable[planObj.planID] = await plan.upsertPlan(planObj);
         await dRx.updateOne({ plan: planTable[planObj.planID]._id });
+      }
+      if (!packageTable[dRxObj.drugNDC]) {
+        packageTable[dRxObj.drugNDC] = true;
+        _upsertPackage(dRxObj);
       }
     }
   } catch (e) {
@@ -198,7 +216,7 @@ exports.checkCSVHeader = (csvHeader) => {
 };
 
 /**
- * @param {DRx} dRx
+ * @param {DRxObj} dRx
  * @returns {Boolean}
  */
 exports.isFileOnly = (dRx) => {
@@ -215,7 +233,7 @@ exports.isFileOnly = (dRx) => {
   }
 };
 /**
- * @param {DigitalRx} dRx
+ * @param {DRxObj} dRx
  * @returns {Boolean}
  */
 exports.isBilled = (dRx) => {
@@ -225,7 +243,7 @@ exports.isBilled = (dRx) => {
   return false;
 };
 /**
- * @param {DigitalRx} dRx
+ * @param {DRxObj} dRx
  * @returns {Boolean}
  */
 exports.hasNoCopay = (dRx) => {
@@ -235,7 +253,7 @@ exports.hasNoCopay = (dRx) => {
   return false;
 };
 /**
- * @param {DigitalRx} dRx
+ * @param {DRxObj} dRx
  * @returns {Boolean}
  */
 exports.isRxOnly = (dRx) => {

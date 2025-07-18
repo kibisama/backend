@@ -34,7 +34,7 @@ const digitalRxSchema = new Schema({
   doctorDEA: String,
   /* Drug Info */
   drugName: String,
-  drugNDC: String,
+  drugNDC: String, // CMS
   drugDEA: String,
   drugRxOTC: String,
   bG: String,
