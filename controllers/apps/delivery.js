@@ -16,5 +16,6 @@ exports.mailer = async (req, res, next) => {
     res.send("OK");
   } catch (e) {
     console.log(e);
+    next(e);
   }
 };
