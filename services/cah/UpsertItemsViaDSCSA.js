@@ -105,7 +105,7 @@ const mailReport = (result) => {
     nodeMailer.sendMail(
       {
         from: process.env.MAILER_EMAIL,
-        to: "",
+        to: process.env.MAILER_EMAIL,
         subject: "Cardinal DSCSA Transaction Report",
         html: `
         <div>
