@@ -99,17 +99,59 @@ const createVirtualScanReq = (result) => {
 /**
  *
  */
-const mailReport = () => {
+const mailReport = (result) => {
+  const { results, number, shortDated } = result;
   try {
     nodeMailer.sendMail(
       {
-        from: "",
+        from: process.env.MAILER_EMAIL,
         to: "",
         subject: "Cardinal DSCSA Transaction Report",
         html: `
         <div>
-            <h3>Short Dated Item List</h2>
-            <h3>Full Transaction List</h3>
+          <p>Total ${number} transactions were recorded in our system.</p>
+          <br/>
+          <h3>Short Dated Item List</h2>
+        ${
+          shortDated.length > 0
+            ? `
+            <div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>CIN</th>
+                    <th>NDC</th>
+                    <th>Desc.</th>
+                    <th>GTIN</th>
+                    <th>Lot #</th>
+                    <th>Serial #</th>
+                    <th>Exp Date</th>
+                    <th>Tote ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${shortDated.map(
+                    (v) => `
+                  <tr>
+                    <td>${v["Invoice Number"]}</td>
+                    <td>${v["Item Number"]}</td>
+                    <td>${v["NDC"]}</td>
+                    <td>${v["Item Description"]}</td>
+                    <td>${v["GTIN"]}</td>
+                    <td>${v["Lot Number"]}</td>
+                    <td>${v["Item Serial Number"]}</td>
+                    <td>${v["Expiration Date"]}</td>
+                    <td>${v["Tote ID"]}</td>
+                  </tr>
+                  `
+                  )}
+                </tbody>
+              </table>
+            </div>
+            `
+            : "<p>No items</p>"
+        }
         </div>
         `,
       },
@@ -159,9 +201,7 @@ const handleResults = async (results, date) => {
           number++;
         }
       }
-      if (shortDated.length > 0) {
-        //
-      }
+      mailReport({ results, number, shortDated });
     } else {
       // make error notification
     }
