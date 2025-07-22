@@ -131,8 +131,9 @@ const mailReport = (result) => {
                   </tr>
                 </thead>
                 <tbody>
-                  ${shortDated.map(
-                    (v) => `
+                  ${shortDated
+                    .map(
+                      (v) => `
                   <tr>
                     <td>${v["Invoice Number"]}</td>
                     <td>${v["Item Number"]}</td>
@@ -145,7 +146,8 @@ const mailReport = (result) => {
                     <td>${v["Tote ID"]}</td>
                   </tr>
                   `
-                  )}
+                    )
+                    .join("")}
                 </tbody>
               </table>
             </div>
