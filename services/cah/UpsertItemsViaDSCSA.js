@@ -105,6 +105,7 @@ const handleResults = async (results, date) => {
     let number = 0;
     if (results.length > 0) {
       const table = {};
+      const shortDated = [];
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
         const { NDC, GTIN } = result;
@@ -123,9 +124,15 @@ const handleResults = async (results, date) => {
           if (!_item.dateFilled) {
             await package.updateInventories(_item, "RECEIVE");
           }
+          if (isShortDated(scanReq.exp, "YYMMDD")) {
+            shortDated.push(result);
+          }
           table[GTIN] = true;
           number++;
         }
+      }
+      if (shortDated.length > 0) {
+        //
       }
     } else {
       // make error notification
