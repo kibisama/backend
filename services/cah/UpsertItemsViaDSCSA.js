@@ -5,6 +5,7 @@ const package = require("../inv/package");
 const { scheduleJob } = require("node-schedule");
 const { isStoreOpen, isShortDated } = require("../common");
 const { hyphenateNDC11 } = require("../convert");
+const nodeMailer = require("../nodeMailer");
 
 /**
  * Returns a native Date object indicating m minutes from now.
@@ -94,6 +95,33 @@ const createVirtualScanReq = (result) => {
     sn: result["Item Serial Number"],
     exp: formatExpString(result["Expiration Date"]),
   };
+};
+/**
+ *
+ */
+const mailReport = () => {
+  try {
+    nodeMailer.sendMail(
+      {
+        from: "",
+        to: "",
+        subject: "Cardinal DSCSA Transaction Report",
+        html: `
+        <div>
+            <h3>Short Dated Item List</h2>
+            <h3>Full Transaction List</h3>
+        </div>
+        `,
+      },
+      (err, info) => {
+        if (err) {
+          console.error(err);
+        }
+      }
+    );
+  } catch (e) {
+    console.log(e);
+  }
 };
 /**
  * @param {} results

@@ -1,4 +1,4 @@
-const mailTransporter = require("../../services/nodemailer");
+const mailTransporter = require("../../services/nodeMailer");
 
 exports.mailer = async (req, res, next) => {
   try {
