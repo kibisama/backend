@@ -64,6 +64,16 @@ const _mapIndex = (csvHeader) => {
 };
 
 /**
+ * @param {string} data
+ * @param {string} delimiter
+ * @returns {}
+ */
+module.exportsupsertWithQR = (data, delimiter) => {
+  const a = data.split(delimiter);
+  const dRxObj = { rxID: a[0], rxNumber: a[1], rxDate: a[2] };
+};
+
+/**
  * @param {ReturnType<_mapIndex>} indexTable
  * @param {[string]} rxReportRow
  * @returns {DRxObj}
@@ -114,7 +124,7 @@ const _updateDRx = async (dRxObj, dRx) => {
     const keys = Object.keys(dRxObj);
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
-      if (dRx[key] !== dRxObj[key]) {
+      if (dRx[key] && dRx[key] !== dRxObj[key]) {
         change = true;
         break;
       }

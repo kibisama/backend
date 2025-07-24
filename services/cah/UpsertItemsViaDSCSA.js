@@ -99,22 +99,8 @@ const createVirtualScanReq = (result) => {
 /**
  *
  */
-const mailReport = (result) => {
-  const { results, number, shortDated } = result;
-  try {
-    nodeMailer.sendMail(
-      {
-        from: process.env.MAILER_EMAIL,
-        to: process.env.MAILER_EMAIL,
-        subject: "Cardinal DSCSA Transaction Report",
-        html: `
-        <div>
-          <p>Total ${number} transactions were recorded in our system.</p>
-          <br/>
-          <h3>Short Dated Item List</h2>
-        ${
-          shortDated.length > 0
-            ? `
+const generateHtmlTable = (results) => {
+  return `
             <div>
               <table>
                 <thead>
@@ -131,7 +117,7 @@ const mailReport = (result) => {
                   </tr>
                 </thead>
                 <tbody>
-                  ${shortDated
+                  ${results
                     .map(
                       (v) => `
                   <tr>
@@ -151,9 +137,48 @@ const mailReport = (result) => {
                 </tbody>
               </table>
             </div>
-            `
-            : "<p>No items</p>"
+            `;
+};
+
+/**
+ *
+ */
+const mailReport = (result) => {
+  const { results, number, shortDated } = result;
+  try {
+    nodeMailer.sendMail(
+      {
+        from: process.env.MAILER_EMAIL,
+        to: process.env.MAILER_EMAIL,
+        subject: "Cardinal DSCSA Transaction Report",
+        html: `
+        <style>
+        table {
+          border: 2px solid #d3d3d3;
         }
+        th {
+          border: 2px solid #d3d3d3;
+          background-color: #46ffa6;
+          padding: 2px;
+        }
+        td {
+          border: 2px solid #d3d3d3;
+          background-color: #fafafa;
+          padding: 2px;
+        }
+        </style>
+        <div>
+          <p>Total ${number} transactions were recorded in our system.</p>
+          <br/>
+          <h3>Short Dated Item List</h3>
+        ${
+          shortDated.length > 0
+            ? generateHtmlTable(shortDated)
+            : "<p>No short dated items</p>"
+        }
+          <br/>
+          <h3>All Transaction List</h3>
+        ${generateHtmlTable(results)}
         </div>
         `,
       },

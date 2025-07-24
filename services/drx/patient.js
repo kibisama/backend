@@ -81,7 +81,7 @@ const _updatePatient = async (ptObj, pt) => {
     const keys = Object.keys(ptObj);
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
-      if (pt[key] !== ptObj[key]) {
+      if (pt[key] && pt[key] !== ptObj[key]) {
         change = true;
         break;
       }
