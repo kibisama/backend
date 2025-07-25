@@ -68,5 +68,3 @@ exports.upsertPlan = async (planObj) => {
     console.log(e);
   }
 };
-
-// updatePlan

@@ -47,49 +47,9 @@ exports.createPtObj = (indexTable, rxReportRow) => {
  * @param {PtObj} ptObj
  * @return {Promise<Patient|undefined>}
  */
-const _findPatient = async (ptObj) => {
-  try {
-    if (!ptObj.patientID) {
-      throw new Error();
-    }
-    return await PT.findOne({ patientID: ptObj.patientID });
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
- * @param {PtObj} ptObj
- * @return {Promise<Patient|undefined>}
- */
 const _createPatient = async (ptObj) => {
   try {
     return await PT.create(ptObj);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
- * @param {PtObj} ptObj
- * @param {Patient} pt
- * @return {Promise<Patient|undefined>}
- */
-const _updatePatient = async (ptObj, pt) => {
-  try {
-    let change = false;
-    const keys = Object.keys(ptObj);
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      if (pt[key] && pt[key] !== ptObj[key]) {
-        change = true;
-        break;
-      }
-    }
-    if (change) {
-      return await PT.findByIdAndUpdate(pt._id, ptObj, { new: true });
-    }
-    return pt;
   } catch (e) {
     console.log(e);
   }
@@ -102,11 +62,15 @@ const _updatePatient = async (ptObj, pt) => {
  */
 exports.upsertPatient = async (ptObj) => {
   try {
-    const pt = await _findPatient(ptObj);
+    const patientID = ptObj.patientID;
+    if (!patientID) {
+      throw new Error();
+    }
+    const pt = await PT.findOneAndUpdate({ patientID }, ptObj, { new: true });
     if (!pt) {
       return await _createPatient(ptObj);
     }
-    return await _updatePatient(ptObj, pt);
+    return pt;
   } catch (e) {
     console.log(e);
   }

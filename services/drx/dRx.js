@@ -68,9 +68,27 @@ const _mapIndex = (csvHeader) => {
  * @param {string} delimiter
  * @returns {}
  */
-module.exportsupsertWithQR = (data, delimiter) => {
-  const a = data.split(delimiter);
-  const dRxObj = { rxID: a[0], rxNumber: a[1], rxDate: a[2] };
+exports.upsertWithQR = (data, delimiter) => {
+  try {
+    const a = data.split(delimiter);
+    const rxObj = {
+      rxID: a[0],
+      rxNumber: a[1],
+      rxDate: a[2],
+      patientID: a[3],
+      patientLastName: a[4],
+      patientFirstName: a[5],
+      drugNDC: a[6],
+      drugName: a[7],
+      rxQty: a[8],
+      refills: a[9],
+      doctorName: a[10],
+      planID: a[11],
+      patPay: a[12],
+    };
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 /**
@@ -90,49 +108,9 @@ const _createDRxObj = (indexTable, rxReportRow) => {
  * @param {DRxObj} dRxObj
  * @return {Promise<DRx|undefined>}
  */
-const _findDRx = async (dRxObj) => {
-  try {
-    if (!dRxObj.rxID) {
-      throw new Error();
-    }
-    return await DRX.findOne({ rxID: dRxObj.rxID });
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
- * @param {DRxObj} dRxObj
- * @return {Promise<DRx|undefined>}
- */
 const _createDRx = async (dRxObj) => {
   try {
     return await DRX.create(dRxObj);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
- * @param {DRxObj} dRxObj
- * @param {DRx} dRx
- * @return {Promise<DRx|undefined>}
- */
-const _updateDRx = async (dRxObj, dRx) => {
-  try {
-    let change = false;
-    const keys = Object.keys(dRxObj);
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      if (dRx[key] && dRx[key] !== dRxObj[key]) {
-        change = true;
-        break;
-      }
-    }
-    if (change) {
-      return await DRX.findByIdAndUpdate(dRx._id, dRxObj, { new: true });
-    }
-    return dRx;
   } catch (e) {
     console.log(e);
   }
@@ -145,11 +123,15 @@ const _updateDRx = async (dRxObj, dRx) => {
  */
 const _upsertDRx = async (dRxObj) => {
   try {
-    const dRx = await _findDRx(dRxObj);
+    const rxID = dRxObj.rxID;
+    if (!rxID) {
+      throw new Error();
+    }
+    const dRx = await DRX.findOneAndUpdate({ rxID }, dRxObj, { new: true });
     if (!dRx) {
       return await _createDRx(dRxObj);
     }
-    return await _updateDRx(dRxObj, dRx);
+    return dRx;
   } catch (e) {
     console.log(e);
   }
