@@ -78,12 +78,12 @@ exports.upsertWithQR = (data, delimiter) => {
       patientID: a[3],
       patientLastName: a[4],
       patientFirstName: a[5],
-      drugNDC: a[6],
-      drugName: a[7],
-      rxQty: a[8],
-      refills: a[9],
-      doctorName: a[10],
-      planID: a[11],
+      patientDOB: a[6],
+      drugNDC: a[7],
+      drugName: a[8],
+      rxQty: a[9],
+      refills: a[10],
+      doctorName: a[11],
       patPay: a[12],
     };
   } catch (e) {
