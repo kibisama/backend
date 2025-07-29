@@ -8,14 +8,10 @@ module.exports = async (req, res, next) => {
     const scanReq = req.body;
     const { gtin, mode } = scanReq;
     const _item = await item.upsertItem(scanReq, "SCAN");
-    if (!_item) {
-      return res.sendStatus(500);
-    }
     if (item.isDuplicateFill(_item, mode)) {
       return res.sendStatus(208);
     }
     await item.updateItem(scanReq);
-    await item.setMethod(_item, "SCAN");
     /** @type {package.UpdateOption} */
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }

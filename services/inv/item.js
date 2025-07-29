@@ -1,18 +1,18 @@
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
-const item = require("../../schemas/item");
+const ITEM = require("../../schemas/item");
 
 /**
- * @typedef {item.Item} Item
- * @typedef {item.Method} Method
+ * @typedef {ITEM.Item} Item
+ * @typedef {ITEM.Method} Method
  * @typedef {object} DataMatrix
  * @property {string} gtin
  * @property {string} lot
  * @property {string} sn
  * @property {string} exp
  * @typedef {"RECEIVE"|"FILL"|"REVERSE"|"RETURN"} Mode
- * @typedef {item.Source} Source
+ * @typedef {ITEM.Source} Source
  * @typedef {object} ScanReqProp
  * @property {Mode} mode
  * @property {Source} [source]
@@ -22,7 +22,7 @@ const item = require("../../schemas/item");
 
 /**
  * @param {DataMatrix} dm
- * @returns {Parameters<item["findOne"]>["0"]}
+ * @returns {{gtin: string, sn: string}}
  */
 const createFilter = (dm) => {
   const { gtin, sn } = dm;
@@ -36,26 +36,14 @@ const createFilter = (dm) => {
 const convertExpToDate = (exp) => {
   return dayjs(exp, "YYMMDD").toDate();
 };
-/**
- * Finds an Item document.
- * @param {DataMatrix} dm
- * @returns {Promise<Item|null|undefined>}
- */
-const findItem = async (dm) => {
-  try {
-    const filter = createFilter(dm);
-    return await item.findOne(filter);
-  } catch (e) {
-    console.log(e);
-  }
-};
+
 /**
  * Check if the scan is a duplicate fill.
  * @param {Item} item
  * @param {Mode} mode
  * @returns {boolean}
  */
-const isDuplicateFill = (item, mode) => {
+exports.isDuplicateFill = (item, mode) => {
   if (mode === "FILL" && item.dateFilled) {
     return true;
   }
@@ -67,7 +55,7 @@ const isDuplicateFill = (item, mode) => {
  * @param {Mode} mode
  * @returns {boolean}
  */
-const isNewFill = (item, mode) => {
+exports.isNewFill = (item, mode) => {
   if (mode === "FILL" && !item.dateFilled) {
     return true;
   }
@@ -77,32 +65,38 @@ const isNewFill = (item, mode) => {
  * Creates an Item document.
  * @param {DataMatrix} dm
  * @param {Method} method
+ * @param {string} invoiceRef optional
  * @returns {Promise<Item|undefined>}
  */
-const createItem = async (dm, method) => {
+const createItem = async (dm, method, invoiceRef) => {
   try {
     const { gtin, sn, lot } = dm;
     const exp = convertExpToDate(dm.exp);
-    return await item.create({ gtin, sn, lot, exp, method });
+    return await ITEM.create({ gtin, sn, lot, exp, method, invoiceRef });
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 /**
  * Upserts an Item document.
  * @param {DataMatrix} dm
  * @param {Method} method
+ * @param {string} invoiceRef optional
  * @returns {Promise<Item|undefined>}
  */
-const upsertItem = async (dm, method) => {
+exports.upsertItem = async (dm, method, invoiceRef) => {
   try {
-    const item = await findItem(dm);
+    const item = await ITEM.findOneAndUpdate(
+      createFilter(dm),
+      { ...dm, method, invoiceRef },
+      { new: true }
+    );
     if (item === null) {
-      return await createItem(dm, method);
+      return await createItem(dm, method, invoiceRef);
     }
     return item;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 /**
@@ -111,12 +105,11 @@ const upsertItem = async (dm, method) => {
  * @param {Date} [date]
  * @returns {Promise<Item|undefined>}
  */
-const updateItem = async (scanReq, date) => {
+exports.updateItem = async (scanReq, date) => {
   try {
     const { mode, source, cost } = scanReq;
     const now = date instanceof Date ? date : new Date();
-    const filter = createFilter(scanReq);
-    /** @type {Parameters<item["findOneAndUpdate"]>["1"]} */
+    /** @type {Parameters<ITEM["findOneAndUpdate"]>["1"]} */
     const update = {};
     switch (mode) {
       case "RECEIVE":
@@ -135,28 +128,10 @@ const updateItem = async (scanReq, date) => {
         break;
       default:
     }
-    return await item.findOneAndUpdate(filter, update, { new: true });
+    return await ITEM.findOneAndUpdate(createFilter(scanReq), update, {
+      new: true,
+    });
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
-};
-/**
- * @param {Item} item
- * @param {Method} method
- * @returns {Promise<void>}
- */
-const setMethod = async (item, method) => {
-  try {
-    await item.updateOne({ $set: { method } });
-  } catch (e) {
-    console.log(e);
-  }
-};
-module.exports = {
-  findItem,
-  isDuplicateFill,
-  isNewFill,
-  upsertItem,
-  updateItem,
-  setMethod,
 };

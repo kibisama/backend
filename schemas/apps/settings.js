@@ -25,22 +25,10 @@ const appSettingsSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  storeFax: {
-    type: String,
-    required: true,
-  },
-  storeEmail: {
-    type: String,
-    required: true,
-  },
-  storeManagerLN: {
-    type: String,
-    required: true,
-  },
-  storeManagerFN: {
-    type: String,
-    required: true,
-  },
+  storeFax: String,
+  storeEmail: String,
+  storeManagerLN: String,
+  storeManagerFN: String,
 });
 
 const model = mongoose.model("App Settings", appSettingsSchema);

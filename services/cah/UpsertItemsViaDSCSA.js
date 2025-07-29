@@ -139,7 +139,6 @@ const generateHtmlTable = (results) => {
             </div>
             `;
 };
-
 /**
  *
  */
@@ -194,21 +193,20 @@ const handleResults = async (results, date) => {
         const cms = NDC.replaceAll("-", ""); // NDC can be either CMS or with hyphens
         if (cms.length === 11) {
           const scanReq = createVirtualScanReq(result);
-          const _item = await item.upsertItem(scanReq, "DSCSA");
-          if (!_item.dateReceived) {
-            await item.updateItem(scanReq, date);
-          }
+          const _item = await item.upsertItem(
+            scanReq,
+            "DSCSA",
+            result["Invoice Number"]
+          );
+          !_item.dateReceived && (await item.updateItem(scanReq, date));
           !table[GTIN] &&
             (await package.crossUpsertPackage({
               ndc11: hyphenateNDC11(cms),
               gtin: GTIN,
             }));
-          if (!_item.dateFilled) {
-            await package.updateInventories(_item, "RECEIVE");
-          }
-          if (isShortDated(scanReq.exp, "YYMMDD")) {
-            shortDated.push(result);
-          }
+          !_item.dateFilled &&
+            (await package.updateInventories(_item, "RECEIVE"));
+          isShortDated(scanReq.exp, "YYMMDD") && shortDated.push(result);
           table[GTIN] = true;
           number++;
         }

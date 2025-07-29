@@ -66,28 +66,34 @@ const _mapIndex = (csvHeader) => {
 /**
  * @param {string} data
  * @param {string} delimiter
- * @returns {}
+ * @param {string} deliveredTo
+ * @returns {Promise<undefined>}
  */
-exports.upsertWithQR = (data, delimiter) => {
+exports.upsertWithQR = async (data, delimiter, deliveredTo) => {
   try {
     const a = data.split(delimiter);
-    const rxObj = {
-      rxID: a[0],
-      rxNumber: a[1],
-      rxDate: a[2],
+    const patient = await pt.upsertPatient({
       patientID: a[3],
       patientLastName: a[4],
       patientFirstName: a[5],
       patientDOB: a[6],
+      lastLocation: deliveredTo,
+    });
+    await _upsertDRx({
+      rxID: a[0],
+      rxNumber: a[1],
+      rxDate: a[2],
       drugNDC: a[7],
       drugName: a[8],
       rxQty: a[9],
       refills: a[10],
       doctorName: a[11],
       patPay: a[12],
-    };
+      patient: patient._id,
+      deliveredTo,
+    });
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 

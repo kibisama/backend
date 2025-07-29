@@ -6,6 +6,7 @@ const ItemSchema = new Schema({
   sn: { type: String, required: true, maxLength: 20 },
   exp: { type: Date, required: true, minLength: 6, maxLength: 6 },
   method: { type: String, required: true },
+  invoiceRef: String,
   cost: String,
   dateReceived: Date,
   source: { type: String, uppercase: true },

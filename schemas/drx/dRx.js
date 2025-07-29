@@ -48,6 +48,9 @@ const digitalRxSchema = new Schema({
   insuredID: String,
   cardNumber: String,
   groupNumber: String,
+
+  // extends
+  deliveredTo: { type: ObjectId, ref: "Facility" },
 });
 
 const model = mongoose.model("DRx Rx", digitalRxSchema);
