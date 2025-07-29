@@ -16,7 +16,7 @@ const facilityGroupSchema = new Schema({
     { lastName: String, firstName: String, email: String, patientID: String },
   ],
   facilityGroup: { type: ObjectId, ref: "Facility Group" },
-  plan: { type: ObjectId, ref: "DRx Plan" },
+  plan: { type: ObjectId, ref: "DRx Plan", unique: true },
 });
 
 const model = mongoose.model("Facility", facilityGroupSchema);

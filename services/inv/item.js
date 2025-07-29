@@ -88,7 +88,7 @@ exports.upsertItem = async (dm, method, invoiceRef) => {
   try {
     const item = await ITEM.findOneAndUpdate(
       createFilter(dm),
-      { ...dm, method, invoiceRef },
+      { method, invoiceRef },
       { new: true }
     );
     if (item === null) {
