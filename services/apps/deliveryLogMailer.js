@@ -1,1 +1,0 @@
-const mailTransporter = require("../nodemailer");
