@@ -5,7 +5,7 @@ const {
 } = Schema;
 
 const patientSchema = new Schema({
-  patientID: { type: String, required: true, unique: true },
+  patientID: { type: String, required: true, unique: true, immutable: true },
   patientFirstName: String,
   patientLastName: String,
   patientDOB: String,

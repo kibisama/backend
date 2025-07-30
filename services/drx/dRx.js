@@ -111,18 +111,6 @@ const _createDRxObj = (indexTable, rxReportRow) => {
 };
 
 /**
- * @param {DRxObj} dRxObj
- * @return {Promise<DRx|undefined>}
- */
-const _createDRx = async (dRxObj) => {
-  try {
-    return await DRX.create(dRxObj);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
  * Also Updates the document.
  * @param {DRxObj} dRxObj
  * @returns {Promise<DRx|undefined>}
@@ -133,13 +121,13 @@ const _upsertDRx = async (dRxObj) => {
     if (!rxID) {
       throw new Error();
     }
-    const dRx = await DRX.findOneAndUpdate({ rxID }, dRxObj, { new: true });
-    if (!dRx) {
-      return await _createDRx(dRxObj);
-    }
-    return dRx;
+    return await DRX.findOneAndUpdate(
+      { rxID },
+      { $set: dRxObj },
+      { new: true, upsert: true }
+    );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -190,7 +178,7 @@ exports.upsertManyRx = async (csvData) => {
       }
     }
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 

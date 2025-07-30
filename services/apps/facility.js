@@ -2,42 +2,34 @@ const Facility = require("../../schemas/apps/facility");
 
 /**
  * @typedef {Facility.Facility} Facility
- * @typedef {Parameters<SETTINGS["findOneAndUpdate"]>["1"]} UpdateParam
+ * @typedef {typeof Facility.schema.obj} FacilityObj
  */
 
 /**
- * @returns {Promise<Settings|null>}
+ * @param {string} name
+ * @returns {Promise<Facility|null|undefined>}
  */
-const getSettings = async () => {
+exports.findFacility = async (name) => {
   try {
-    return await SETTINGS.findOne({});
+    return await Facility.findOne({ name });
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
 /**
- * @returns {Promise<Settings>}
+ * @param {string} name
+ * @param {FacilityObj} obj
+ * @returns {Promise<Facility|undefined>}
  */
-exports.createPreset = async () => {
+exports.upsertFacility = async (name, obj) => {
   try {
-    const settings = await getSettings();
-    if (!settings) {
-      return await SETTINGS.create(preset);
-    }
-    return settings;
+    return await Facility.findOneAndUpdate(
+      { name },
+      { $set: obj },
+      { new: true, upsert: true }
+    );
   } catch (e) {
-    console.log(e);
-  }
-};
-/**
- * @param {UpdateParam} param
- * @returns {Promise<Settings>}
- */
-exports.updateSettings = async (param) => {
-  try {
-    return await SETTINGS.findOneAndUpdate({}, { $set: param }, { new: true });
-  } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };

@@ -37,18 +37,6 @@ exports.createPlanObj = (indexTable, rxReportRow) => {
 
 /**
  * @param {PlanObj} planObj
- * @return {Promise<Plan|undefined>}
- */
-const _createPlan = async (planObj) => {
-  try {
-    return await PLAN.create(planObj);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
- * @param {PlanObj} planObj
  * @returns {Promise<Plan|undefined>}
  */
 exports.upsertPlan = async (planObj) => {
@@ -57,14 +45,12 @@ exports.upsertPlan = async (planObj) => {
     if (!planID) {
       throw new Error();
     }
-    const plan = await PLAN.findOneAndUpdate({ planID }, planObj, {
-      new: true,
-    });
-    if (!plan) {
-      return await _createPlan(planObj);
-    }
-    return plan;
+    return await PLAN.findOneAndUpdate(
+      { planID },
+      { $set: planObj },
+      { new: true, upsert: true }
+    );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };

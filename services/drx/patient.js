@@ -44,18 +44,6 @@ exports.createPtObj = (indexTable, rxReportRow) => {
 };
 
 /**
- * @param {PtObj} ptObj
- * @return {Promise<Patient|undefined>}
- */
-const _createPatient = async (ptObj) => {
-  try {
-    return await PT.create(ptObj);
-  } catch (e) {
-    console.log(e);
-  }
-};
-
-/**
  * Also Updates the document.
  * @param {PtObj} ptObj
  * @returns {Promise<Patient|undefined>}
@@ -66,12 +54,12 @@ exports.upsertPatient = async (ptObj) => {
     if (!patientID) {
       throw new Error();
     }
-    const pt = await PT.findOneAndUpdate({ patientID }, ptObj, { new: true });
-    if (!pt) {
-      return await _createPatient(ptObj);
-    }
-    return pt;
+    return await PT.findOneAndUpdate(
+      { patientID },
+      { $set: ptObj },
+      { new: true, upsert: true }
+    );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const planSchema = new Schema({
-  planID: { type: String, required: true, unique: true },
+  planID: { type: String, required: true, unique: true, immutable: true },
   planName: String,
   ansiBin: String,
   pcn: String,

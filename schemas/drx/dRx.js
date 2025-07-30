@@ -5,7 +5,7 @@ const {
 } = Schema;
 
 const digitalRxSchema = new Schema({
-  rxID: { type: String, required: true, unique: true },
+  rxID: { type: String, required: true, unique: true, immutable: true },
   createdDate: Date,
   createdBy: String,
   rxNumber: String,
