@@ -1,18 +1,18 @@
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
-const ITEM = require("../../schemas/item");
+const Item = require("../../schemas/item");
 
 /**
- * @typedef {ITEM.Item} Item
- * @typedef {ITEM.Method} Method
+ * @typedef {Item.Item} Item
+ * @typedef {Item.Method} Method
+ * @typedef {Item.Source} Source
  * @typedef {object} DataMatrix
  * @property {string} gtin
  * @property {string} lot
  * @property {string} sn
  * @property {string} exp
  * @typedef {"RECEIVE"|"FILL"|"REVERSE"|"RETURN"} Mode
- * @typedef {ITEM.Source} Source
  * @typedef {object} ScanReqProp
  * @property {Mode} mode
  * @property {Source} [source]
@@ -72,7 +72,7 @@ const createItem = async (dm, method, invoiceRef) => {
   try {
     const { gtin, sn, lot } = dm;
     const exp = convertExpToDate(dm.exp);
-    return await ITEM.create({ gtin, sn, lot, exp, method, invoiceRef });
+    return await Item.create({ gtin, sn, lot, exp, method, invoiceRef });
   } catch (e) {
     console.error(e);
   }
@@ -86,7 +86,7 @@ const createItem = async (dm, method, invoiceRef) => {
  */
 exports.upsertItem = async (dm, method, invoiceRef) => {
   try {
-    const item = await ITEM.findOneAndUpdate(
+    const item = await Item.findOneAndUpdate(
       createFilter(dm),
       { method, invoiceRef },
       { new: true }
@@ -128,8 +128,23 @@ exports.updateItem = async (scanReq, date) => {
         break;
       default:
     }
-    return await ITEM.findOneAndUpdate(createFilter(scanReq), update, {
+    return await Item.findOneAndUpdate(createFilter(scanReq), update, {
       new: true,
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+/**
+ * @param {dayjs.Dayjs} dayjs
+ * @param {Source} source
+ * @returns {Promise<[Item]|undefined>}
+ */
+exports.findReturnedItems = async (dayjs, source) => {
+  try {
+    return await Item.find({
+      dateReturned: { $gte: dayjs.startOf("d"), $lte: dayjs.endOf("d") },
+      source,
     });
   } catch (e) {
     console.error(e);
