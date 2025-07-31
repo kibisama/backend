@@ -5,7 +5,7 @@ const {
 } = Schema;
 
 const facilityGroupSchema = new Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   facilities: [{ type: ObjectId, ref: "Facility" }],
 });
 
