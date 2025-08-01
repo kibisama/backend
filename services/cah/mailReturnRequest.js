@@ -29,6 +29,10 @@ const findReturnedItems = async () => {
  */
 
 /**
+ * WARN IF PASSED 180 DAYS, REJECTS IF PASSED 360 DAYS & EXPORT TO CONTROLLER
+ */
+
+/**
  * @param {[ReturnItem]} items
  */
 const generateHtmlTable = (items) => {

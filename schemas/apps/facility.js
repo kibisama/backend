@@ -15,7 +15,7 @@ const facilityGroupSchema = new Schema({
   employees: [
     { lastName: String, firstName: String, email: String, patientID: String },
   ],
-  facilityGroup: { type: ObjectId, ref: "Facility Group" },
+  group: { type: ObjectId, ref: "Facility Group" },
   plan: { type: ObjectId, ref: "DRx Plan", unique: true },
 });
 

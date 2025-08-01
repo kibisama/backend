@@ -25,7 +25,7 @@ const getSettings = async () => {
   try {
     return await SETTINGS.findOne({});
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -40,7 +40,7 @@ exports.createPreset = async () => {
     }
     return settings;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 /**
@@ -51,6 +51,6 @@ exports.updateSettings = async (param) => {
   try {
     return await SETTINGS.findOneAndUpdate({}, { $set: param }, { new: true });
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
