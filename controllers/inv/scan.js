@@ -11,7 +11,16 @@ module.exports = async (req, res, next) => {
     if (item.isDuplicateFill(_item, mode)) {
       return res.sendStatus(208);
     }
-    await item.updateItem(scanReq);
+    if (mode === "RETURN") {
+      const result = item.preprocessReturn(_item);
+      if (result.code === 200) {
+        await item.updateItem(scanReq);
+      } else {
+        //
+      }
+    } else {
+      await item.updateItem(scanReq);
+    }
     /** @type {package.UpdateOption} */
     const option = item.isNewFill(_item, mode)
       ? { callback: dailyOrder.upsertDO }

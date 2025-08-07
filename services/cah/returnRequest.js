@@ -35,37 +35,27 @@ const findReturnedItems = async () => {
  */
 const mapItems = async (items) => {
   try {
-    const ndcTable = {};
+    const table = {};
     items.forEach(async (v) => {
       const { gtin } = v;
-      if (!ndcTable[gtin]) {
+      if (!table[gtin]) {
         try {
-          const package = await package.findPackage(gtin, "gtin");
-          ndcTable[gtin] = package.ndc11 || "";
+          const package = await (
+            await package.findPackage(gtin, "gtin")
+          ).populate({ path: "cahProduct", select: "cin" });
+          table[gtin] = {};
+          table[gtin].ndc = package.ndc11 || "";
+          table[gtin].cin = package.cahProduct.cin || "";
         } catch (e) {
           console.error(e);
         }
       }
     });
-    const cinTable = {};
-    Object.keys(ndcTable).forEach(async (v) => {
-      try {
-        const ndc = ndcTable[v];
-        if (ndc) {
-          const cahPrd = await CahProduct.findOne({ ndc });
-          if (cahPrd) {
-            cinTable[v] = cahPrd.cin;
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    });
     return items.map((v) => {
       return {
         invoiceRef: v.invoiceRef,
-        cin: cinTable[v.gtin],
-        ndc: ndcTable[v.gtin],
+        cin: table[v.gtin].ndc,
+        ndc: table[v.gtin].cin,
         sn: v.sn,
       };
     });
@@ -75,13 +65,21 @@ const mapItems = async (items) => {
 };
 
 /**
- *
+ * @returns {Promise<undefined>}
  */
 const processReturns = async () => {
-  try {
-  } catch (e) {
-    console.log(e);
+  if (common.isStoreOpen()) {
+    try {
+      const items = await findReturnedItems();
+      if (items.length > 0) {
+        const _items = await mapItems(items);
+        mailReport(_items);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
+  scheduleJob(getNextScheduleDate(), processReturns);
 };
 
 /**
@@ -97,14 +95,17 @@ const getNextScheduleDate = () => {
 };
 
 /**
- *
+ * @returns {dayjs.Dayjs}
  */
-const scheduleMailer = async () => {
-  if (common.isStoreOpen()) {
-  }
-  const items = await findReturnedItems();
-  if (items.length > 0) {
-  }
+const getScheduleDate = () => {
+  return dayjs().set("hour", 23).set("minute", 55).set("second", 0).toDate();
+};
+
+/**
+ * @returns {undefined}
+ */
+exports.scheduleMailer = () => {
+  scheduleJob(getScheduleDate(), processReturns);
 };
 
 /**
@@ -145,9 +146,10 @@ exports.checkDateReceived = (item) => {
 };
 
 /**
- *
+ * @param {[ReturnItem]} items
+ * @returns {Promise<undefined>}
  */
-const mailReport = async () => {
+const mailReport = async (items) => {
   try {
     const {
       storeName,
@@ -188,7 +190,7 @@ const mailReport = async () => {
           <br/>
           <p>Please create MRA for the following item(s).</p>
           <br/>
-        ${generateHtmlTable(results)}
+        ${generateHtmlTable(items)}
         </div>
         `,
       },
@@ -199,12 +201,13 @@ const mailReport = async () => {
       }
     );
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
 /**
  * @param {[ReturnItem]} items
+ * @returns {string}
  */
 const generateHtmlTable = (items) => {
   return `

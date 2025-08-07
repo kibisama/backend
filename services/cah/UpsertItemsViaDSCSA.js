@@ -232,14 +232,13 @@ const getNextScheduleDate = () => {
     .toDate();
 };
 /**
- * @returns {void}
+ * @returns {undefined}
  */
 const scheduleUpsert = () => {
-  const nextScheduleDate = getNextScheduleDate();
   if (isStoreOpen()) {
     requestPuppet(formatDateQuery());
   }
-  scheduleJob(nextScheduleDate, scheduleUpsert);
+  scheduleJob(getNextScheduleDate(), scheduleUpsert);
 };
 
 module.exports = { scheduleUpsert, handleResults, getDate };
