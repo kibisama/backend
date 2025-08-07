@@ -3,6 +3,12 @@ const dayjs = require("dayjs");
 const axios = require("axios");
 const { stringToNumber } = require("./convert");
 
+/**
+ * @typedef {object} Response
+ * @property {number} code
+ * @property {string} [message]
+ */
+
 module.exports = {
   /**
    * Returns true if any of the properties of an object is undefined

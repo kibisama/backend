@@ -59,15 +59,15 @@ exports.createPreset = async () => {
   }
 };
 /**
- * @param {string} oldName
- * @param {string} newName
+ * @param {string} _id
+ * @param {string} name
  * @returns {Promise<FacilityGroup|undefined>}
  */
-exports.updateName = async (oldName, newName) => {
+exports.updateName = async (_id, name) => {
   try {
-    return await FacilityGroup.findOneAndUpdate(
-      { name: oldName },
-      { $set: { name: newName } },
+    return await FacilityGroup.findByIdAndUpdate(
+      _id,
+      { $set: { name } },
       { new: true }
     );
   } catch (e) {
@@ -75,25 +75,33 @@ exports.updateName = async (oldName, newName) => {
   }
 };
 /**
- * @param {FacilityGroup} group
+ * @param {string} _id
  * @param {Facility} facility
- * @returns {Promise<undefined>}
+ * @returns {Promise<FacilityGroup|undefined>}
  */
-exports.addFacility = (group, facility) => {
+exports.addFacility = async (_id, facility) => {
   try {
-    group.updateOne({ $addToSet: { facilities: facility._id } });
+    return await FacilityGroup.findByIdAndUpdate(
+      _id,
+      { $addToSet: { facilities: facility._id } },
+      { new: true }
+    );
   } catch (e) {
     console.error(e);
   }
 };
 /**
- * @param {FacilityGroup} group
+ * @param {string} _id
  * @param {Facility} facility
- * @returns {Promise<undefined>}
+ * @returns {Promise<FacilityGroup|undefined>}
  */
-exports.pullFacility = (group, facility) => {
+exports.pullFacility = async (_id, facility) => {
   try {
-    group.updateOne({ $pull: { facilities: facility._id } });
+    return await FacilityGroup.findByIdAndUpdate(
+      _id,
+      { $pull: { facilities: facility._id } },
+      { new: true }
+    );
   } catch (e) {
     console.error(e);
   }

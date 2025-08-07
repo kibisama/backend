@@ -2,6 +2,7 @@ const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const Item = require("../../schemas/item");
+const { checkDateReceived } = require("../cah/returnRequest");
 
 /**
  * @typedef {Item.Item} Item
@@ -100,6 +101,35 @@ exports.upsertItem = async (dm, method, invoiceRef) => {
   }
 };
 /**
+ * @param {Item} item
+ * @returns {import("../common").Response}
+ */
+exports.preprocessReturn = (item) => {
+  try {
+    const { dateFilled, dateReceived, exp, source } = item;
+    if (dayjs().isAfter(dayjs(exp))) {
+      return { code: 409, message: "The item is already expired." };
+    } else if (dateFilled) {
+      return { code: 409, message: "The item is already filled." };
+    } else if (!dateReceived) {
+      return {
+        code: 409,
+        message: "The date received for the item has not recorded.",
+      };
+    } else {
+      switch (source) {
+        case "CARDINAL":
+          return checkDateReceived(item);
+        default:
+          return { code: 200 };
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
  * Updates an Item document.
  * @param {ScanReq} scanReq
  * @param {Date} [date]
@@ -109,7 +139,7 @@ exports.updateItem = async (scanReq, date) => {
   try {
     const { mode, source, cost } = scanReq;
     const now = date instanceof Date ? date : new Date();
-    /** @type {Parameters<ITEM["findOneAndUpdate"]>["1"]} */
+    /** @type {Parameters<Item["findOneAndUpdate"]>["1"]} */
     const update = {};
     switch (mode) {
       case "RECEIVE":

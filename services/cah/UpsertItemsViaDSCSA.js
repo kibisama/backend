@@ -221,7 +221,7 @@ const handleResults = async (results, date) => {
   }
 };
 /**
- * @returns {Date}
+ * @returns {dayjs.Dayjs}
  */
 const getNextScheduleDate = () => {
   return dayjs()

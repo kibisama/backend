@@ -21,7 +21,7 @@ const preset = {
 /**
  * @returns {Promise<Settings|null>}
  */
-const getSettings = async () => {
+exports.getSettings = async () => {
   try {
     return await SETTINGS.findOne({});
   } catch (e) {
