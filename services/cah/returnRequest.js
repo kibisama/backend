@@ -2,7 +2,6 @@ const dayjs = require("dayjs");
 const { scheduleJob } = require("node-schedule");
 const item = require("../inv/item");
 const package = require("../inv/package");
-const CahProduct = require("../../schemas/cahProduct");
 const nodeMailer = require("../nodeMailer");
 const { getSettings } = require("../apps/settings");
 const common = require("../common");
@@ -40,12 +39,12 @@ const mapItems = async (items) => {
       const { gtin } = v;
       if (!table[gtin]) {
         try {
-          const package = await (
+          const _package = await (
             await package.findPackage(gtin, "gtin")
           ).populate({ path: "cahProduct", select: "cin" });
           table[gtin] = {};
-          table[gtin].ndc = package.ndc11 || "";
-          table[gtin].cin = package.cahProduct.cin || "";
+          table[gtin].ndc = _package.ndc11 || "";
+          table[gtin].cin = _package.cahProduct.cin || "";
         } catch (e) {
           console.error(e);
         }
