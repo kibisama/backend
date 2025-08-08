@@ -34,7 +34,7 @@ exports.getSettings = async () => {
  */
 exports.createPreset = async () => {
   try {
-    const settings = await getSettings();
+    const settings = await exports.getSettings();
     if (!settings) {
       return await SETTINGS.create(preset);
     }
