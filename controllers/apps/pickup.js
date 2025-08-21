@@ -10,7 +10,42 @@ let deliveryDate = null;
 let notes = "";
 let state = "standby";
 
-exports.get = (req, res) => {
+exports.get = (req, res, next) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    pickup.emit("state", state);
+    pickup.emit("items", items);
+    pickup.emit("canvas", req.app.get("apps_pickup_canvas"));
+    pickup.emit("relation", relation);
+    pickup.emit("notes", notes);
+    pickup.emit("date", deliveryDate);
+    res.sendStatus(200);
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
+exports.post = (req, res, next) => {
+  try {
+    const pickup = req.app.get("io").of("/pickup");
+    const { type } = req.params;
+    const { data } = req.body;
+    switch (type) {
+      case "relation":
+        relation = data;
+        pickup.emit("relation", relation);
+        break;
+      default:
+    }
+    res.sendStatus(200);
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
+exports.getType = (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
     const { type } = req.params;
@@ -114,17 +149,6 @@ exports.clearCanvas = (req, res) => {
   }
 };
 
-exports.setRelation = (req, res) => {
-  try {
-    const pickup = req.app.get("io").of("/pickup");
-    const _relation = req.body.relation;
-    relation = _relation;
-    pickup.emit("relation", relation);
-    res.sendStatus(200);
-  } catch (e) {
-    console.log(e);
-  }
-};
 exports.preSubmit = async (req, res) => {
   try {
     const pickup = req.app.get("io").of("/pickup");
