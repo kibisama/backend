@@ -166,14 +166,14 @@ exports.updateItem = async (scanReq, date) => {
   }
 };
 /**
- * @param {dayjs.Dayjs} dayjs
+ * @param {dayjs.Dayjs} day
  * @param {Source} source
  * @returns {Promise<[Item]|undefined>}
  */
-exports.findReturnedItems = async (dayjs, source) => {
+exports.findReturnedItems = async (day, source) => {
   try {
     return await Item.find({
-      dateReturned: { $gte: dayjs.startOf("d"), $lte: dayjs.endOf("d") },
+      dateReturned: { $gte: day.startOf("d"), $lte: day.endOf("d") },
       source,
     });
   } catch (e) {

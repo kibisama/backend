@@ -24,7 +24,7 @@ const findReturnedItems = async () => {
   try {
     return await item.findReturnedItems(dayjs(), "CARDINAL");
   } catch (e) {
-    console.log;
+    console.error(e);
   }
 };
 
@@ -59,7 +59,7 @@ const mapItems = async (items) => {
       };
     });
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 

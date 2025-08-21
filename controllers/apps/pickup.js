@@ -36,6 +36,21 @@ exports.post = (req, res, next) => {
         relation = data;
         pickup.emit("relation", relation);
         break;
+      case "items":
+        const { action, data: item } = data;
+        if (action === "add") {
+          if (item && !items.includes(item)) {
+            items.push(item);
+          }
+        } else if (action === "remove") {
+          if (i === 0) {
+            items.shift();
+          } else if (i > -1) {
+            items.splice(i, i);
+          }
+        }
+        pickup.emit("items", items);
+        break;
       default:
     }
     res.sendStatus(200);
