@@ -1,5 +1,14 @@
 const SocketIO = require("socket.io");
 
+const init_APPS_PICKUP = (app) => {
+  app.set("apps_pickup_state", "standby");
+  app.set("apps_pickup_relation", "self");
+  app.set("apps_pickup_canvas", null);
+  app.set("apps_pickup_notes", "");
+  app.set("apps_pickup_items", []);
+  app.set("apps_pickup_date", null);
+};
+
 module.exports = (server, app) => {
   const io = SocketIO(server, {
     cors: {
@@ -12,20 +21,23 @@ module.exports = (server, app) => {
    * APPS_PICKUP
    */
   const pickup = io.of("/pickup");
-  app.set("apps_pickup_relation", "self");
-  app.set("apps_pickup_canvas", null);
-  app.set("apps_pickup_notes", "");
-  app.set("apps_pickup_items", []);
+  init_APPS_PICKUP(app);
   pickup.on("connect", (socket) => {
     const req = socket.request;
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     console.log(ip, socket.id, "Pickup Namespace Connected");
+    socket.emit("state", app.get("apps_pickup_state"));
     socket.emit("relation", app.get("apps_pickup_relation"));
     socket.emit("canvas", app.get("apps_pickup_canvas"));
     socket.emit("notes", app.get("apps_pickup_notes"));
     socket.emit("items", app.get("apps_pickup_items"));
+    socket.emit("date", app.get("apps_pickup_date"));
     socket.on("disconnect", () => {
       console.log(ip, socket.id, "Pickup Namespace Disconnected");
+    });
+    socket.on("state", (data) => {
+      app.set("apps_pickup_state", data);
+      pickup.emit("state", data);
     });
     socket.on("relation", (data) => {
       app.set("apps_pickup_relation", data);
@@ -54,12 +66,15 @@ module.exports = (server, app) => {
         const index = items.indexOf(item);
         if (index === 0) {
           items.shift();
-        } else if (i > -1) {
-          items.splice(index, index);
+        } else if (index > -1) {
+          items.splice(index, 1);
         }
       }
-      console.log("items", item);
       pickup.emit("items", items);
+    });
+    socket.on("date", (data) => {
+      app.set("apps_pickup_date", data);
+      pickup.emit("date", data);
     });
   });
 };
