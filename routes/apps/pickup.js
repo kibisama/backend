@@ -19,7 +19,7 @@ const {
 } = require("../../controllers/apps/pickup");
 
 router.get("/", get);
-router.post("/:type", post);
+router.post("/", post);
 //
 router.get("/get/:type", getType);
 router.post("/remove", remove);
