@@ -1,13 +1,8 @@
 const SocketIO = require("socket.io");
-
-const init_APPS_PICKUP = (app) => {
-  app.set("apps_pickup_state", "standby");
-  app.set("apps_pickup_relation", "self");
-  app.set("apps_pickup_canvas", null);
-  app.set("apps_pickup_notes", "");
-  app.set("apps_pickup_items", []);
-  app.set("apps_pickup_date", null);
-};
+const {
+  init: init_APPS_PICKUP,
+  emitAll: emitAll_APPS_PICKUP,
+} = require("./services/apps/pickup");
 
 module.exports = (server, app) => {
   const io = SocketIO(server, {
@@ -26,12 +21,7 @@ module.exports = (server, app) => {
     const req = socket.request;
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     console.log(ip, socket.id, "Pickup Namespace Connected");
-    socket.emit("state", app.get("apps_pickup_state"));
-    socket.emit("relation", app.get("apps_pickup_relation"));
-    socket.emit("canvas", app.get("apps_pickup_canvas"));
-    socket.emit("notes", app.get("apps_pickup_notes"));
-    socket.emit("items", app.get("apps_pickup_items"));
-    socket.emit("date", app.get("apps_pickup_date"));
+    emitAll_APPS_PICKUP(socket, app);
     socket.on("disconnect", () => {
       console.log(ip, socket.id, "Pickup Namespace Disconnected");
     });
@@ -75,6 +65,10 @@ module.exports = (server, app) => {
     socket.on("date", (data) => {
       app.set("apps_pickup_date", data);
       pickup.emit("date", data);
+    });
+    socket.on("reset", () => {
+      init_APPS_PICKUP(app);
+      emitAll_APPS_PICKUP(pickup, app);
     });
   });
 };
