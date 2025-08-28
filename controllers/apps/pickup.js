@@ -23,10 +23,12 @@ exports.post = async (req, res, next) => {
       deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
       rxNumber: { $in: items },
     });
+    console.log(exDoc);
+
     if (exDoc.length > 0) {
       pickup.emit("state", "error");
       const intersection = items.filter((v) => exDoc[0].rxNumber.includes(v));
-      res.status(409).send({
+      return res.status(409).send({
         code: 409,
         message: `Following RxNumber(s) are already recorded as delivered: ${intersection.join(
           ", "
@@ -65,12 +67,59 @@ exports.post = async (req, res, next) => {
   }
 };
 
+/**
+ * @typedef {object} Row
+ * @property {import("mongoose").ObjectId} id
+ * @property {string} rxNumber
+ * @property {Date} deliveryDate
+ * @property {Pickup.Relation} relation
+ * @property {string} notes
+ */
+
+/**
+ * @param {Pickup.Relation} relation
+ * @returns {"Self"|"Family/Friend"|"Guardian/Caregiver"|"Other"}
+ */
+const relationToString = (relation) => {
+  switch (relation) {
+    case "self":
+      return "Self";
+    case "ff":
+      return "Family/Friend";
+    case "gc":
+      return "Guardian/Caregiver";
+    case "other":
+      return "Other";
+  }
+};
+
+/**
+ * @param {[Pickup.Pickup]} pickups
+ * @return {[Row]}
+ */
+const mapSearchResults = (pickups) => {
+  console.log(pickups);
+  const mappedResults = [];
+  pickups.forEach((v) => {
+    v.rxNumber.forEach((w) => {
+      mappedResults.push({
+        _id: v._id,
+        rxNumber: w,
+        deliveryDate: v.deliveryDate,
+        relation: relationToString(v.relation),
+        notes: v.notes,
+      });
+    });
+  });
+  return mappedResults;
+};
+
 exports.search = async (req, res, next) => {
   try {
     const { rxNumber, date } = req.query;
     const $and = [];
     rxNumber && $and.push({ rxNumber });
-    if (date && date !== "null") {
+    if (date) {
       const day = dayjs(date);
       $and.push({
         deliveryDate: {
@@ -86,68 +135,21 @@ exports.search = async (req, res, next) => {
     if (results.length === 0) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }
-    return res.status(200).send({ code: 200, data: results });
+    return res.status(200).send({ code: 200, data: mapSearchResults(results) });
   } catch (e) {
     console.error(e);
     next(e);
   }
 };
 
-// exports.find = async (req, res) => {
-//   try {
-//     const { rxNumber, deliveryDate } = req.body;
-//     switch (true) {
-//       case !!rxNumber:
-//         var _results = await PICKUP.find({ rxNumber });
-//         if (_results.length > 0) {
-//           const results = _results.map((v) => {
-//             return {
-//               _id: v._id,
-//               deliveryDate: dayjs(v.deliveryDate).format("M/DD/YYYY HH:mm"),
-//               rxNumber,
-//               relation: v.relation,
-//               notes: v.notes,
-//             };
-//           });
-//           return res.send({ results });
-//         }
-//         break;
-//       case !!deliveryDate:
-//         var day = dayjs(deliveryDate);
-//         var _results = await PICKUP.find({
-//           deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
-//         });
-//         if (_results.length > 0) {
-//           const results = [];
-//           _results.forEach((v) => {
-//             v.rxNumber.forEach((w) => {
-//               results.push({
-//                 _id: v._id,
-//                 deliveryDate: dayjs(v.deliveryDate).format("M/DD/YYYY HH:mm"),
-//                 rxNumber: w,
-//                 relation: v.relation,
-//                 notes: v.notes,
-//               });
-//             });
-//           });
-//           return res.send({ results });
-//         }
-//         break;
-//       default:
-//     }
-//     res.sendStatus(404);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-
-// exports.png = async (req, res) => {
-//   try {
-//     res.sendFile(path + `/${req.params._id}.png`);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+exports.png = (req, res) => {
+  try {
+    res.sendFile(path + `/${req.params._id}.png`);
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
 
 // exports.proof = async (req, res) => {
 //   try {

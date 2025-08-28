@@ -19,4 +19,10 @@ const pickupSchema = new mongoose.Schema({
     required: true,
   },
 });
-module.exports = mongoose.model("Pickup", pickupSchema);
+const model = mongoose.model("Pickup", pickupSchema);
+/**
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} Pickup
+ * @typedef {"self"|"ff"|"gc"|"other"} Relation
+ */
+
+module.exports = model;
