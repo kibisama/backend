@@ -65,12 +65,12 @@ exports.post = async (req, res, next) => {
   }
 };
 
-exports.search = async (req, res) => {
+exports.search = async (req, res, next) => {
   try {
     const { rxNumber, date } = req.query;
     const $and = [];
     rxNumber && $and.push({ rxNumber });
-    if (date) {
+    if (date && date !== "null") {
       const day = dayjs(date);
       $and.push({
         deliveryDate: {
@@ -89,6 +89,7 @@ exports.search = async (req, res) => {
     return res.status(200).send({ code: 200, data: results });
   } catch (e) {
     console.error(e);
+    next(e);
   }
 };
 
