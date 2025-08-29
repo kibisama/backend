@@ -23,10 +23,9 @@ exports.post = async (req, res, next) => {
       deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
       rxNumber: { $in: items },
     });
-    console.log(exDoc);
-
     if (exDoc.length > 0) {
       pickup.emit("state", "error");
+      req.app.set("apps_pickup_state", "standby");
       const intersection = items.filter((v) => exDoc[0].rxNumber.includes(v));
       return res.status(409).send({
         code: 409,
@@ -98,11 +97,14 @@ const relationToString = (relation) => {
  * @return {[Row]}
  */
 const mapSearchResults = (pickups) => {
-  console.log(pickups);
   const mappedResults = [];
-  pickups.forEach((v) => {
-    v.rxNumber.forEach((w) => {
+  let id = 1;
+  pickups.forEach((v, i) => {
+    id += i;
+    v.rxNumber.forEach((w, i) => {
+      id += i;
       mappedResults.push({
+        id,
         _id: v._id,
         rxNumber: w,
         deliveryDate: v.deliveryDate,
@@ -151,16 +153,20 @@ exports.png = (req, res) => {
   }
 };
 
-// exports.proof = async (req, res) => {
-//   try {
-//     const { _id, rxNumber } = req.body;
-//     const { deliveryDate, relation, notes } = await PICKUP.findById(_id);
-//     res.send({
-//       deliveryDate: dayjs(deliveryDate).format("M/DD/YYYY HH:mm"),
-//       relation,
-//       notes,
-//     });
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+exports.report = async (req, res) => {
+  try {
+    const { _id, rxNumber } = req.params;
+    const { deliveryDate, relation, notes } = await Pickup.findById(_id);
+    res.status(200).send({
+      code: 200,
+      data: {
+        deliveryDate: dayjs(deliveryDate).format("M/DD/YYYY HH:mm"),
+        relation: relationToString(relation),
+        notes,
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    next(e);
+  }
+};
