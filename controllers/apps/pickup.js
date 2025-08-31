@@ -29,7 +29,7 @@ exports.post = async (req, res, next) => {
       const intersection = items.filter((v) => exDoc[0].rxNumber.includes(v));
       return res.status(409).send({
         code: 409,
-        message: `Following RxNumber(s) are already recorded as delivered: ${intersection.join(
+        message: `Following item(s) are already recorded as delivered: ${intersection.join(
           ", "
         )}`,
       });
@@ -59,9 +59,9 @@ exports.post = async (req, res, next) => {
     console.error(e);
     pickup.emit("state", "error");
     req.app.set("apps_pickup_state", "standby");
-    res.status(500).send({
+    return res.status(500).send({
       code: 500,
-      message: "An unexpected error occurred. Please try again.",
+      message: "An unexpected error occurred.",
     });
   }
 };

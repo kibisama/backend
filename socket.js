@@ -70,5 +70,8 @@ module.exports = (server, app) => {
       init_APPS_PICKUP(app);
       emitAll_APPS_PICKUP(pickup, app);
     });
+    socket.on("refresh", () => {
+      emitAll_APPS_PICKUP(socket, app);
+    });
   });
 };

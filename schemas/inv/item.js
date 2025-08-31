@@ -9,7 +9,7 @@ const ItemSchema = new Schema({
   invoiceRef: String,
   cost: String,
   dateReceived: Date,
-  source: String,
+  source: { type: String, uppercase: true },
   dateFilled: Date,
   dateReversed: Date,
   dateReturned: Date,
