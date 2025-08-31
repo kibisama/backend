@@ -7,6 +7,7 @@ const path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
 
 exports.post = async (req, res, next) => {
   const pickup = req.app.get("io").of("/pickup");
+  const canvas = req.app.get("apps_pickup_canvas");
   const items = req.app.get("apps_pickup_items");
   const relation = req.app.get("apps_pickup_relation");
   const date = new Date();
@@ -14,11 +15,10 @@ exports.post = async (req, res, next) => {
   const day = dayjs(_date || date);
 
   try {
-    if (items.length === 0) {
+    if (items.length === 0 || !canvas) {
       throw new Error();
     }
     const { notes } = req.body;
-
     const exDoc = await Pickup.find({
       deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
       rxNumber: { $in: items },
@@ -26,7 +26,17 @@ exports.post = async (req, res, next) => {
     if (exDoc.length > 0) {
       pickup.emit("state", "error");
       req.app.set("apps_pickup_state", "standby");
-      const intersection = items.filter((v) => exDoc[0].rxNumber.includes(v));
+      const table = {};
+      items.forEach((v) => (table[v] = false));
+      const intersection = [];
+      exDoc.forEach((v) => {
+        v.rxNumber.forEach((w) => table[w] === false && (table[w] = true));
+      });
+      for (const key in table) {
+        if (table[key]) {
+          intersection.push(key);
+        }
+      }
       return res.status(409).send({
         code: 409,
         message: `Following item(s) are already recorded as delivered: ${intersection.join(
@@ -41,9 +51,7 @@ exports.post = async (req, res, next) => {
       notes,
       deliveryDate: _date ? day : date,
     });
-    const base64Data = req.app
-      .get("apps_pickup_canvas")
-      .replace(/^data:image\/png;base64,/, "");
+    const base64Data = canvas.replace(/^data:image\/png;base64,/, "");
     const binaryData = Buffer.from(base64Data, "base64");
     const fileName = _id + ".png";
     if (!fs.existsSync(path)) {

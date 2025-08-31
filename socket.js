@@ -42,8 +42,10 @@ module.exports = (server, app) => {
       pickup.emit("canvas", null);
     });
     socket.on("notes", (data) => {
-      app.set("apps_pickup_notes", data);
-      pickup.emit("notes", data);
+      if (app.get("apps_pickup_canva") && app.get("apps_pickup_items").length) {
+        app.set("apps_pickup_notes", data);
+        pickup.emit("notes", data);
+      }
     });
     socket.on("items", (data) => {
       const items = app.get("apps_pickup_items");
