@@ -39,46 +39,6 @@ const convertExpToDate = (exp) => {
 };
 
 /**
- * Check if the scan is a duplicate fill.
- * @param {Item} item
- * @param {Mode} mode
- * @returns {boolean}
- */
-exports.isDuplicateFill = (item, mode) => {
-  if (mode === "FILL" && item.dateFilled) {
-    return true;
-  }
-  return false;
-};
-/**
- * Check if the scan is a new fill.
- * @param {Item} item
- * @param {Mode} mode
- * @returns {boolean}
- */
-exports.isNewFill = (item, mode) => {
-  if (mode === "FILL" && !item.dateFilled) {
-    return true;
-  }
-  return false;
-};
-/**
- * Creates an Item document.
- * @param {DataMatrix} dm
- * @param {Method} method
- * @param {string} invoiceRef optional
- * @returns {Promise<Item|undefined>}
- */
-const createItem = async (dm, method, invoiceRef) => {
-  try {
-    const { gtin, sn, lot } = dm;
-    const exp = convertExpToDate(dm.exp);
-    return await Item.create({ gtin, sn, lot, exp, method, invoiceRef });
-  } catch (e) {
-    console.error(e);
-  }
-};
-/**
  * Upserts an Item document.
  * @param {DataMatrix} dm
  * @param {Method} method
@@ -87,43 +47,11 @@ const createItem = async (dm, method, invoiceRef) => {
  */
 exports.upsertItem = async (dm, method, invoiceRef) => {
   try {
-    const item = await Item.findOneAndUpdate(
+    return await Item.findOneAndUpdate(
       createFilter(dm),
-      { method, invoiceRef },
-      { new: true }
+      { lot: dm.lot, exp: convertExpToDate(dm.exp), method, invoiceRef },
+      { new: true, upsert: true }
     );
-    if (item === null) {
-      return await createItem(dm, method, invoiceRef);
-    }
-    return item;
-  } catch (e) {
-    console.error(e);
-  }
-};
-/**
- * @param {Item} item
- * @returns {import("../common").Response}
- */
-exports.preprocessReturn = (item) => {
-  try {
-    const { dateFilled, dateReceived, exp, source } = item;
-    if (dayjs().isAfter(dayjs(exp))) {
-      return { code: 409, message: "The item is already expired." };
-    } else if (dateFilled) {
-      return { code: 409, message: "The item is already filled." };
-    } else if (!dateReceived) {
-      return {
-        code: 409,
-        message: "The date received for the item has not recorded.",
-      };
-    } else {
-      switch (source) {
-        case "CARDINAL":
-          return checkDateReceived(item);
-        default:
-          return { code: 200 };
-      }
-    }
   } catch (e) {
     console.error(e);
   }
@@ -165,18 +93,60 @@ exports.updateItem = async (scanReq, date) => {
     console.error(e);
   }
 };
-/**
- * @param {dayjs.Dayjs} day
- * @param {Source} source
- * @returns {Promise<[Item]|undefined>}
- */
-exports.findReturnedItems = async (day, source) => {
-  try {
-    return await Item.find({
-      dateReturned: { $gte: day.startOf("d"), $lte: day.endOf("d") },
-      source,
-    });
-  } catch (e) {
-    console.error(e);
-  }
-};
+
+// /**
+//  * Check if the scan is a new fill.
+//  * @param {Item} item
+//  * @param {Mode} mode
+//  * @returns {boolean}
+//  */
+// exports.isNewFill = (item, mode) => {
+//   if (mode === "FILL" && !item.dateFilled) {
+//     return true;
+//   }
+//   return false;
+// };
+// /**
+//  * @param {Item} item
+//  * @returns {import("../common").Response}
+//  */
+// exports.preprocessReturn = (item) => {
+//   try {
+//     const { dateFilled, dateReceived, exp, source } = item;
+//     if (dayjs().isAfter(dayjs(exp))) {
+//       return { code: 409, message: "The item is already expired." };
+//     } else if (dateFilled) {
+//       return { code: 409, message: "The item is already filled." };
+//     } else if (!dateReceived) {
+//       return {
+//         code: 409,
+//         message: "The date received for the item has not recorded.",
+//       };
+//     } else {
+//       switch (source) {
+//         case "CARDINAL":
+//           return checkDateReceived(item);
+//         default:
+//           return { code: 200 };
+//       }
+//     }
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };
+
+// /**
+//  * @param {dayjs.Dayjs} day
+//  * @param {Source} source
+//  * @returns {Promise<[Item]|undefined>}
+//  */
+// exports.findReturnedItems = async (day, source) => {
+//   try {
+//     return await Item.find({
+//       dateReturned: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+//       source,
+//     });
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };

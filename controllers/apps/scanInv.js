@@ -1,0 +1,75 @@
+const item = require("../../services/inv/item");
+const package = require("../../services/inv/package");
+const dailyOrder = require("../../services/inv/dailyOrder");
+
+exports.post = async (req, res, next) => {
+  try {
+    /** @type {item.ScanReq} */
+    const scanReq = req.body;
+    const { gtin, mode } = scanReq;
+    const _package = await package.upsertPackage(gtin, "gtin");
+    if (!_package) {
+      res
+        .status(422)
+        .send({ code: 422, message: "Unable to create a Package document." });
+    }
+    // update Package
+    const _item = await item.upsertItem(scanReq, "SCAN");
+    switch (mode) {
+      case "FILL":
+        if (_item.dateFilled) {
+          return res.status(208).send({
+            code: 208,
+            message: "The item has been already filled.",
+          });
+        }
+        //
+        break;
+      case "RETURN":
+        //
+        break;
+      default:
+    }
+    await item.updateItem(scanReq);
+    await package.updateInventories(_item, mode);
+    res.status(200).send({
+      code: 200,
+      message: "The inventory has been successfully updated.",
+    });
+
+    // if (mode === "RETURN") {
+    //   const result = item.preprocessReturn(_item);
+    //   if (result.code === 200) {
+    //     await item.updateItem(scanReq);
+    //   } else {
+    //     //
+    //   }
+    // } else {
+    //   await item.updateItem(scanReq);
+    // }
+    /** @type {package.UpdateOption} */
+    // const option = item.isNewFill(_item, mode)
+    //   ? { callback: dailyOrder.upsertDO }
+    //   : mode !== "RETURN"
+    //   ? {
+    //       callback: async (package) => {
+    //         await dailyOrder.updateAltDOs(package);
+    //         const dO = await dailyOrder.findDO(package);
+    //         dO && (await dailyOrder.updateFilledItems(dO, gtin));
+    //       },
+    //     }
+    //   : undefined;
+    // const pkg = await package.upsertPackage(gtin, "gtin", option);
+    // if (!pkg) {
+    //   //
+    //   return res.sendStatus(500);
+    // }
+
+    // return res.sendStatus(200);
+  } catch (e) {
+    console.error(e);
+    return res
+      .status(500)
+      .send({ code: 500, message: "An unexpected error occurred." });
+  }
+};
