@@ -1,6 +1,5 @@
 const alt = require("../services/inv/alternative");
 const item = require("../services/inv/item");
-const package = require("../services/inv/package");
 
 /**
  * @param {[alt.Alternative]} alts
@@ -35,7 +34,7 @@ exports.getAlternatives = async (req, res, next) => {
  */
 
 /**
- * @param {package.Package} pkg populated inventories
+ * @param {alt.Package} pkg populated inventories
  * @returns {string}
  */
 const getRowLabel = (pkg) => {
@@ -47,7 +46,7 @@ const getRowLabel = (pkg) => {
 };
 
 /**
- * @param {[package.Package]} packages populated inventories
+ * @param {[alt.Package]} packages populated inventories
  * @returns {{rows: [Row], count: number}}
  */
 const mapInventoryRows = (packages) => {
@@ -56,35 +55,45 @@ const mapInventoryRows = (packages) => {
   let count = 0;
   let id = 0;
   packages.forEach((pkg) => {
-    id += 1;
-    rows.push({ label: true, _id: pkg._id, id, lot: getRowLabel(pkg) });
-    pkg.inventories.forEach((item) => {
+    if (pkg.inventories.length > 0) {
       id += 1;
-      count += 1;
-      rows.push({
-        _id: item._id,
-        id,
-        gtin: item.gtin,
-        lot: item.lot,
-        sn: item.sn,
-        exp: item.exp,
-        source: item.source,
-        cost: item.cost,
-        dateFilled: item.dateFilled,
-        dateReceived: item.dateReceived,
+      rows.push({ label: true, _id: pkg._id, id, lot: getRowLabel(pkg) });
+      pkg.inventories.forEach((item) => {
+        id += 1;
+        count += 1;
+        rows.push({
+          _id: item._id,
+          id,
+          gtin: item.gtin,
+          lot: item.lot,
+          sn: item.sn,
+          exp: item.exp,
+          source: item.source,
+          cost: item.cost,
+          dateFilled: item.dateFilled,
+          dateReceived: item.dateReceived,
+        });
       });
-    });
+    }
   });
   return { rows, count };
 };
 exports.getInventories = async (req, res, next) => {
   try {
     const { _id, filled } = req.query;
-    const packages = await package.getAllInventories(_id);
-    if (packages.length > 0) {
+    if (!_id) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const packages = await alt.getPackagesWithInventories(_id);
+    if (packages?.length > 0) {
       if (filled === "true") {
         for (let i = 0; i < packages.length; i++) {
+          const { gtin } = packages[i];
+          if (!gtin) {
+            continue;
+          }
           packages[i].inventories = await item.findItemsByGTIN(gtin);
+          await packages[i].populate({ path: "inventories" });
         }
       }
       return res

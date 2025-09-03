@@ -212,6 +212,32 @@ exports.getAllDocuments = async () => {
   }
 };
 
+/**
+ * @param {ObjectId} _id
+ * @returns {Promise<[Package]|undefined>}
+ */
+exports.getPackagesWithInventories = async (_id) => {
+  try {
+    const result = await alternative.findById(
+      _id,
+      { packages: true },
+      {
+        populate: {
+          path: "packages",
+          populate: {
+            path: "inventories",
+          },
+        },
+      }
+    );
+    if (result?.packages) {
+      return result.packages;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // /**
 //  * @param {ObjectId} alt
 //  * @param {ObjectId} cahProduct
