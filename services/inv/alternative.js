@@ -20,7 +20,9 @@ exports.upsertAlternative = async (rxcui) => {
       {},
       { new: true, upsert: true }
     );
-    exports.updateAlternative(alt);
+    exports.updateAlternative(alt, {
+      callback: () => exports.getAllDocuments(true),
+    });
     return alt;
   } catch (e) {
     console.error(e);
@@ -204,9 +206,15 @@ const linkWithFamily = async (alt, scdf) => {
     console.error(e);
   }
 };
-exports.getAllDocuments = async () => {
+
+/** Caching sortedAllDocuments **/
+let allDocuments;
+exports.getAllDocuments = async (refresh) => {
   try {
-    return await alternative.find();
+    if (refresh || !allDocuments) {
+      allDocuments = await alternative.find().sort({ name: 1, defaultName: 1 });
+    }
+    return allDocuments;
   } catch (e) {
     console.error(e);
   }
