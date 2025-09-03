@@ -46,11 +46,12 @@ const getRowLabel = (pkg) => {
 
 /**
  * @param {[alt.Package]} packages populated inventories
- * @returns {[Row]}
+ * @returns {{rows: [Row], count: number}}
  */
 const mapInventoryRows = (packages) => {
   /** @type {[Row]} */
   const rows = [];
+  let count = 0;
   let id = 0;
   packages.forEach((pkg) => {
     if (pkg.inventories.length > 0) {
@@ -58,6 +59,7 @@ const mapInventoryRows = (packages) => {
       rows.push({ label: true, _id: pkg._id, id, lot: getRowLabel(pkg) });
       pkg.inventories.forEach((item) => {
         id += 1;
+        count += 1;
         rows.push({
           _id: item._id,
           id,
@@ -73,16 +75,16 @@ const mapInventoryRows = (packages) => {
       });
     }
   });
-  return rows;
+  return { rows, count };
 };
 exports.getInventories = async (req, res, next) => {
   try {
     const { _id, all } = req.query;
-    if (all === "true") {
-      // return
-    }
     const packages = await alt.getPackagesWithInventories(_id);
     if (packages) {
+      if (all === "true") {
+        console.log(true);
+      }
       return res
         .status(200)
         .send({ code: 200, data: mapInventoryRows(packages) });
