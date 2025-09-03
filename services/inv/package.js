@@ -3,7 +3,6 @@ const item = require("./item");
 const alt = require("./alternative");
 const getNDCStatus = require("../rxnav/getNDCStatus");
 const getNDCProperties = require("../rxnav/getNDCProperties");
-const { setOptionParameters } = require("../common");
 const {
   gtinStringToNDCRegExp,
   gtinToNDC11RegExp,
@@ -17,9 +16,10 @@ const { isObjectIdOrHexString } = require("mongoose");
 
 /**
  * @typedef {package.Package} Package
- * @typedef {typeof package.schema.obj} UpdateObj
- * @typedef {"gtin"|"ndc"|"ndc11"} ArgType either gtin or ndc11 preferred
+ * @typedef {typeof package.schema.obj} PackageSchema
+ * @typedef {"gtin"|"ndc"|"ndc11"} ArgType
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
+ * @typedef {import("mongoose").ObjectId} ObjectId
  */
 
 /**
@@ -63,17 +63,21 @@ const createCrossFilter = (arg, type) => {
  */
 exports.upsertPackage = async (arg, type) => {
   try {
-    const pkg = await package.findOne(createFilter(arg, type));
-    if (pkg) {
-      return pkg;
-    } else {
+    let pkg = await package.findOne(createFilter(arg, type));
+    if (!pkg) {
       const crossPackage = await package.findOne(createCrossFilter(arg, type));
       if (
         crossPackage === null ||
         (crossPackage[type] && crossPackage[type] !== arg)
       ) {
-        return await package.create(createFilter(arg, type));
+        pkg = await package.create(createFilter(arg, type));
       }
+    }
+    if (!pkg) {
+      return;
+    } else {
+      exports.updatePackage(pkg);
+      return pkg;
     }
   } catch (e) {
     console.error(e);
@@ -115,7 +119,7 @@ const pullItem = async (item, pkg) => {
         { new: true }
       );
       if (_pkg.inventories.length === 0) {
-        await _pkg.updateOne({ active: false });
+        await _pkg.updateOne({ $set: { active: false } });
       }
       return _pkg;
     }
@@ -136,7 +140,7 @@ const addItem = async (item, pkg) => {
     if (pkg) {
       return await package.findByIdAndUpdate(
         pkg._id,
-        { $addToSet: { inventories: _id }, active: true },
+        { $addToSet: { inventories: _id }, $set: { active: true } },
         { new: true }
       );
     }
@@ -145,181 +149,161 @@ const addItem = async (item, pkg) => {
   }
 };
 
-// /**
-//  * Refreshes a Package documnet.
-//  * @param {Package|import("mongoose").ObjectId} pkg
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const refreshPackage = async (pkg) => {
-//   try {
-//     if (isObjectIdOrHexString(pkg)) {
-//       return await package.findById(pkg);
-//     }
-//     return await package.findById(pkg._id);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * Refreshes a Package documnet.
+ * @param {Package|ObjectId} pkg
+ * @returns {Promise<Package|undefined>}
+ */
+const refreshPackage = async (pkg) => {
+  try {
+    if (isObjectIdOrHexString(pkg)) {
+      return await package.findById(pkg);
+    }
+    return await package.findById(pkg._id);
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @param {{gtin: string, ndc11: string}} arg
-//  * @param {UpdateOption} [option]
-//  * @returns {Promise<Package|null|undefined>}
-//  */
-// const crossUpsertPackage = async (arg, option) => {
-//   try {
-//     const { gtin, ndc11 } = arg;
-//     let pkg = await package.findOne({ $or: [{ gtin }, { ndc11 }] });
-//     if (pkg === null) {
-//       pkg = await package.create(arg);
-//     }
-//     pkg && updatePackage(pkg, option);
-//     return pkg;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} pkg
-//  * @param {string} gtin
-//  * @returns {Promise<void>}
-//  */
-// const updateGTIN = async (pkg, gtin) => {
-//   try {
-//     await pkg.updateOne({ gtin });
-//     updatePackage(pkg);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * Merges Package documents.
-//  * @param {Package} pkg1
-//  * @param {Package} pkg2
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const mergePackage = async (pkg1, pkg2) => {
-//   try {
-//     //
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * @typedef {object} UpdateOption
+ * @property {boolean} [refresh]
+ * @property {boolean} [force]
+ * @property {Function} [callback]
+ */
 
-// /**
-//  * @typedef {object} UpdateOption
-//  * @property {boolean} [force]
-//  * @property {Function} [callback]
-//  */
+/**
+ * Updates a Package document. Returns a refreshed Package.
+ * @param {Package} pkg
+ * @param {UpdateOption} [option]
+ * @returns {Promise<Package|undefined>}
+ */
+exports.updatePackage = async (pkg, option = {}) => {
+  try {
+    const { refresh, force, callback } = option;
+    const _pkg = refresh ? await refreshPackage(pkg) : pkg;
+    if (!_pkg) {
+      return;
+    }
+    const [arg, type] = selectArg(_pkg);
+    let { rxcui, ndc11, mfr, mfrName, alternative } = _pkg;
+    if (force || !rxcui || !ndc11) {
+      const ndcStatus = await getNDCStatus(arg, type);
+      if (ndcStatus) {
+        const { rxcui: _rxcui, ndc11: _ndc11 } = ndcStatus;
+        rxcui = _rxcui;
+        ndc11 = _ndc11;
+        await _pkg.updateOne({ $set: { rxcui, ndc11 } });
+      } else {
+        return;
+      }
+    }
+    if (force || !mfr) {
+      const ndcProperties = await getNDCProperties(ndc11, rxcui);
+      if (ndcProperties) {
+        mfr = ndcProperties.mfr;
+        await _pkg.updateOne({ $set: ndcProperties });
+      }
+    }
+    if (mfr && (force || !mfrName)) {
+      if (!_pkg.mfr) {
+        _pkg.mfr = mfr;
+      }
+      await updateMfrName(_pkg);
+    }
+    if (force || !alternative) {
+      if (!_pkg.rxcui) {
+        _pkg.rxcui = rxcui;
+      }
+      await linkWithAlternative(_pkg);
+    }
+    // if (cah) {
+    //   _pkg = (await updateSizeViaCAH(_pkg)) || _pkg;
+    // }
+    // if (name) {
+    //   _pkg = (await setName(_pkg)) || _pkg;
+    // }
+    // if (mfrName) {
+    //   _pkg = (await setMfrName(_pkg)) || _pkg;
+    // }
+    // if (!_pkg.ndc || !_pkg.ndc11) {
+    //   //
+    // }
+    // if (callback instanceof Function) {
+    //   callback(_pkg);
+    // }
+    // return _pkg;
+    const refreshedPackage = await refreshPackage(_pkg);
+    callback instanceof Function && callback(refreshedPackage);
+    return refreshedPackage;
+  } catch (e) {
+    console.error(e);
+  }
+};
+/**
+ * @param {Package} pkg
+ * @returns {[string, ArgType]}
+ */
+const selectArg = (pkg) => {
+  const result = [];
+  switch (true) {
+    case !!pkg.ndc:
+      result[0] = pkg.ndc;
+      result[1] = "ndc";
+      break;
+    case !!pkg.ndc11:
+      result[0] = pkg.ndc11;
+      result[1] = "ndc11";
+      break;
+    case !!pkg.gtin:
+      result[0] = pkg.gtin;
+      result[1] = "gtin";
+    default:
+  }
+  return result;
+};
+/**
+ * @param {Package} pkg
+ * @returns {Promise<Awaited<ReturnType<Package["updateOne"]>>|undefined>}
+ */
+const updateMfrName = async (pkg) => {
+  try {
+    const mfr = pkg.mfr;
+    let mfrName = "";
+    const match = mfr.match(/[^\s,]+/g);
+    if (match) {
+      if (match[0].match(/[a-zA-Z0-9]{3,}/g)) {
+        mfrName = match[0];
+      } else {
+        mfrName = mfr.substring(0, mfr.indexOf(match[1])) + match[1];
+      }
+    } else {
+      mfrName = mfr;
+    }
+    mfrName = mfrName.toUpperCase();
+    return await pkg.updateOne({ $set: { mfrName } });
+  } catch (e) {
+    console.error(e);
+  }
+};
+/**
+ * This upserts an Alternative document.
+ * @param {Package} pkg
+ * @returns {Promise<Awaited<ReturnType<Package["updateOne"]>>|undefined>}
+ */
+const linkWithAlternative = async (pkg) => {
+  try {
+    const { _id, rxcui, alternative } = pkg;
+    const _alt = await alt.upsertAlternative(rxcui);
+    if (_alt && !alternative?.equals(_alt._id)) {
+      await _alt.updateOne({ $addToSet: { packages: _id } });
+      return await pkg.updateOne({ $set: { alternative: _alt._id } });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * Determines if the Package document needs an update.
-//  * @param {Package} package
-//  * @returns {{rxNav: boolean, cah: boolean, name: boolean, mfrName: boolean, alt: boolean}}
-//  */
-// const needsUpdate = (package) => {
-//   let rxNav = false;
-//   let cah = false;
-//   let name = false;
-//   let mfrName = false;
-//   let alt = false;
-//   if (!package.rxcui) {
-//     rxNav = true;
-//   }
-//   if (!package.size) {
-//     cah = true;
-//   }
-//   if (!package.name) {
-//     name = true;
-//   }
-//   if (!package.mfrName) {
-//     mfrName = true;
-//   }
-//   if (!package.alternative) {
-//     alt = true;
-//   }
-//   return { rxNav, cah, name, mfrName, alt };
-// };
-// /**
-//  * Updates a Package document.
-//  * @param {Package} pkg
-//  * @param {UpdateOption} [option]
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const updatePackage = async (pkg, option) => {
-//   try {
-//     let _pkg = await refreshPackage(pkg);
-//     /** @type {UpdateOption} */
-//     const defaultOption = { force: false };
-//     const { force, callback } = setOptionParameters(defaultOption, option);
-//     /** @type {Parameters<package["findOneAndUpdate"]>["1"]} */
-//     const update = { $set: {} };
-//     const [arg, type] = selectArg(_pkg);
-//     const { rxNav, cah, name, mfrName, alt } = force
-//       ? { rxNav: true, cah: true, name: true, mfrName: true, alt: true }
-//       : needsUpdate(_pkg);
-//     if (rxNav) {
-//       const rxNavData = await updateViaRxNav(arg, type);
-//       if (rxNavData) {
-//         Object.assign(update.$set, rxNavData);
-//       }
-//     }
-//     if (Object.keys(update.$set).length) {
-//       _pkg = await package.findOneAndUpdate({ _id: _pkg._id }, update, {
-//         new: true,
-//       });
-//     }
-//     if (alt) {
-//       _pkg = (await linkWithAlternative(_pkg)) || _pkg;
-//     }
-//     if (cah) {
-//       _pkg = (await updateSizeViaCAH(_pkg)) || _pkg;
-//     }
-//     if (name) {
-//       _pkg = (await setName(_pkg)) || _pkg;
-//     }
-//     if (mfrName) {
-//       _pkg = (await setMfrName(_pkg)) || _pkg;
-//     }
-//     if (!_pkg.ndc || !_pkg.ndc11) {
-//       //
-//     }
-//     if (callback instanceof Function) {
-//       callback(_pkg);
-//     }
-//     return _pkg;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {string} arg
-//  * @param {ArgType} type
-//  * @returns {Promise<UpdateObj|undefined>}
-//  */
-// const updateViaRxNav = async (arg, type) => {
-//   try {
-//     const ndcStatus = await getNDCStatus(arg, type);
-//     if (!ndcStatus) {
-//       return;
-//     }
-//     const { ndc, ndc11, rxcui } = ndcStatus;
-//     /** @type {UpdateObj} */
-//     let update = {};
-//     ndc && (update.ndc = ndc);
-//     ndc11 && (update.ndc11 = ndc11);
-//     rxcui && (update.rxcui = rxcui);
-//     if (ndc11) {
-//       const output = await getNDCProperties(ndc11, rxcui);
-//       if (output) {
-//         update = Object.assign(output, update);
-//       }
-//     }
-//     return update;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
 // /**
 //  * @param {Package} pkg
 //  * @returns {Promise<Package|undefined>}
@@ -357,83 +341,6 @@ const addItem = async (item, pkg) => {
 //         {
 //           $set: { name: `${alternative.defaultName.toUpperCase()} (${size})` },
 //         },
-//         { new: true }
-//       );
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} pkg
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const setMfrName = async (pkg) => {
-//   try {
-//     const { _id, mfr } = pkg;
-//     if (mfr) {
-//       let mfrName = "";
-//       const match = mfr.match(/[^\s,]+/g);
-//       if (match) {
-//         if (match[0].match(/[a-zA-Z0-9]{3,}/g)) {
-//           mfrName = match[0];
-//         } else {
-//           mfrName = mfr.substring(0, mfr.indexOf(match[1])) + match[1];
-//         }
-//       } else {
-//         mfrName = mfr;
-//       }
-//       mfrName = mfrName.toUpperCase();
-//       return await package.findByIdAndUpdate(
-//         _id,
-//         { $set: { mfrName } },
-//         { new: true }
-//       );
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} pkg
-//  * @returns {[string, ArgType]}
-//  */
-// const selectArg = (pkg) => {
-//   const result = [];
-//   switch (true) {
-//     case !!pkg.ndc:
-//       result[0] = pkg.ndc;
-//       result[1] = "ndc";
-//       break;
-//     case !!pkg.ndc11:
-//       result[0] = pkg.ndc11;
-//       result[1] = "ndc11";
-//       break;
-//     case !!pkg.gtin:
-//       result[0] = pkg.gtin;
-//       result[1] = "gtin";
-//     default:
-//   }
-//   return result;
-// };
-
-// /**
-//  * This upserts an Alternative document.
-//  * @param {Package} pkg
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const linkWithAlternative = async (pkg) => {
-//   try {
-//     const { _id, rxcui, alternative } = pkg;
-//     if (!rxcui) {
-//       return;
-//     }
-//     const _alt = await alt.upsertAlternative(rxcui);
-//     if (_alt && !alternative?.equals(_alt._id)) {
-//       await _alt.updateOne({ $addToSet: { packages: _id } });
-//       return await package.findOneAndUpdate(
-//         { _id },
-//         { alternative: _alt._id },
 //         { new: true }
 //       );
 //     }
@@ -513,16 +420,34 @@ const addItem = async (item, pkg) => {
 //     console.log(e);
 //   }
 // };
-// module.exports = {
-//   findPackage,
-//   refreshPackage,
-//   upsertPackage,
-//   crossUpsertPackage,
-//   updateInventories,
-//   updatePackage,
-//   updateGTIN,
-//   getNumberInStock,
-//   getStock,
-//   getAltStocks,
-//   findAltPackages,
+// /**
+//  * @param {{gtin: string, ndc11: string}} arg
+//  * @param {UpdateOption} [option]
+//  * @returns {Promise<Package|null|undefined>}
+//  */
+// const crossUpsertPackage = async (arg, option) => {
+//   try {
+//     const { gtin, ndc11 } = arg;
+//     let pkg = await package.findOne({ $or: [{ gtin }, { ndc11 }] });
+//     if (pkg === null) {
+//       pkg = await package.create(arg);
+//     }
+//     pkg && updatePackage(pkg, option);
+//     return pkg;
+//   } catch (e) {
+//     console.log(e);
+//   }
+// };
+// /**
+//  * @param {Package} pkg
+//  * @param {string} gtin
+//  * @returns {Promise<void>}
+//  */
+// const updateGTIN = async (pkg, gtin) => {
+//   try {
+//     await pkg.updateOne({ gtin });
+//     updatePackage(pkg);
+//   } catch (e) {
+//     console.log(e);
+//   }
 // };

@@ -1,7 +1,7 @@
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
-const Item = require("../../schemas/item");
+const Item = require("../../schemas/inv/item");
 const { checkDateReceived } = require("../cah/returnRequest");
 
 /**
@@ -49,7 +49,14 @@ exports.upsertItem = async (dm, method, invoiceRef) => {
   try {
     return await Item.findOneAndUpdate(
       createFilter(dm),
-      { lot: dm.lot, exp: convertExpToDate(dm.exp), method, invoiceRef },
+      {
+        $set: {
+          lot: dm.lot,
+          exp: convertExpToDate(dm.exp),
+          method,
+          invoiceRef,
+        },
+      },
       { new: true, upsert: true }
     );
   } catch (e) {
@@ -61,9 +68,10 @@ exports.upsertItem = async (dm, method, invoiceRef) => {
  * Updates an Item document.
  * @param {ScanReq} scanReq
  * @param {Date} [date]
- * @returns {Promise<Item|undefined>}
+ * @param {Item} [item]
+ * @returns {Promise<Awaited<ReturnType<Item["updateOne"]>>|Item|undefined>}
  */
-exports.updateItem = async (scanReq, date) => {
+exports.updateItem = async (scanReq, date, item) => {
   try {
     const { mode, source, cost } = scanReq;
     const now = date instanceof Date ? date : new Date();
@@ -85,6 +93,9 @@ exports.updateItem = async (scanReq, date) => {
         update.$unset = { dateFilled: 1 };
         break;
       default:
+    }
+    if (item) {
+      return await item.updateOne(update);
     }
     return await Item.findOneAndUpdate(createFilter(scanReq), update, {
       new: true,

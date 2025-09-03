@@ -1,106 +1,99 @@
-const alternative = require("../../schemas/alternative");
+const alternative = require("../../schemas/inv/alternative");
 const family = require("./family");
 const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
-const { setOptionParameters } = require("../common");
-
 /**
  * @typedef {import("mongoose").ObjectId} ObjectId
  * @typedef {alternative.Alternative} Alternative
- * @typedef {typeof alternative.schema.obj} UpdateObj
  * @typedef {import("./package").Package} Package
  */
-/**
- * Finds an Alternative document.
- * @param {string} rxcui
- * @returns {Promise<Alternative|undefined>}
- */
-const findAlternative = async (rxcui) => {
-  try {
-    return (await alternative.findOne({ rxcui })) ?? undefined;
-  } catch (e) {
-    console.log(e);
-  }
-};
-/**
- * Creates an Alternative document.
- * @param {string} rxcui
- * @returns {Promise<Alternative|undefined>}
- */
-const createAlternative = async (rxcui) => {
-  try {
-    return await alternative.create({ rxcui });
-  } catch (e) {
-    console.log(e);
-  }
-};
+
 /**
  * Upserts an Alternative document.
  * @param {string} rxcui
- * @param {UpdateOption} [option]
  * @returns {Promise<Alternative|undefined>}
  */
-const upsertAlternative = async (rxcui, option) => {
+exports.upsertAlternative = async (rxcui) => {
   try {
-    let alt = await findAlternative(rxcui);
-    if (!alt) {
-      alt = await createAlternative(rxcui);
-    }
-    if (alt) {
-      updateAlternative(alt, option);
-    }
+    const alt = await alternative.findOneAndUpdate(
+      { rxcui },
+      {},
+      { new: true, upsert: true }
+    );
+    exports.updateAlternative(alt);
     return alt;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
 /**
  * @typedef {object} UpdateOption
- * @property {boolean} force
+ * @property {boolean} [force]
+ * @property {Function} [callback]
  */
 
 /**
- * Determines if the Alternative document needs an update.
- * @param {Alternative} alt
- * @returns {{rxNav: boolean}}
- */
-const needsUpdate = (alt) => {
-  let rxNav = false;
-  if (!alt.defaultName) {
-    rxNav = true;
-  }
-  return { rxNav };
-};
-/**
  * Updates an Alternative document.
  * @param {Alternative} alt
- * @param {UpdateOption} [option]
- * @returns {Promise<Alternative|undefined>}
+ * @returns {Promise<Awaited<ReturnType<Alternative["updateOne"]>>|undefined>}
  */
-const updateAlternative = async (alt, option) => {
+exports.updateAlternative = async (alt, option = {}) => {
   try {
-    let _alt = alt;
-    /** @type {UpdateOption} */
-    const defaultOption = { force: false };
-    const { force } = setOptionParameters(defaultOption, option);
-    /** @type {Parameters<alternative["findOneAndUpdate"]>["1"]} */
-    const update = { $set: {} };
-    const { rxNav } = force ? { rxNav: true } : needsUpdate(_alt);
-    if (rxNav) {
-      const rxNavData = await updateViaRxNav(_alt);
-      if (rxNavData) {
-        Object.assign(update.$set, rxNavData);
+    const { force, callback } = option;
+    const {
+      defaultName,
+      isBranded: _isBranded,
+      genAlt,
+      family,
+      rxcui,
+      cahProduct,
+    } = alt;
+    if (!cahProduct) {
+      //
+    }
+    if (force || _isBranded == undefined || !family || !defaultName) {
+      const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
+      if (!rxcuiStatus) {
+        return;
       }
+      /** @type {Parameters<alternative["findOneAndUpdate"]>["1"]} */
+      const update = { $set: {} };
+      const { attributes, scdConcept } = rxcuiStatus;
+      if (scdConcept && (force || !genAlt)) {
+        await updateGenAlt(alt, scdConcept.scdConceptRxcui);
+      }
+      const { name, tty } = attributes;
+      update.$set.isBranded = isBranded(tty);
+      const activeRxcui = getActiveRxcui(rxcuiStatus);
+      if (!activeRxcui) {
+        update.$set.defaultName = name;
+        return await alt.updateOne(update);
+      }
+      const allRelatedInfo = await getAllRelatedInfo(activeRxcui);
+      if (allRelatedInfo) {
+        const { sbd, scd, bpck, gpck, scdf } = allRelatedInfo;
+        if (sbd && tty === "SBD") {
+          update.$set.defaultName = selectName(sbd[0]);
+        } else if (scd && tty === "SCD") {
+          update.$set.defaultName = selectName(scd[0]);
+        } else if (bpck && tty === "BPCK") {
+          if (gpck && (force || !genAlt)) {
+            await updateGenAlt(alt, gpck[0].rxcui);
+          }
+          update.$set.defaultName = selectName(bpck[0]);
+        } else if (gpck && tty === "GPCK") {
+          update.$set.defaultName = selectName(gpck[0]);
+        }
+        if (scdf) {
+          await linkWithFamily(alt, scdf[0].rxcui);
+        }
+      }
+      callback instanceof Function && callback(await refreshPackage(_pkg));
+      return await alt.updateOne(update);
     }
-    if (Object.keys(update.$set).length) {
-      _alt = await alternative.findOneAndUpdate({ _id: _alt._id }, update, {
-        new: true,
-      });
-    }
-    return (await linkWithFamily(_alt)) ?? _alt;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
@@ -109,75 +102,13 @@ const updateAlternative = async (alt, option) => {
  * @returns {boolean}
  */
 const isBranded = (tty) => {
+  if (!tty) {
+    return;
+  }
   if (tty === "SBD" || tty === "BPCK") {
     return true;
   }
   return false;
-};
-
-/**
- * @param {Alternative} alt
- * @returns {Promise<UpdateObj|undefined>}
- */
-const updateViaRxNav = async (alt) => {
-  try {
-    const { rxcui } = alt;
-    const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
-    if (!rxcuiStatus) {
-      return;
-    }
-    /** @type {UpdateObj} */
-    const obj = {};
-    const { attributes, scdConcept } = rxcuiStatus;
-    if (scdConcept) {
-      await setGenAlt(alt, scdConcept.scdConceptRxcui);
-    }
-    const { name, tty } = attributes;
-    obj.isBranded = isBranded(tty);
-    const activeRxcui = getActiveRxcui(rxcuiStatus);
-    if (!activeRxcui) {
-      obj.defaultName = name;
-      return obj;
-    }
-    const allRelatedInfo = await getAllRelatedInfo(activeRxcui);
-    if (allRelatedInfo) {
-      const { sbd, scd, bpck, gpck, scdf } = allRelatedInfo;
-      if (sbd && tty === "SBD") {
-        obj.defaultName = selectName(sbd[0]);
-      } else if (scd && tty === "SCD") {
-        obj.defaultName = selectName(scd[0]);
-      } else if (bpck && tty === "BPCK") {
-        if (gpck) {
-          await setGenAlt(alt, gpck[0].rxcui);
-        }
-        obj.defaultName = selectName(bpck[0]);
-      } else if (gpck && tty === "GPCK") {
-        obj.defaultName = selectName(gpck[0]);
-      }
-      if (scdf) {
-        const fm = await family.upsertFamily(scdf[0].rxcui);
-        await fm.updateOne({ $addToSet: { rxcui } });
-      }
-    }
-    return obj;
-  } catch (e) {
-    console.log(e);
-  }
-};
-/**
- * @param {Alternative} alt
- * @param {string} rxcui
- * @returns {Promise<undefined>}
- */
-const setGenAlt = async (alt, rxcui) => {
-  try {
-    const genAlt = await upsertAlternative(rxcui);
-    if (genAlt) {
-      await alt.updateOne({ $set: { genAlt: genAlt._id } });
-    }
-  } catch (e) {
-    console.log(e);
-  }
 };
 /**
  * @param {getRxcuiHistoryStatus.Output} rxcuiStatus
@@ -227,6 +158,22 @@ const getActiveRxcui = (rxcuiStatus) => {
     return _rxcui.toString;
   }
 };
+
+/**
+ * @param {Alternative} alt
+ * @param {string} rxcui
+ * @returns {Promise<undefined>}
+ */
+const updateGenAlt = async (alt, rxcui) => {
+  try {
+    const genAlt = await exports.upsertAlternative(rxcui);
+    if (genAlt) {
+      await alt.updateOne({ $set: { genAlt: genAlt._id } });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
 /**
  * @param {getAllRelatedInfo.ConceptProperties} conceptProperties
  * @returns {string|undefined}
@@ -242,40 +189,31 @@ const selectName = (conceptProperties) => {
   return name;
 };
 /**
- * This will not upsert a Family document.
  * @param {Alternative} alt
- * @returns {Promise<Alternative|undefined>}
+ * @returns {Promise<Awaited<ReturnType<Alternative["updateOne"]>>|undefined>}
  */
-const linkWithFamily = async (alt) => {
+const linkWithFamily = async (alt, scdf) => {
   try {
-    const { _id, rxcui } = alt;
-    const fm = await family.searchFamily({ rxcui });
-    if (fm?.length > 0) {
-      const _fm = fm[0];
-      if (!alt.family?.equals(_fm._id)) {
-        await _fm.updateOne({ $addToSet: { alternatives: _id } });
-        return await alternative.findOneAndUpdate(
-          { _id },
-          { family: _fm._id },
-          { new: true }
-        );
-      }
+    const { _id, family: _family, rxcui } = alt;
+    const fm = await family.upsertFamily(scdf);
+    if (fm && !_family?.equals(fm._id)) {
+      await fm.updateOne({ $addToSet: { alternatives: _id, rxcui } });
+      return await alt.updateOne({ $set: { family: fm._id } });
     }
   } catch (e) {
-    console.log(e);
-  }
-};
-/**
- * @param {ObjectId} alt
- * @param {ObjectId} cahProduct
- * @returns {Promise<undefined>}
- */
-const setCAHProduct = async (alt, cahProduct) => {
-  try {
-    await alternative.findByIdAndUpdate(alt, { $set: { cahProduct } });
-  } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
 
-module.exports = { findAlternative, upsertAlternative, setCAHProduct };
+// /**
+//  * @param {ObjectId} alt
+//  * @param {ObjectId} cahProduct
+//  * @returns {Promise<undefined>}
+//  */
+// const setCAHProduct = async (alt, cahProduct) => {
+//   try {
+//     await alternative.findByIdAndUpdate(alt, { $set: { cahProduct } });
+//   } catch (e) {
+//     console.log(e);
+//   }
+// };

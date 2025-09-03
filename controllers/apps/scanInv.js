@@ -1,6 +1,6 @@
 const item = require("../../services/inv/item");
 const package = require("../../services/inv/package");
-const dailyOrder = require("../../services/inv/dailyOrder");
+// const dailyOrder = require("../../services/inv/dailyOrder");
 
 exports.post = async (req, res, next) => {
   try {
@@ -13,7 +13,6 @@ exports.post = async (req, res, next) => {
         .status(422)
         .send({ code: 422, message: "Unable to create a Package document." });
     }
-    // update Package
     const _item = await item.upsertItem(scanReq, "SCAN");
     switch (mode) {
       case "FILL":
@@ -30,7 +29,7 @@ exports.post = async (req, res, next) => {
         break;
       default:
     }
-    await item.updateItem(scanReq);
+    await item.updateItem(scanReq, new Date(), _item);
     await package.updateInventories(_item, mode);
     res.status(200).send({
       code: 200,
@@ -59,11 +58,6 @@ exports.post = async (req, res, next) => {
     //       },
     //     }
     //   : undefined;
-    // const pkg = await package.upsertPackage(gtin, "gtin", option);
-    // if (!pkg) {
-    //   //
-    //   return res.sendStatus(500);
-    // }
 
     // return res.sendStatus(200);
   } catch (e) {

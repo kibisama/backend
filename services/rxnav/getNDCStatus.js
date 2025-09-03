@@ -19,21 +19,22 @@ const { gtinToNDC, hyphenateNDC11 } = require("../convert");
 /**
  * @param {string} arg
  * @param {ArgType} type
- * @returns {Array}
+ * @returns {[string]}
  */
 const getQueries = (arg, type) => {
-  let queries = [];
+  let queries;
   switch (type) {
     case "ndc11":
-      queries[0] = arg;
+      queries = [arg];
       break;
     case "ndc":
-      queries[0] = arg;
+      queries = [arg];
       break;
     case "gtin":
       queries = gtinToNDC(arg);
       break;
     default:
+      return [];
   }
   return queries;
 };
@@ -65,20 +66,22 @@ module.exports = async (arg, type) => {
           rxcui = ndcStatus.rxcui;
           status = _status;
         } else {
+          // If the results are more than one, voids
           return;
         }
       }
     }
     if (!rxcui) {
+      // Not found
       return;
     }
     /** @type {Output} */
     const output = { rxcui, status, ndc11: hyphenateNDC11(ndc11) };
-    if (type === "gtin" || type === "ndc") {
+    if (type !== "ndc11") {
       output.ndc = query;
     }
     return output;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };

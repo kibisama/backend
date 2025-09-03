@@ -5,9 +5,9 @@ const { createPreset: createSettingPreset } = require("./apps/settings");
 const { createPreset: createDeliveryGroupPreset } = require("./apps/delivery");
 
 module.exports = () => {
-  scheduleUpsert();
-  scheduleUpdateSources();
-  createSettingPreset();
-  createDeliveryGroupPreset();
-  scheduleReturns();
+  // scheduleUpsert();
+  // scheduleUpdateSources();
+  // createSettingPreset();
+  // createDeliveryGroupPreset();
+  // scheduleReturns();
 };

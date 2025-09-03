@@ -20,12 +20,20 @@ const { getMaxNumberString } = require("../common");
  * @typedef {object} PropertyConcept
  * @property {rxnav.PropertyName} propName
  * @property {string} propValue
- * @typedef {import("../inv/package").UpdateObj} Output
+ * @typedef {object} Output
+ * @property {string} [mfr]
+ * @property {string} [schedule]
+ * @property {string} [shape]
+ * @property {string} [shapeSize]
+ * @property {string} [color]
+ * @property {string} [imprint]
+ * @property {string} [ndc]
+ * @property {string} [rxcui]
  */
 
 /**
  * @param {[NDCProperty]} ndcProps
- * @param {string} rxcui
+ * @param {string} [rxcui]
  * @return {NDCProperty}
  */
 const selectNdcProp = (ndcProps, rxcui) => {
@@ -48,7 +56,7 @@ const selectNdcProp = (ndcProps, rxcui) => {
  * @param {NDCProperty} ndcProp
  * @return {Output}
  */
-const createUpdateObj = (ndcProp) => {
+const createOutput = (ndcProp) => {
   /** @type {Output} */
   const output = {};
   const { propertyConceptList, packagingList } = ndcProp;
@@ -85,18 +93,17 @@ const createUpdateObj = (ndcProp) => {
 module.exports = async (ndc, rxcui) => {
   try {
     /** @type {Output} */
-    const output = {};
     const result = await rxnav("getNDCProperties", ndc);
     /** @type {NDCPropertyList|undefined} */
     const ndcPropertyList = result.data.ndcPropertyList;
     if (ndcPropertyList) {
       const ndcProperty = selectNdcProp(ndcPropertyList.ndcProperty, rxcui);
+      const output = createOutput(ndcProperty);
       output.ndc = ndcProperty.ndc10;
       output.rxcui = ndcProperty.rxcui;
-      Object.assign(output, createUpdateObj(ndcProperty));
       return output;
     }
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };

@@ -1,5 +1,5 @@
 const psAlt = require("../../schemas/psAlternative");
-const alternative = require("../../schemas/alternative");
+const alternative = require("../../schemas/inv/alternative");
 
 /**
  * @typedef {import("mongoose").ObjectId} ObjectId

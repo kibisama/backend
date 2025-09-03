@@ -1,6 +1,6 @@
 const dayjs = require("dayjs");
 const dailyOrder = require("../../schemas/dailyOrder");
-const item = require("../../schemas/item");
+const item = require("../../schemas/inv/item");
 const package = require("./package");
 const getSearchResults = require("../ps/getSearchResults");
 const getProductDetails = require("../cah/getProductDetails");

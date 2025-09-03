@@ -87,6 +87,6 @@ module.exports = async (rxcui) => {
     }
     return output;
   } catch (e) {
-    console.log(e);
+    console.error(e);
   }
 };
