@@ -302,6 +302,27 @@ const linkWithAlternative = async (pkg) => {
   }
 };
 
+/**
+ * Requires an alternative ObjectId.
+ * @param {ObjectId} alt_id
+ * @returns {Promise<[Package]|undefined>}
+ */
+exports.getAllInventories = async (alt_id) => {
+  try {
+    return await package.find(
+      { alternative: alt_id, $expr: { $gt: [{ $size: "$inventories" }, 0] } },
+      {},
+      {
+        populate: {
+          path: "inventories",
+        },
+      }
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // /**
 //  * @param {Package} pkg
 //  * @returns {Promise<Package|undefined>}

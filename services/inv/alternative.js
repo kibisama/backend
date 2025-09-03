@@ -211,29 +211,7 @@ exports.getAllDocuments = async () => {
     console.error(e);
   }
 };
-/**
- * @param {ObjectId} alt_id
- * @returns {Promise<[Package]|undefined>}
- */
-exports.getPackagesWithInventories = async (alt_id) => {
-  try {
-    const result = await alternative.findById(
-      alt_id,
-      { packages: true },
-      {
-        populate: {
-          path: "packages",
-          populate: { path: "inventories" },
-        },
-      }
-    );
-    if (result?.packages) {
-      return result.packages;
-    }
-  } catch (e) {
-    console.error(e);
-  }
-};
+
 // /**
 //  * @param {ObjectId} alt
 //  * @param {ObjectId} cahProduct

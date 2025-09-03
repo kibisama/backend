@@ -1,4 +1,6 @@
 const alt = require("../services/inv/alternative");
+const item = require("../services/inv/item");
+const package = require("../services/inv/package");
 
 /**
  * @param {[alt.Alternative]} alts
@@ -33,7 +35,7 @@ exports.getAlternatives = async (req, res, next) => {
  */
 
 /**
- * @param {alt.Package} pkg populated inventories
+ * @param {package.Package} pkg populated inventories
  * @returns {string}
  */
 const getRowLabel = (pkg) => {
@@ -45,7 +47,7 @@ const getRowLabel = (pkg) => {
 };
 
 /**
- * @param {[alt.Package]} packages populated inventories
+ * @param {[package.Package]} packages populated inventories
  * @returns {{rows: [Row], count: number}}
  */
 const mapInventoryRows = (packages) => {
@@ -54,36 +56,36 @@ const mapInventoryRows = (packages) => {
   let count = 0;
   let id = 0;
   packages.forEach((pkg) => {
-    if (pkg.inventories.length > 0) {
+    id += 1;
+    rows.push({ label: true, _id: pkg._id, id, lot: getRowLabel(pkg) });
+    pkg.inventories.forEach((item) => {
       id += 1;
-      rows.push({ label: true, _id: pkg._id, id, lot: getRowLabel(pkg) });
-      pkg.inventories.forEach((item) => {
-        id += 1;
-        count += 1;
-        rows.push({
-          _id: item._id,
-          id,
-          gtin: item.gtin,
-          lot: item.lot,
-          sn: item.sn,
-          exp: item.exp,
-          source: item.source,
-          cost: item.cost,
-          dateFilled: item.dateFilled,
-          dateReceived: item.dateReceived,
-        });
+      count += 1;
+      rows.push({
+        _id: item._id,
+        id,
+        gtin: item.gtin,
+        lot: item.lot,
+        sn: item.sn,
+        exp: item.exp,
+        source: item.source,
+        cost: item.cost,
+        dateFilled: item.dateFilled,
+        dateReceived: item.dateReceived,
       });
-    }
+    });
   });
   return { rows, count };
 };
 exports.getInventories = async (req, res, next) => {
   try {
-    const { _id, all } = req.query;
-    const packages = await alt.getPackagesWithInventories(_id);
-    if (packages) {
-      if (all === "true") {
-        console.log(true);
+    const { _id, filled } = req.query;
+    const packages = await package.getAllInventories(_id);
+    if (packages.length > 0) {
+      if (filled === "true") {
+        for (let i = 0; i < packages.length; i++) {
+          packages[i].inventories = await item.findItemsByGTIN(gtin);
+        }
       }
       return res
         .status(200)

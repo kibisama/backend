@@ -105,6 +105,18 @@ exports.updateItem = async (scanReq, date, item) => {
   }
 };
 
+/**
+ * @param {string} gtin
+ * @returns {Promise<[Item]|undefined>}
+ */
+exports.findItemsByGTIN = async (gtin) => {
+  try {
+    return await Item.find({ gtin });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // /**
 //  * Check if the scan is a new fill.
 //  * @param {Item} item
