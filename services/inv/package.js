@@ -20,6 +20,7 @@ const { isObjectIdOrHexString } = require("mongoose");
  * @typedef {"gtin"|"ndc"|"ndc11"} ArgType
  * @typedef {Parameters<package["findOne"]>["0"]} Filter
  * @typedef {import("mongoose").ObjectId} ObjectId
+ * @typedef {item.Item} Item
  */
 
 /**
@@ -86,7 +87,7 @@ exports.upsertPackage = async (arg, type) => {
 
 /**
  * Updates the inventories.
- * @param {item.Item} item
+ * @param {Item} item
  * @param {item.Mode} mode
  * @param {package.Package} [pkg]
  * @returns {Promise<Package|undefined>}
@@ -104,7 +105,7 @@ exports.updateInventories = async (item, mode, pkg) => {
 };
 /**
  * Pulls an Item from the inventories.
- * @param {item.Item} item
+ * @param {Item} item
  * @param {package.Package} [pkg]
  * @returns {Promise<Package|undefined>}
  */
@@ -129,7 +130,7 @@ const pullItem = async (item, pkg) => {
 };
 /**
  * Adds an Item to the inventories.
- * @param {item.Item} item
+ * @param {Item} item
  * @param {package.Package} [pkg]
  * @returns {Promise<Package|undefined>}
  */
@@ -186,7 +187,7 @@ exports.updatePackage = async (pkg, option = {}) => {
       return;
     }
     const [arg, type] = selectArg(_pkg);
-    let { rxcui, ndc11, mfr, mfrName, alternative } = _pkg;
+    let { rxcui, ndc11, mfr, mfrName, alternative, ndc } = _pkg;
     if (force || !rxcui || !ndc11) {
       const ndcStatus = await getNDCStatus(arg, type);
       if (ndcStatus) {
@@ -198,7 +199,7 @@ exports.updatePackage = async (pkg, option = {}) => {
         return;
       }
     }
-    if (force || !mfr) {
+    if (force || !mfr || !ndc) {
       const ndcProperties = await getNDCProperties(ndc11, rxcui);
       if (ndcProperties) {
         mfr = ndcProperties.mfr;
@@ -222,9 +223,6 @@ exports.updatePackage = async (pkg, option = {}) => {
     // }
     // if (name) {
     //   _pkg = (await setName(_pkg)) || _pkg;
-    // }
-    // if (mfrName) {
-    //   _pkg = (await setMfrName(_pkg)) || _pkg;
     // }
     // if (!_pkg.ndc || !_pkg.ndc11) {
     //   //
@@ -308,6 +306,27 @@ const linkWithAlternative = async (pkg) => {
 //  * @param {Package} pkg
 //  * @returns {Promise<Package|undefined>}
 //  */
+// const setName = async (pkg) => {
+//   try {
+//     const { _id, size, alternative } = await pkg.populate("alternative");
+//     if (size && alternative?.defaultName) {
+//       return await package.findByIdAndUpdate(
+//         _id,
+//         {
+//           $set: { name: `${alternative.defaultName.toUpperCase()} (${size})` },
+//         },
+//         { new: true }
+//       );
+//     }
+//   } catch (e) {
+//     console.log(e);
+//   }
+// };
+
+// /**
+//  * @param {Package} pkg
+//  * @returns {Promise<Package|undefined>}
+//  */
 // const updateSizeViaCAH = async (pkg) => {
 //   try {
 //     const { _id, cahProduct } = await pkg.populate("cahProduct");
@@ -323,26 +342,6 @@ const linkWithAlternative = async (pkg) => {
 //           );
 //         }
 //       }
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} pkg
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const setName = async (pkg) => {
-//   try {
-//     const { _id, size, alternative } = await pkg.populate("alternative");
-//     if (size && alternative?.defaultName) {
-//       return await package.findByIdAndUpdate(
-//         _id,
-//         {
-//           $set: { name: `${alternative.defaultName.toUpperCase()} (${size})` },
-//         },
-//         { new: true }
-//       );
 //     }
 //   } catch (e) {
 //     console.log(e);

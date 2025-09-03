@@ -13,7 +13,6 @@ const alternativeSchema = new Schema({
 
   /* Internal data */
   name: String,
-  // active: { type: Boolean, default: true },
 
   /* Updated via getRxcuiHistoryStatus */
   isBranded: Boolean,

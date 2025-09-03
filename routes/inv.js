@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const getDailyOrder = require("../controllers/inv/getDailyOrder");
+const inventory = require("../controllers/inventory");
 
-router.get("/dailyOrder/:date", getDailyOrder);
+router.get("/", inventory.getInventories);
+router.get("/alt", inventory.getAlternatives);
 
 module.exports = router;

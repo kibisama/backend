@@ -76,7 +76,8 @@ exports.post = async (req, res, next) => {
 
 /**
  * @typedef {object} Row
- * @property {import("mongoose").ObjectId} id
+ * @property {number} id
+ * @property {import("mongoose").ObjectId} _id
  * @property {string} rxNumber
  * @property {Date} deliveryDate
  * @property {Pickup.Relation} relation
@@ -106,11 +107,11 @@ const relationToString = (relation) => {
  */
 const mapSearchResults = (pickups) => {
   const mappedResults = [];
-  let id = 1;
+  let id = 0;
   pickups.forEach((v, i) => {
-    id += i;
-    v.rxNumber.forEach((w, i) => {
-      id += i;
+    id += 1;
+    v.rxNumber.forEach((w, j) => {
+      j !== 0 && (id += 1);
       mappedResults.push({
         id,
         _id: v._id,
