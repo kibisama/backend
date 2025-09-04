@@ -115,4 +115,12 @@ module.exports = {
   isShortDated(exp, format) {
     return dayjs(exp, format).isBefore(dayjs().add(12, "month"));
   },
+  /**
+   * Returns
+   * @param {Date} date
+   * @returns {boolean}
+   */
+  isAfterTodayStart(date) {
+    return dayjs(date).isAfter(dayjs().startOf("d"));
+  },
 };

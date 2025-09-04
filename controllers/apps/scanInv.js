@@ -19,7 +19,16 @@ exports.post = async (req, res, next) => {
         if (_item.dateFilled) {
           return res.status(208).send({
             code: 208,
-            message: "The item has been already filled.",
+            message: "The item has been already reported as filled.",
+          });
+        }
+        //
+        break;
+      case "RECEIVE":
+        if (_item.dateReceived) {
+          return res.status(208).send({
+            code: 208,
+            message: "The item has been already reported as received.",
           });
         }
         //

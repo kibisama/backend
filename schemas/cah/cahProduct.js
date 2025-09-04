@@ -12,7 +12,7 @@ const cahProductSchema = new Schema({
     required: true,
     unique: true,
   },
-  lastUpdated: { type: Date, required: true },
+  lastUpdated: Date,
   active: { type: Boolean, default: false },
   //   priority: { type: Number, default: 0 },
   /* Common fields */
@@ -37,11 +37,11 @@ const cahProductSchema = new Schema({
   mpn: String,
   brandName: String,
   amu: String,
-  size: String, // n X n.nnn Units
+  size: String, // "n X n.nnn Units"
   form: String,
   strength: String,
 
-  //   /* More details */
+  /* More details */
   rx: Boolean,
   deaSchedule: String,
   // productType: String,

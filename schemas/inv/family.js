@@ -8,6 +8,7 @@ const familySchema = new Schema({
   scdf: { type: String, required: true, unique: true },
 
   /* Internal data */
+  lastUpdated: Date,
   name: String,
 
   /* Updated via getAllRelatedInfo */

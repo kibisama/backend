@@ -1,3 +1,4 @@
+const dayjs = require("dayjs");
 const package = require("../../schemas/inv/package");
 const item = require("./item");
 const alt = require("./alternative");
@@ -13,6 +14,10 @@ const {
 } = require("../convert");
 const { calculateSize } = require("../cah/common");
 const { isObjectIdOrHexString } = require("mongoose");
+const { isAfterTodayStart } = require("../common");
+
+/** Constants **/
+const CREATE_CAHPRODUCT = true;
 
 /**
  * @typedef {package.Package} Package
@@ -174,10 +179,10 @@ const refreshPackage = async (pkg) => {
  */
 
 /**
- * Updates a Package document. Returns a refreshed Package.
+ * Updates a Package document
  * @param {Package} pkg
  * @param {UpdateOption} [option]
- * @returns {Promise<Package|undefined>}
+ * @returns {Promise<any>}
  */
 exports.updatePackage = async (pkg, option = {}) => {
   try {
@@ -186,8 +191,23 @@ exports.updatePackage = async (pkg, option = {}) => {
     if (!_pkg) {
       return;
     }
+    let {
+      _id,
+      lastUpdated,
+      rxcui,
+      ndc11,
+      mfr,
+      mfrName,
+      alternative,
+      ndc,
+      cahProduct,
+      name,
+    } = _pkg;
+    if (!force && lastUpdated && isAfterTodayStart(lastUpdated)) {
+      return;
+    }
+    await _pkg.updateOne({ $set: { lastUpdated: new Date() } });
     const [arg, type] = selectArg(_pkg);
-    let { rxcui, ndc11, mfr, mfrName, alternative, ndc } = _pkg;
     if (force || !rxcui || !ndc11) {
       const ndcStatus = await getNDCStatus(arg, type);
       if (ndcStatus) {
@@ -195,7 +215,7 @@ exports.updatePackage = async (pkg, option = {}) => {
         rxcui = _rxcui;
         ndc11 = _ndc11;
         await _pkg.updateOne({ $set: { rxcui, ndc11 } });
-      } else {
+      } else if (!rxcui) {
         return;
       }
     }
@@ -216,24 +236,20 @@ exports.updatePackage = async (pkg, option = {}) => {
       if (!_pkg.rxcui) {
         _pkg.rxcui = rxcui;
       }
-      await linkWithAlternative(_pkg);
+      await linkWithAlternative(_pkg, {
+        callback: async () => exports.updateName(await refreshPackage(_pkg)),
+      });
     }
-    // if (cah) {
-    //   _pkg = (await updateSizeViaCAH(_pkg)) || _pkg;
-    // }
-    // if (name) {
-    //   _pkg = (await setName(_pkg)) || _pkg;
-    // }
-    // if (!_pkg.ndc || !_pkg.ndc11) {
-    //   //
-    // }
-    // if (callback instanceof Function) {
-    //   callback(_pkg);
-    // }
-    // return _pkg;
-    const refreshedPackage = await refreshPackage(_pkg);
-    callback instanceof Function && callback(refreshedPackage);
-    return refreshedPackage;
+    if (CREATE_CAHPRODUCT) {
+      // upsert cahProduct
+      // callback update size
+      // if (!cahProduct) {
+      //   await updateOne
+      // }
+    }
+    if (callback instanceof Function) {
+      return callback(await refreshPackage(_pkg));
+    }
   } catch (e) {
     console.error(e);
   }
@@ -287,12 +303,13 @@ const updateMfrName = async (pkg) => {
 /**
  * This upserts an Alternative document.
  * @param {Package} pkg
+ * @param {alt.UpdateOption} [option]
  * @returns {Promise<Awaited<ReturnType<Package["updateOne"]>>|undefined>}
  */
-const linkWithAlternative = async (pkg) => {
+const linkWithAlternative = async (pkg, option) => {
   try {
     const { _id, rxcui, alternative } = pkg;
-    const _alt = await alt.upsertAlternative(rxcui);
+    const _alt = await alt.upsertAlternative(rxcui, option);
     if (_alt && !alternative?.equals(_alt._id)) {
       await _alt.updateOne({ $addToSet: { packages: _id } });
       return await pkg.updateOne({ $set: { alternative: _alt._id } });
@@ -302,26 +319,31 @@ const linkWithAlternative = async (pkg) => {
   }
 };
 
-// /**
-//  * @param {Package} pkg
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const setName = async (pkg) => {
-//   try {
-//     const { _id, size, alternative } = await pkg.populate("alternative");
-//     if (size && alternative?.defaultName) {
-//       return await package.findByIdAndUpdate(
-//         _id,
-//         {
-//           $set: { name: `${alternative.defaultName.toUpperCase()} (${size})` },
-//         },
-//         { new: true }
-//       );
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * @param {Package} pkg
+ * @param {string} [name]
+ * @returns {Promise<Awaited<ReturnType<Package["updateOne"]>>|undefined>}
+ */
+exports.updateName = async (pkg, name) => {
+  try {
+    var name = name || "";
+    if (!name) {
+      if (!pkg.alternative) {
+        return;
+      }
+      const { size, alternative } = await pkg.populate("alternative");
+      const { defaultName } = alternative;
+      if (!defaultName) {
+        return;
+      }
+      name += defaultName;
+      size && (name += ` (${size})`);
+    }
+    return await pkg.updateOne({ $set: { name } });
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // /**
 //  * @param {Package} pkg

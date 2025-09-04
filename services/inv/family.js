@@ -1,5 +1,7 @@
 const family = require("../../schemas/inv/family");
+const { isAfterTodayStart } = require("../common");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
+const { isObjectIdOrHexString } = require("mongoose");
 
 /**
  * @typedef {family.Family} Family
@@ -26,8 +28,25 @@ exports.upsertFamily = async (scdf) => {
 };
 
 /**
+ * Refreshes a Family documnet.
+ * @param {Family|ObjectId} pkg
+ * @returns {Promise<Family|undefined>}
+ */
+const refreshFamily = async (pkg) => {
+  try {
+    if (isObjectIdOrHexString(pkg)) {
+      return await family.findById(pkg);
+    }
+    return await family.findById(pkg._id);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
  * @typedef {object} UpdateOption
- * @property {boolean} force
+ * @property {boolean} [force]
+ * @property {function} [callback]
  */
 
 /**
@@ -38,8 +57,12 @@ exports.upsertFamily = async (scdf) => {
  */
 exports.updateFamily = async (fm, option = {}) => {
   try {
-    const { force } = option;
-    const { defaultName, scdf } = fm;
+    const { force, callback } = option;
+    const { lastUpdated, defaultName, scdf } = fm;
+    if (!force && lastUpdated && isAfterTodayStart(lastUpdated)) {
+      return;
+    }
+    await fm.updateOne({ $set: { lastUpdated: new Date() } });
     if (force || !defaultName) {
       /** @type {Parameters<family["findOneAndUpdate"]>["1"]} */
       const update = { $set: {} };
@@ -60,7 +83,10 @@ exports.updateFamily = async (fm, option = {}) => {
           update.$addToSet = { rxcui };
         }
       }
-      return await fm.updateOne(update);
+      await fm.updateOne(update);
+      if (callback instanceof Function) {
+        return callback(await refreshFamily(fm));
+      }
     }
   } catch (e) {
     console.error(e);

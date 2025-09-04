@@ -2,6 +2,8 @@ const alternative = require("../../schemas/inv/alternative");
 const family = require("./family");
 const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
+const { isObjectIdOrHexString } = require("mongoose");
+const { isAfterTodayStart } = require("../common");
 /**
  * @typedef {import("mongoose").ObjectId} ObjectId
  * @typedef {alternative.Alternative} Alternative
@@ -11,19 +13,43 @@ const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
 /**
  * Upserts an Alternative document.
  * @param {string} rxcui
+ * @param {UpdateOption} option
  * @returns {Promise<Alternative|undefined>}
  */
-exports.upsertAlternative = async (rxcui) => {
+exports.upsertAlternative = async (rxcui, option = {}) => {
   try {
+    const { force, callback } = option;
     const alt = await alternative.findOneAndUpdate(
       { rxcui },
       {},
       { new: true, upsert: true }
     );
     exports.updateAlternative(alt, {
-      callback: () => exports.getAllDocuments(true),
+      force,
+      callback: (refreshedAlt) => {
+        exports.getAllDocuments(true);
+        if (callback instanceof Function) {
+          return callback(refreshedAlt);
+        }
+      },
     });
     return alt;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * Refreshes a Alternative documnet.
+ * @param {Alternative|ObjectId} alt
+ * @returns {Promise<Alternative|undefined>}
+ */
+const refreshAlternative = async (alt) => {
+  try {
+    if (isObjectIdOrHexString(alt)) {
+      return await alternative.findById(alt);
+    }
+    return await alternative.findById(alt._id);
   } catch (e) {
     console.error(e);
   }
@@ -38,22 +64,28 @@ exports.upsertAlternative = async (rxcui) => {
 /**
  * Updates an Alternative document.
  * @param {Alternative} alt
- * @returns {Promise<Awaited<ReturnType<Alternative["updateOne"]>>|undefined>}
+ * @returns {Promise<any>}
  */
 exports.updateAlternative = async (alt, option = {}) => {
   try {
     const { force, callback } = option;
     const {
+      lastUpdated,
       defaultName,
       isBranded: _isBranded,
       genAlt,
       family,
       rxcui,
-      cahProduct,
+      // cahProduct,
     } = alt;
-    if (!cahProduct) {
-      //
+    // if (!cahProduct) {
+    // Process in a separate fn
+    // }
+    if (!force && lastUpdated && isAfterTodayStart(lastUpdated)) {
+      return;
     }
+    await alt.updateOne({ $set: { lastUpdated: new Date() } });
+
     if (force || _isBranded == undefined || !family || !defaultName) {
       const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
       if (!rxcuiStatus) {
@@ -91,8 +123,10 @@ exports.updateAlternative = async (alt, option = {}) => {
           await linkWithFamily(alt, scdf[0].rxcui);
         }
       }
-      callback instanceof Function && callback(await refreshPackage(_pkg));
-      return await alt.updateOne(update);
+      await alt.updateOne(update);
+      if (callback instanceof Function) {
+        return callback(refreshAlternative(alt));
+      }
     }
   } catch (e) {
     console.error(e);
