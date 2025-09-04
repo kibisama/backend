@@ -26,7 +26,7 @@ const timeEvent = require("./sse/time");
 app.get("/time", timeEvent);
 
 app.use((req, res, next) => {
-  const error = new Error(`${req.method} ${req.url} 라우터가 없습니다.`);
+  const error = new Error(`${req.method} ${req.url} A router does not exist.`);
   error.status = 404;
   next(error);
 });

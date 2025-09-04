@@ -1,4 +1,4 @@
-const SETTINGS = require("../../schemas/apps/settings");
+const Settings = require("../../schemas/apps/settings");
 
 const preset = {
   storeName: "El Camino Pharmacy Inc.",
@@ -14,29 +14,31 @@ const preset = {
 };
 
 /**
- * @typedef {SETTINGS.Settings} Settings
- * @typedef {Parameters<SETTINGS["findOneAndUpdate"]>["1"]} UpdateParam
+ * @typedef {Settings.Settings} Settings
+ * @typedef {typeof Settings.schema.obj} SettingsSchema
  */
 
+/** Caching Settings Document **/
+let __settings;
 /**
- * @returns {Promise<Settings|null>}
+ * @returns {Promise<Settings|null|undefined>}
  */
 exports.getSettings = async () => {
   try {
-    return await SETTINGS.findOne({});
+    return __settings || (__settings = await createPreset());
   } catch (e) {
     console.error(e);
   }
 };
 
 /**
- * @returns {Promise<Settings>}
+ * @returns {Promise<Settings|undefined>}
  */
-exports.createPreset = async () => {
+const createPreset = async () => {
   try {
-    const settings = await exports.getSettings();
+    const settings = await Settings.findOne({});
     if (!settings) {
-      return await SETTINGS.create(preset);
+      return await Settings.create(preset);
     }
     return settings;
   } catch (e) {
@@ -44,12 +46,12 @@ exports.createPreset = async () => {
   }
 };
 /**
- * @param {UpdateParam} param
- * @returns {Promise<Settings>}
+ * @param {SettingsSchema} param
+ * @returns {Promise<Settings|undefined>}
  */
 exports.updateSettings = async (param) => {
   try {
-    return await SETTINGS.findOneAndUpdate({}, { $set: param }, { new: true });
+    return await Settings.findOneAndUpdate({}, { $set: param }, { new: true });
   } catch (e) {
     console.error(e);
   }

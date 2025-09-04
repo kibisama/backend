@@ -208,13 +208,15 @@ const linkWithFamily = async (alt, scdf) => {
 };
 
 /** Caching sortedAllDocuments **/
-let allDocuments;
+let __allDocuments;
 exports.getAllDocuments = async (refresh) => {
   try {
-    if (refresh || !allDocuments) {
-      allDocuments = await alternative.find().sort({ name: 1, defaultName: 1 });
+    if (refresh || !__allDocuments) {
+      __allDocuments = await alternative
+        .find()
+        .sort({ name: 1, defaultName: 1 });
     }
-    return allDocuments;
+    return __allDocuments;
   } catch (e) {
     console.error(e);
   }
