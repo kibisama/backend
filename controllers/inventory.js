@@ -108,3 +108,27 @@ exports.getInventories = async (req, res, next) => {
     next(e);
   }
 };
+
+/**
+ * @param {[item.Item]} items
+ * @returns {[{time: Date, qty: number, gtin: string}]}
+ */
+const preMapUsageRows = (items) => {
+  const rows = [];
+  const table = {};
+  let id = 0;
+  items.forEach((item, index) => {
+    if (!table[item.gtin]) {
+      table[item.gtin] = 1;
+    }
+  });
+};
+exports.getUsages = async (req, res, next) => {
+  try {
+    const { date } = req.params;
+    const items = await item.findItemsByFilledDate(date);
+    return res.status(200).send({ code: 200, data: [] });
+  } catch (e) {
+    console.error(e);
+  }
+};

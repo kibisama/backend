@@ -148,7 +148,6 @@ exports.preprocessReturn = (item) => {
     console.error(e);
   }
 };
-
 // /**
 //  * @param {dayjs.Dayjs} day
 //  * @param {Source} source
@@ -164,3 +163,19 @@ exports.preprocessReturn = (item) => {
 //     console.error(e);
 //   }
 // };
+
+/**
+ * @param {string|Date|undefined} date
+ * @returns {Promise<[Item]|undefined>}
+ */
+exports.findItemsByFilledDate = async (date) => {
+  try {
+    const day =
+      typeof date === "string" ? dayjs(date, "MMDDYYYY") : dayjs(date);
+    return await Item.find({
+      dateFilled: { $gte: day.startOf("day"), $lte: day.endOf("day") },
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
