@@ -1,19 +1,14 @@
-// const mongoose = require("mongoose");
-// const { Schema } = mongoose;
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
-// const systemLogSchema = new Schema({
-//   createdAt: { type: Date, reqruied: true },
-//   msg: { type: String, required: true },
-//   type: { type: String, required: true },
-//   active: { type: Boolean, required: true, default: true },
-//   date: String,
-//   status: String,
-//   url: String,
-// });
+const systemLogSchema = new Schema({
+  date: { type: String, required: true, unique: true }, // "MM/DD/YYYY"
+  CAH_LAST_UPSERT_ITEMS_VIA_DSCSA: Boolean,
+});
 
-// const model = mongoose.model("System Log", systemLogSchema);
-// /**
-//  * @typedef {Awaited<ReturnType<model["create"]>>[0]} SystemLog
-//  */
+const model = mongoose.model("System Log", systemLogSchema);
+/**
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} SystemLog
+ */
 
-// module.exports = model;
+module.exports = model;

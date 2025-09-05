@@ -1,21 +1,65 @@
-// const dayjs = require("dayjs");
+const dayjs = require("dayjs");
 // const { scheduleJob } = require("node-schedule");
-// const item = require("../inv/item");
+const item = require("../inv/item");
 // const package = require("../inv/package");
 // const nodeMailer = require("../nodeMailer");
 // const { getSettings } = require("../apps/settings");
-// const common = require("../common");
+const common = require("../common");
 
-// /**
-//  * @typedef {object} ReturnItem
-//  * @property {string} gtin
-//  * @property {string} sn
-//  * @property {string} [invoiceRef]
-//  * @property {string} [cost]
-//  * @property {string} [cin]
-//  * @property {string} [ndc]
-//  * @typedef {item.Item} Item
-//  */
+/**
+ * @param {Item} item
+ * @returns {common.Response}
+ */
+exports.checkItemCondition = (item) => {
+  const { dateReceived, exp } = item;
+  const today = dayjs();
+  const dayExp = dayjs(exp, "YYMMDD");
+  if (dayExp.isBefore(today.add(200, "day"))) {
+    return {
+      code: 409,
+      message: "The expiration date is too short (less than 200 days).",
+    };
+  }
+  const dayDateReceived = dayjs(dateReceived);
+  if (dayDateReceived.isAfter(today.add(1, "year"))) {
+    return {
+      code: 409,
+      message:
+        "Cardinal does not accept returning items passed more than 1 year.",
+    };
+  } else if (dayDateReceived.isAfter(today.add(350, "days"))) {
+    return {
+      code: 202,
+      message:
+        "The item has passed more than 350 days. Cardinal might not issue RMA.",
+    };
+  } else if (dayDateReceived.isAfter(today.add(180, "day"))) {
+    return {
+      code: 202,
+      message:
+        "The item has passed more than 180 days. Cardinal will not issue the full credit.",
+    };
+  } else if (dayDateReceived.isAfter(today.add(170, "day"))) {
+    return {
+      code: 202,
+      message:
+        "The item has passed more than 170 days. Cardinal might not issue the full credit.",
+    };
+  } else {
+    return { code: 200 };
+  }
+};
+
+/**
+ * @typedef {object} ReturnItem
+ * @property {string} gtin
+ * @property {string} sn
+ * @property {string} [invoiceRef]
+ * @property {string} [cost]
+ * @property {string} [cin]
+ * @property {string} [ndc]
+ * @typedef {item.Item} Item
+ */
 
 // /**
 //  * @returns {Promise<[Item]|undefined>}
@@ -105,43 +149,6 @@
 //  */
 // exports.scheduleMailer = () => {
 //   scheduleJob(getScheduleDate(), processReturns);
-// };
-
-// /**
-//  * @param {Item} item
-//  * @returns {common.Response}
-//  */
-// exports.checkDateReceived = (item) => {
-//   const { dateReceived } = item;
-//   const today = dayjs();
-//   const dayDateReceived = dayjs(dateReceived);
-//   if (dayDateReceived.isAfter(today.add(1, "year"))) {
-//     return {
-//       code: 409,
-//       message:
-//         "Cardinal does not accept returning items passed more than 1 year.",
-//     };
-//   } else if (dayDateReceived.isAfter(today.add(355, "days"))) {
-//     return {
-//       code: 200,
-//       message:
-//         "The item has passed more than 355 days, so Cardinal might not issue RMA.",
-//     };
-//   } else if (dayDateReceived.isAfter(today.add(180, "day"))) {
-//     return {
-//       code: 200,
-//       message:
-//         "The item has passed more than 180 days, so Cardinal will not issue the full credit.",
-//     };
-//   } else if (dayDateReceived.isAfter(today.add(170, "day"))) {
-//     return {
-//       code: 200,
-//       message:
-//         "The item has passed more than 170 days, so Cardinal might not issue the full credit.",
-//     };
-//   } else {
-//     return { code: 200 };
-//   }
 // };
 
 // /**

@@ -1,7 +1,7 @@
-// const dayjs = require("dayjs");
 // const { scheduleJob } = require("node-schedule");
 // const { cardinal } = require("../../api/puppet");
 // const findRelatedNDCs = require("../rxnav/findRelatedNDCs");
+// const { setDelay } = require("../common");
 
 // /**
 //  * @typedef {import("./getProductDetails").Alt} Alt
@@ -10,15 +10,6 @@
 //  * @typedef {object} Body
 //  * @property {[string]} queries
 //  */
-
-// /**
-//  * Returns a native Date object indicating m minutes from now.
-//  * @param {Parameters<dayjs.Dayjs["add"]>["0"]} m
-//  * @returns {Date}
-//  */
-// const setDelay = (m) => {
-//   return dayjs().add(m, "minute").toDate();
-// };
 
 // /**
 //  * @param {string} ndc
@@ -31,7 +22,7 @@
 //       return { queries };
 //     }
 //   } catch (e) {
-//     console.log(e);
+//     console.error(e);
 //   }
 // };
 
@@ -68,7 +59,7 @@
 //           default:
 //         }
 //       } else {
-//         /** @type {Data} */
+//         /** @type {Data} **/
 //         const data = result.data;
 //         callback(data.results);
 //       }

@@ -2,7 +2,7 @@ const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const Item = require("../../schemas/inv/item");
-// const { checkDateReceived } = require("../cah/returnRequest");
+const { checkItemCondition } = require("../cah/returnRequest");
 
 /**
  * @typedef {Item.Item} Item
@@ -32,10 +32,10 @@ const createFilter = (dm) => {
 /**
  * Converts exp string to a native Date object.
  * @param {string} exp
- * @returns {Date}
+ * @returns {dayjs.Dayjs}
  */
 const convertExpToDate = (exp) => {
-  return dayjs(exp, "YYMMDD").toDate();
+  return dayjs(exp, "YYMMDD");
 };
 
 /**
@@ -52,7 +52,7 @@ exports.upsertItem = async (dm, method, invoiceRef) => {
       {
         $set: {
           lot: dm.lot,
-          exp: convertExpToDate(dm.exp),
+          exp: convertExpToDate(dm.exp).toDate(),
           method,
           invoiceRef,
         },
@@ -104,7 +104,13 @@ exports.updateItem = async (scanReq, date, item) => {
     console.error(e);
   }
 };
-
+/**
+ * @param {Item} item
+ * @returns {boolean}
+ */
+exports.isItemExpired = (item) => {
+  return dayjs().isAfter(convertExpToDate(item.exp));
+};
 /**
  * @param {string} gtin
  * @returns {Promise<[Item]|undefined>}
@@ -116,47 +122,32 @@ exports.findItemsByGTIN = async (gtin) => {
     console.error(e);
   }
 };
-
-// /**
-//  * Check if the scan is a new fill.
-//  * @param {Item} item
-//  * @param {Mode} mode
-//  * @returns {boolean}
-//  */
-// exports.isNewFill = (item, mode) => {
-//   if (mode === "FILL" && !item.dateFilled) {
-//     return true;
-//   }
-//   return false;
-// };
-// /**
-//  * @param {Item} item
-//  * @returns {import("../common").Response}
-//  */
-// exports.preprocessReturn = (item) => {
-//   try {
-//     const { dateFilled, dateReceived, exp, source } = item;
-//     if (dayjs().isAfter(dayjs(exp))) {
-//       return { code: 409, message: "The item is already expired." };
-//     } else if (dateFilled) {
-//       return { code: 409, message: "The item is already filled." };
-//     } else if (!dateReceived) {
-//       return {
-//         code: 409,
-//         message: "The date received for the item has not recorded.",
-//       };
-//     } else {
-//       switch (source) {
-//         case "CARDINAL":
-//           return checkDateReceived(item);
-//         default:
-//           return { code: 200 };
-//       }
-//     }
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {Item} item
+ * @returns {import("../common").Response}
+ */
+exports.preprocessReturn = (item) => {
+  try {
+    const { dateFilled, dateReceived, source } = item;
+    if (dateFilled) {
+      return { code: 409, message: "The item has been already filled." };
+    }
+    if (!dateReceived) {
+      return {
+        code: 409,
+        message: "The date received for the item has not recorded.",
+      };
+    }
+    switch (source) {
+      case "CARDINAL":
+        return checkItemCondition(item);
+      default:
+        return { code: 200 };
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // /**
 //  * @param {dayjs.Dayjs} day

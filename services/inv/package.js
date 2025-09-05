@@ -105,6 +105,35 @@ exports.upsertPackage = async (arg, type) => {
 };
 
 /**
+ * Upserts a Package document. Voids if a conflicting document
+ * @param {{gtin: string, [ndc]: string, ndc11: string}} arg
+ * @returns {Promise<Package|undefined>}
+ */
+exports.upsertCompletePackage = async (arg) => {
+  try {
+    const filter = [];
+    for (const type in arg) {
+      filter.push({ type: arg[type] });
+    }
+    let pkg = await package.findOne({ $or: filter });
+    if (pkg) {
+      for (const type in arg) {
+        if (pkg[type] && arg[type] !== pkg[type]) {
+          return;
+        }
+        await pkg.updateOne(arg);
+      }
+      return pkg;
+    }
+    pkg = await package.create(arg);
+    exports.updatePackage(pkg);
+    return pkg;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
  * Updates the inventories.
  * @param {Item} item
  * @param {item.Mode} mode
@@ -436,24 +465,6 @@ exports.updateName = async (pkg, name) => {
 //     const packages = await package.find({
 //       $or: [{ ndc: { $exists: false } }, { ndc11: { $exists: false } }],
 //     });
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {{gtin: string, ndc11: string}} arg
-//  * @param {UpdateOption} [option]
-//  * @returns {Promise<Package|null|undefined>}
-//  */
-// const crossUpsertPackage = async (arg, option) => {
-//   try {
-//     const { gtin, ndc11 } = arg;
-//     let pkg = await package.findOne({ $or: [{ gtin }, { ndc11 }] });
-//     if (pkg === null) {
-//       pkg = await package.create(arg);
-//     }
-//     pkg && updatePackage(pkg, option);
-//     return pkg;
 //   } catch (e) {
 //     console.log(e);
 //   }

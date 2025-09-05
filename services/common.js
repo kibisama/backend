@@ -24,17 +24,6 @@ module.exports = {
     }
     return false;
   },
-  // /**
-  //  * @template T
-  //  * @param {T} defaultOption
-  //  * @param {T} option
-  //  * @returns {T}
-  //  */
-  // setOptionParameters(defaultOption = {}, option) {
-  //   return option instanceof Object
-  //     ? Object.assign(defaultOption, option)
-  //     : defaultOption;
-  // },
   /**
    * Returns the highest number (type: string|number) and its index in an array
    * if there is a key, it compares the property of each element

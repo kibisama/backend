@@ -1,5 +1,4 @@
 const cahProduct = require("../../schemas/cah/cahProduct");
-const { upsertPackage } = require("../inv/package");
 const { isAfterTodayStart, saveImg } = require("../common");
 const getProductDetails = require("./getProductDetails");
 const {
@@ -161,6 +160,7 @@ const updateProductCallback = async (data, _cahPrd, option) => {
           const { ndc } = source;
           if (ndc) {
             // if the package is new, updateProduct will be called
+            const { upsertPackage } = require("../inv/package");
             const pkg = await upsertPackage(ndc, "ndc11");
             // if not new, cahProduct field exists and call updateProduct
             if (pkg.cahProduct) {

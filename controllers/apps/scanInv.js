@@ -1,10 +1,10 @@
 const item = require("../../services/inv/item");
 const package = require("../../services/inv/package");
-// const dailyOrder = require("../../services/inv/dailyOrder");
+const cahProduct = require("../../services/cah/cahProduct");
 
 exports.post = async (req, res, next) => {
   try {
-    /** @type {item.ScanReq} */
+    /** @type {item.ScanReq} **/
     const scanReq = req.body;
     const { gtin, mode } = scanReq;
     const _package = await package.upsertPackage(gtin, "gtin");
@@ -14,6 +14,8 @@ exports.post = async (req, res, next) => {
         .send({ code: 422, message: "Unable to create a Package document." });
     }
     const _item = await item.upsertItem(scanReq, "SCAN");
+    /** @type {import("../../services/common").Response} **/
+    let response;
     switch (mode) {
       case "FILL":
         if (_item.dateFilled) {
@@ -34,7 +36,13 @@ exports.post = async (req, res, next) => {
         //
         break;
       case "RETURN":
-        //
+        const _response = item.preprocessReturn(_item);
+        const { code } = _response;
+        if (code === 200 || code === 202) {
+          response = _response;
+        } else {
+          return res.status(code).send(_response);
+        }
         break;
       default:
     }
@@ -44,31 +52,10 @@ exports.post = async (req, res, next) => {
       code: 200,
       message: "The inventory has been successfully updated.",
     });
-
-    // if (mode === "RETURN") {
-    //   const result = item.preprocessReturn(_item);
-    //   if (result.code === 200) {
-    //     await item.updateItem(scanReq);
-    //   } else {
-    //     //
-    //   }
-    // } else {
-    //   await item.updateItem(scanReq);
-    // }
-    /** @type {package.UpdateOption} */
-    // const option = item.isNewFill(_item, mode)
-    //   ? { callback: dailyOrder.upsertDO }
-    //   : mode !== "RETURN"
-    //   ? {
-    //       callback: async (package) => {
-    //         await dailyOrder.updateAltDOs(package);
-    //         const dO = await dailyOrder.findDO(package);
-    //         dO && (await dailyOrder.updateFilledItems(dO, gtin));
-    //       },
-    //     }
-    //   : undefined;
-
-    // return res.sendStatus(200);
+    if (_package.cahProduct) {
+      await _package.populate("cahProduct");
+      cahProduct.updateProduct(_package.cahProduct);
+    }
   } catch (e) {
     console.error(e);
     return res
