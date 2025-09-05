@@ -1,7 +1,6 @@
 const family = require("../../schemas/inv/family");
 const { isAfterTodayStart } = require("../common");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
-const { isObjectIdOrHexString } = require("mongoose");
 
 /**
  * @typedef {family.Family} Family
@@ -29,15 +28,12 @@ exports.upsertFamily = async (scdf) => {
 
 /**
  * Refreshes a Family documnet.
- * @param {Family|ObjectId} pkg
+ * @param {Family|ObjectId} fm
  * @returns {Promise<Family|undefined>}
  */
-const refreshFamily = async (pkg) => {
+exports.refreshFamily = async (fm) => {
   try {
-    if (isObjectIdOrHexString(pkg)) {
-      return await family.findById(pkg);
-    }
-    return await family.findById(pkg._id);
+    return await family.findById(fm);
   } catch (e) {
     console.error(e);
   }
@@ -58,11 +54,7 @@ const refreshFamily = async (pkg) => {
 exports.updateFamily = async (fm, option = {}) => {
   try {
     const { force, callback } = option;
-    const { lastUpdated, defaultName, scdf } = fm;
-    if (!force && lastUpdated && isAfterTodayStart(lastUpdated)) {
-      return;
-    }
-    await fm.updateOne({ $set: { lastUpdated: new Date() } });
+    const { defaultName, scdf } = fm;
     if (force || !defaultName) {
       /** @type {Parameters<family["findOneAndUpdate"]>["1"]} */
       const update = { $set: {} };
@@ -85,7 +77,7 @@ exports.updateFamily = async (fm, option = {}) => {
       }
       await fm.updateOne(update);
       if (callback instanceof Function) {
-        return callback(await refreshFamily(fm));
+        return callback(await exports.refreshFamily(fm));
       }
     }
   } catch (e) {

@@ -2,7 +2,6 @@ const alternative = require("../../schemas/inv/alternative");
 const family = require("./family");
 const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
-const { isObjectIdOrHexString } = require("mongoose");
 const { isAfterTodayStart } = require("../common");
 /**
  * @typedef {import("mongoose").ObjectId} ObjectId
@@ -44,12 +43,9 @@ exports.upsertAlternative = async (rxcui, option = {}) => {
  * @param {Alternative|ObjectId} alt
  * @returns {Promise<Alternative|undefined>}
  */
-const refreshAlternative = async (alt) => {
+exports.refreshAlternative = async (alt) => {
   try {
-    if (isObjectIdOrHexString(alt)) {
-      return await alternative.findById(alt);
-    }
-    return await alternative.findById(alt._id);
+    return await alternative.findById(alt);
   } catch (e) {
     console.error(e);
   }
@@ -69,22 +65,7 @@ const refreshAlternative = async (alt) => {
 exports.updateAlternative = async (alt, option = {}) => {
   try {
     const { force, callback } = option;
-    const {
-      lastUpdated,
-      defaultName,
-      isBranded: _isBranded,
-      genAlt,
-      family,
-      rxcui,
-      // cahProduct,
-    } = alt;
-    // if (!cahProduct) {
-    // Process in a separate fn
-    // }
-    if (!force && lastUpdated && isAfterTodayStart(lastUpdated)) {
-      return;
-    }
-    await alt.updateOne({ $set: { lastUpdated: new Date() } });
+    const { defaultName, isBranded: _isBranded, genAlt, family, rxcui } = alt;
 
     if (force || _isBranded == undefined || !family || !defaultName) {
       const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
@@ -125,7 +106,7 @@ exports.updateAlternative = async (alt, option = {}) => {
       }
       await alt.updateOne(update);
       if (callback instanceof Function) {
-        return callback(refreshAlternative(alt));
+        return callback(exports.refreshAlternative(alt));
       }
     }
   } catch (e) {
@@ -204,7 +185,7 @@ const updateGenAlt = async (alt, rxcui) => {
   try {
     const genAlt = await exports.upsertAlternative(rxcui);
     if (genAlt) {
-      await alt.updateOne({ $set: { genAlt: genAlt._id } });
+      await alt.updateOne({ $set: { genAlt } });
     }
   } catch (e) {
     console.error(e);
@@ -234,7 +215,7 @@ const linkWithFamily = async (alt, scdf) => {
     const fm = await family.upsertFamily(scdf);
     if (fm && !_family?.equals(fm._id)) {
       await fm.updateOne({ $addToSet: { alternatives: _id, rxcui } });
-      return await alt.updateOne({ $set: { family: fm._id } });
+      return await alt.updateOne({ $set: { family: fm } });
     }
   } catch (e) {
     console.error(e);
@@ -257,7 +238,7 @@ exports.getAllDocuments = async (refresh) => {
 };
 
 /**
- * @param {ObjectId} _id
+ * @param {string|ObjectId} _id
  * @returns {Promise<[Package]|undefined>}
  */
 exports.getPackagesWithInventories = async (_id) => {
@@ -281,16 +262,3 @@ exports.getPackagesWithInventories = async (_id) => {
     console.error(e);
   }
 };
-
-// /**
-//  * @param {ObjectId} alt
-//  * @param {ObjectId} cahProduct
-//  * @returns {Promise<undefined>}
-//  */
-// const setCAHProduct = async (alt, cahProduct) => {
-//   try {
-//     await alternative.findByIdAndUpdate(alt, { $set: { cahProduct } });
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };

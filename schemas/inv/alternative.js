@@ -12,7 +12,6 @@ const alternativeSchema = new Schema({
   },
 
   /* Internal data */
-  lastUpdated: Date,
   name: String,
 
   /* Updated via getRxcuiHistoryStatus */

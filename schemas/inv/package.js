@@ -48,7 +48,6 @@ const packageSchema = new Schema({
   unit: String,
 
   /* Internal data */
-  lastUpdated: Date,
   name: String,
   mfrName: String,
   inventories: {

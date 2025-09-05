@@ -1,12 +1,9 @@
-const { stringToNumber } = require("../convert");
-
 /**
- * @typedef {import("../../schemas/cahProduct").CAHData} CAHData
- * @typedef {import("../../schemas/cahProduct").StockStatus} StockStatus
- * @typedef {import("../../schemas/cahProduct").BooleanText} BooleanText
- * @typedef {import("../../schemas/cahProduct").BooleanIcon} BooleanIcon
- * @typedef {import("../../schemas/cahProduct").BooleanTextCaps} BooleanTextCaps
- * @typedef {import("./getProductDetails").Alt} Alt
+ * @typedef {import("../../schemas/cah/cahProduct").CAHData} CAHData
+ * @typedef {import("../../schemas/cah/cahProduct").StockStatus} StockStatus
+ * @typedef {import("../../schemas/cah/cahProduct").BooleanText} BooleanText
+ * @typedef {import("../../schemas/cah/cahProduct").BooleanIcon} BooleanIcon
+ * @typedef {import("../../schemas/cah/cahProduct").BooleanTextCaps} BooleanTextCaps
  */
 
 module.exports = {
@@ -33,22 +30,11 @@ module.exports = {
     }
   },
   /**
-   * @param {BooleanText} boolText
+   * @param {BooleanText|BooleanTextCaps} boolText
    * @returns {boolean}
    */
   interpretBooleanText(boolText) {
-    if (boolText === "Yes") {
-      return true;
-    } else {
-      return false;
-    }
-  },
-  /**
-   * @param {BooleanTextCaps} boolTextCaps
-   * @returns {boolean}
-   */
-  interpretBooleanTextCaps(boolTextCaps) {
-    if (boolTextCaps === "YES") {
+    if (boolText === "Yes" || boolText === "YES") {
       return true;
     } else {
       return false;
@@ -87,47 +73,6 @@ module.exports = {
    */
   isProductInStock(status) {
     return status === "IN STOCK" || status === "LOW STOCK";
-  },
-  /**
-   * @typedef {object} SelectAlt
-   * @property {Alt} [cheapSrcInStock]
-   * @property {Alt} [cheapSrc]
-   * @property {Alt} [cheap]
-   * @param {[Alt]} alts
-   * @param {string} orangeBookCode
-   * @returns {SelectAlt}
-   */
-  selectAlt(alts, orangeBookCode) {
-    /** @type {Alt} */
-    let cheapSrcInStock;
-    /** @type {Alt} */
-    let cheapSrc;
-    /** @type {Alt} */
-    let cheap;
-    alts.forEach((v) => {
-      if (orangeBookCode !== v.orangeBookCode) {
-        return;
-      }
-      const numCost = stringToNumber(v.netUoiCost);
-      if (v.contract) {
-        if (module.exports.isProductInStock(v.stockStatus)) {
-          if (!cheapSrcInStock) {
-            cheapSrcInStock = v;
-          } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
-            cheapSrcInStock = v;
-          }
-        } else if (!cheapSrc) {
-          cheapSrc = v;
-        } else if (stringToNumber(cheapSrc.netUoiCost) > numCost) {
-          cheapSrc = v;
-        }
-      } else if (!cheap) {
-        cheap = v;
-      } else if (stringToNumber(cheap.netUoiCost) > numCost) {
-        cheap = v;
-      }
-    });
-    return { cheapSrcInStock, cheapSrc, cheap };
   },
   /**
    * @param {string} size

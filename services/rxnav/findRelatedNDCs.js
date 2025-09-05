@@ -14,7 +14,7 @@ const { hyphenateNDC11 } = require("../convert");
 
 /**
  * @param {string} ndc
- * @returns {Promise<[string]|undefined>}
+ * @returns {Promise<[string]|undefined>} returns an array of hyphenated ndc11
  */
 module.exports = async (ndc) => {
   try {

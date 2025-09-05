@@ -123,4 +123,12 @@ module.exports = {
   isAfterTodayStart(date) {
     return dayjs(date).isAfter(dayjs().startOf("d"));
   },
+  /**
+   * Returns a native Date object indicating m minutes from now.
+   * @param {Parameters<dayjs.Dayjs["add"]>["0"]} m
+   * @returns {Date}
+   */
+  setDelay(m) {
+    return dayjs().add(m, "minute").toDate();
+  },
 };

@@ -12,8 +12,9 @@ const cahProductSchema = new Schema({
     required: true,
     unique: true,
   },
+  lastRequested: Date,
   lastUpdated: Date,
-  active: { type: Boolean, default: false },
+  active: Boolean,
   //   priority: { type: Number, default: 0 },
   /* Common fields */
   cin: { type: String, unique: true, sparse: true }, // Note: the same product can have more than one cins

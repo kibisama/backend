@@ -1,167 +1,312 @@
-// const dayjs = require("dayjs");
-const cahProduct = require("../../schemas/cahProduct");
-// const { refreshPackage } = require("../inv/package");
-// const {
-//   interpretBooleanIcon,
-//   interpretBooleanText,
-//   interpretBooleanTextCaps,
-//   isProductEligible,
-// } = require("./common");
+const cahProduct = require("../../schemas/cah/cahProduct");
+const { upsertPackage } = require("../inv/package");
+const { isAfterTodayStart, saveImg } = require("../common");
+const getProductDetails = require("./getProductDetails");
+const {
+  isProductInStock,
+  interpretCAHData,
+  formatCAHData,
+  isProductEligible,
+  interpretBooleanIcon,
+  interpretBooleanText,
+} = require("./common");
+const { stringToNumber } = require("../convert");
 
 /**
+ * @typedef {import("mongoose").ObjectId} ObjectId
  * @typedef {cahProduct.CAHProduct} CAHProduct
  * @typedef {import("../inv/package").Package} Package
  * @typedef {Parameters<cahProduct["findOneAndUpdate"]>["0"]} Filter
  * @typedef {Parameters<cahProduct["findOneAndUpdate"]>["1"]} UpdateParam
  */
 
-// /**
-//  * @param {Date} date
-//  * @returns {boolean}
-//  */
-// const isOld = (date) => {
-//   return dayjs().startOf("day").isAfter(dayjs(date), "day");
-// };
+/** CONSTANTS **/
+const defaultImgUrl =
+  "https://cardinalhealth.bynder.com/transform/pharma-medium/6f60cc86-566e-48e2-8ab4-5f78c4b53f74/";
+const saveImgPath = "img/pharma-medium/";
 
-// /**
-//  * @returns {UpdateParam}
-//  */
-// const createUpdateParam = () => {
-//   return { $set: { lastUpdated: new Date() } };
-// };
 /**
- * @param {Package} package
- * @returns {Filter}
+ * @param {Package|ObjectId} package
+ * @returns {Promise<CAHProduct|undefined>}
  */
-const createFilter = (package) => {
-  return { package: package._id };
+exports.upsertProduct = async (package) => {
+  try {
+    const _cahProduct = await cahProduct.findOneAndUpdate(
+      { package },
+      {},
+      { new: true, upsert: true }
+    );
+    exports.updateProduct(_cahProduct);
+    return _cahProduct;
+  } catch (e) {
+    console.error(e);
+  }
 };
-// /**
-//  * @param {Package} package
-//  * @returns {typeof cahProduct.schema.obj}
-//  */
-// const createBase = (package) => {
-//   return {
-//     lastUpdated: new Date(),
-//     package: package._id,
-//   };
-// };
-// /**
-//  * @param {Package} package
-//  * @returns {Promise<CAHProduct|undefined>}
-//  */
-// const findProduct = async (package) => {
-//   try {
-//     return (await cahProduct.findOne(createFilter(package))) ?? undefined;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} package
-//  * @returns {Promise<CAHProduct|undefined>}
-//  */
-// const createProduct = async (package) => {
-//   try {
-//     const product = await cahProduct.create(createBase(package));
-//     await package.updateOne({ cahProduct: product._id });
-//     return product;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} package
-//  * @returns {Promise<CAHProduct|undefined>}
-//  */
-// const voidProduct = async (package) => {
-//   try {
-//     const product = await findProduct(package);
-//     if (!product) {
-//       return await createProduct(package);
-//     } else if (product.active) {
-//       const updateParam = createUpdateParam();
-//       updateParam.$set.active = false;
-//       return await cahProduct.findOneAndUpdate(
-//         createFilter(package),
-//         updateParam,
-//         { new: true }
-//       );
-//     }
-//     return product;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} package
-//  * @returns {Promise<CAHProduct|undefined>}
-//  */
-// const upsertProduct = async (package) => {
-//   try {
-//     const product = await findProduct(package);
-//     if (!product) {
-//       return await createProduct(package);
-//     }
-//     return product;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
 
-// /**
-//  * @param {Package} pkg
-//  * @returns {Promise<boolean|undefined>}
-//  */
-// const needsUpdate = async (pkg) => {
-//   try {
-//     const package = await refreshPackage(pkg);
-//     if (package.cahProduct) {
-//       const populated = await package.populate([
-//         { path: "cahProduct", select: ["lastUpdated"] },
-//       ]);
-//       if (isOld(populated.cahProduct.lastUpdated)) {
-//         return true;
-//       }
-//       return false;
-//     }
-//     return true;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
-// /**
-//  * @param {Package} package
-//  * @param {import("./getProductDetails").Result} result
-//  * @returns {Promise<CAHProduct|undefined>}
-//  */
-// const handleResult = async (package, result) => {
-//   try {
-//     const product = await upsertProduct(package);
-//     if (product) {
-//       const updateParam = createUpdateParam();
-//       const set = updateParam.$set;
-//       Object.assign(updateParam.$set, result);
-//       const { rx, refrigerated, serialized } = result;
-//       set.active = isProductEligible(result.stockStatus);
-//       set.rebateEligible = interpretBooleanIcon(result.rebateEligible);
-//       set.returnable = interpretBooleanIcon(result.returnable);
-//       set.rx = rx ? interpretBooleanText(rx) : undefined;
-//       set.refrigerated = refrigerated
-//         ? interpretBooleanText(refrigerated)
-//         : undefined;
-//       set.serialized = serialized
-//         ? interpretBooleanTextCaps(serialized)
-//         : serialized;
-//       return await cahProduct.findOneAndUpdate(
-//         { _id: product._id },
-//         updateParam,
-//         { new: true }
-//       );
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * Refreshes a CAHProduct documnet.
+ * @param {CAHProduct|ObjectId} cahPrd
+ * @returns {Promise<CAHProduct|undefined>}
+ */
+exports.refreshProduct = async (cahPrd) => {
+  try {
+    return await cahProduct.findById(cahPrd);
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// module.exports = { voidProduct, needsUpdate, handleResult };
+/**
+ * @param {CAHProduct} cahPrd
+ * @returns {boolean}
+ */
+const needsUpdate = (cahPrd) => {
+  const { lastRequested } = cahPrd;
+  if (!lastRequested || isAfterTodayStart(lastRequested)) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * @typedef {object} UpdateOption
+ * @property {boolean} [force]
+ * @property {boolean} [skipUpdateSource]
+ * @property {Function} [callback]
+ */
+
+/**
+ * Request a puppet to update a CAHProduct.
+ * @param {CAHProduct} cahPrd
+ * @param {UpdateOption} option
+ */
+exports.updateProduct = (cahPrd, option = {}) => {
+  (option.force || needsUpdate(cahPrd)) &&
+    getProductDetails(cahPrd, (data, _cahPrd) =>
+      updateProductCallback(data, _cahPrd, option)
+    );
+};
+/**
+ * @param {getProductDetails.Data|null} data
+ * @param {CAHProduct} _cahPrd
+ * @param {UpdateOption} option
+ * @returns {void}
+ */
+const updateProductCallback = async (data, _cahPrd, option) => {
+  const { callback, skipUpdateSource } = option;
+  try {
+    const cahPrd = await exports.refreshProduct(_cahPrd);
+    await cahPrd.populate({
+      path: "package",
+      populate: { path: "alternative" },
+    });
+    // handle 404
+    if (data == null) {
+      await cahPrd.updateOne({
+        $set: { lastUpdated: new Date(), active: false },
+      });
+      if (!skipUpdateSource) {
+        const { package } = cahPrd;
+        const { alternative } = package;
+        if (alternative?.cahProduct) {
+          exports.updateProduct(alternative.cahProduct);
+        } else {
+          // searchProduct and callback upsertPackage
+        }
+      }
+      return;
+    }
+    const result = data.data;
+    const {
+      cin,
+      img,
+      stockStatus,
+      rebateEligible,
+      returnable,
+      rx,
+      refrigerated,
+      serialized,
+      ...rest
+    } = result;
+    if (img && img !== defaultImgUrl) {
+      await saveImg(`${saveImgPath + cin}.jpg`, img);
+    }
+    Object.assign(result, evalHist(result));
+    /** @type {UpdateParam} */
+    const updateParam = {
+      $set: {
+        lastUpdated: new Date(),
+        cin,
+        ...rest,
+        active: isProductEligible(stockStatus),
+        rebateEligible: interpretBooleanIcon(rebateEligible),
+        returnable: interpretBooleanIcon(returnable),
+        rx: rx && interpretBooleanText(rx),
+        refrigerated: refrigerated && interpretBooleanText(refrigerated),
+        serialized: serialized && interpretBooleanText(serialized),
+      },
+    };
+    await cahPrd.updateOne(updateParam);
+
+    const { package } = cahPrd;
+    const { alternative } = package;
+    if (alternative) {
+      const source = selectSource(result);
+      if (alternative.isBranded === true) {
+        await alternative.updateOne({ $set: { cahProduct: cahPrd } });
+      } else if (alternative.isBranded === false && source) {
+        if (source === result) {
+          await alternative.updateOne({ $set: { cahProduct: cahPrd } });
+        } else if (!skipUpdateSource) {
+          const { ndc } = source;
+          if (ndc) {
+            // if the package is new, updateProduct will be called
+            const pkg = await upsertPackage(ndc, "ndc11");
+            // if not new, cahProduct field exists and call updateProduct
+            if (pkg.cahProduct) {
+              exports.updateProduct(pkg.cahProduct);
+            }
+          }
+        }
+      }
+    }
+    callback instanceof Function && callback();
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @param {getProductDetails.Result} result
+ * @returns {getProductDetails.PurchaseHistoryEval}
+ */
+const evalHist = (result) => {
+  const purchaseHistory = result.purchaseHistory;
+  let lastCost;
+  let histLow;
+  let lastSFDCDate;
+  let lastSFDCCost;
+  if (purchaseHistory.length > 0) {
+    purchaseHistory.forEach((v) => {
+      const { invoiceCost, unitCost, orderMethod, invoiceDate } = v;
+      if (invoiceCost === "$0.00" || invoiceCost.startsWith("-")) {
+        return;
+      }
+      if (!lastCost) {
+        lastCost = unitCost;
+        histLow = unitCost;
+      } else {
+        if (stringToNumber(histLow) > stringToNumber(unitCost)) {
+          histLow = unitCost;
+        }
+      }
+      if (orderMethod === "SFDC") {
+        if (!lastSFDCDate) {
+          lastSFDCDate = invoiceDate;
+          lastSFDCCost = unitCost;
+        }
+      }
+    });
+  }
+  return {
+    lastCost: formatCAHData(lastCost),
+    histLow: formatCAHData(histLow),
+    lastSFDCDate: formatCAHData(lastSFDCDate),
+    lastSFDCCost: formatCAHData(lastSFDCCost),
+  };
+};
+/**
+ * Returns itself if it is the best source. Returns undefined if its orange book code missing.
+ * @param {getProductDetails.Result} result
+ * @returns {getProductDetails.Result|Alt|undefined}
+ */
+const selectSource = (result) => {
+  const { alts, contract, stockStatus, netUoiCost, orangeBookCode } = result;
+  if (!interpretCAHData(orangeBookCode)) {
+    return;
+  }
+  if (alts.length > 0) {
+    const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
+      alts,
+      orangeBookCode
+    );
+    if (interpretCAHData(netUoiCost)) {
+      const numCost = stringToNumber(netUoiCost);
+      const inStock = isProductInStock(stockStatus);
+      if (cheapSrcInStock) {
+        if (contract && inStock) {
+          if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+            return result;
+          }
+        }
+        return cheapSrcInStock;
+      } else if (cheapSrc) {
+        if (contract) {
+          if (inStock || stringToNumber(cheapSrc.netUoiCost) > numCost) {
+            return result;
+          }
+        }
+        return cheapSrc;
+      } else if (cheap) {
+        if (
+          contract ||
+          (inStock && stringToNumber(cheap.netUoiCost) > numCost)
+        ) {
+          return result;
+        }
+        return cheap;
+      }
+    }
+    const alt = cheapSrcInStock || cheapSrc || cheap;
+    if (alt) {
+      return alt;
+    }
+  }
+  return result;
+};
+/**
+ * @typedef {getProductDetails.Alt} Alt
+ * @typedef {object} SelectAlt
+ * @property {Alt} [cheapSrcInStock]
+ * @property {Alt} [cheapSrc]
+ * @property {Alt} [cheap]
+ */
+/**
+ * @param {[Alt]} alts
+ * @param {string} orangeBookCode
+ * @returns {SelectAlt}
+ */
+const selectAlt = (alts, orangeBookCode) => {
+  /** @type {Alt} */
+  let cheapSrcInStock;
+  /** @type {Alt} */
+  let cheapSrc;
+  /** @type {Alt} */
+  let cheap;
+  alts.forEach((v) => {
+    if (orangeBookCode !== v.orangeBookCode) {
+      return;
+    }
+    if (interpretCAHData(v.netUoiCost)) {
+      const numCost = stringToNumber(v.netUoiCost);
+      if (v.contract) {
+        if (isProductInStock(v.stockStatus)) {
+          if (!cheapSrcInStock) {
+            cheapSrcInStock = v;
+          } else if (stringToNumber(cheapSrcInStock.netUoiCost) > numCost) {
+            cheapSrcInStock = v;
+          }
+        } else if (!cheapSrc) {
+          cheapSrc = v;
+        } else if (stringToNumber(cheapSrc.netUoiCost) > numCost) {
+          cheapSrc = v;
+        }
+      } else if (!cheap) {
+        cheap = v;
+      } else if (stringToNumber(cheap.netUoiCost) > numCost) {
+        cheap = v;
+      }
+    }
+  });
+  return { cheapSrcInStock, cheapSrc, cheap };
+};
