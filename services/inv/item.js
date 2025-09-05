@@ -174,7 +174,7 @@ exports.findItemsByFilledDate = async (date) => {
       typeof date === "string" ? dayjs(date, "MMDDYYYY") : dayjs(date);
     return await Item.find({
       dateFilled: { $gte: day.startOf("day"), $lte: day.endOf("day") },
-    });
+    }).sort({ dateFilled: -1 }); // from latest to oldest
   } catch (e) {
     console.error(e);
   }

@@ -398,6 +398,18 @@ exports.updateName = async (pkg, name) => {
 //   }
 // };
 
+/**
+ * @param {string} gtin
+ * @returns {Promise<Package|undefined>}
+ */
+exports.findPackageByGTIN = async (gtin) => {
+  try {
+    return await package.findOne({ gtin });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // /**
 //  * @param {Package} pkg
 //  * @returns {number}
