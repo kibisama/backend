@@ -83,11 +83,16 @@ const needsUpdate = (cahPrd) => {
  * @param {UpdateOption} option
  * @returns {void}
  */
-exports.updateProduct = (cahPrd, option = {}) => {
-  (option.force || needsUpdate(cahPrd)) &&
-    getProductDetails(cahPrd, (data, _cahPrd) =>
-      updateProductCallback(data, _cahPrd, option)
-    );
+exports.updateProduct = async (cahPrd, option = {}) => {
+  try {
+    (option.force || needsUpdate(cahPrd)) &&
+      getProductDetails(cahPrd, (data, _cahPrd) =>
+        updateProductCallback(data, _cahPrd, option)
+      ) &&
+      (await cahPrd.updateOne({ $set: { lastRequested: new Date() } }));
+  } catch (e) {
+    console.error(e);
+  }
 };
 /**
  * @param {getProductDetails.Data|null} data

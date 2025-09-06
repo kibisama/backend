@@ -31,8 +31,9 @@ exports.getAlternatives = async () => {
 const getRowLabel = (pkg) => {
   const mfrName = pkg.mfrName || pkg.mfr;
   return `${
-    (mfrName ? mfrName + " | " : "") +
-    (pkg.gtin || pkg.inventories[0]?.gtin || pkg.ndc11 || pkg.ndc)
+    (mfrName ? mfrName : "") +
+    (pkg.gtin ? ` | ${pkg.gtin}` : "") +
+    (pkg.size ? ` | ${pkg.size}` : "")
   }`;
 };
 /**
