@@ -11,7 +11,13 @@ const common = require("../common");
  * @returns {common.Response}
  */
 exports.checkItemCondition = (item) => {
-  const { dateReceived, exp } = item;
+  const { dateReceived, exp, invoiceRef } = item;
+  if (!invoiceRef) {
+    return {
+      code: 409,
+      message: "The invoice number has not recorded for the item.",
+    };
+  }
   const today = dayjs();
   const dayExp = dayjs(exp, "YYMMDD");
   if (dayExp.isBefore(today.add(200, "day"))) {

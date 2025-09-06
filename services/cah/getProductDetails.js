@@ -111,7 +111,7 @@ module.exports = async (cahPrd, callback) => {
           case 400:
             break;
           case 404:
-            callback instanceof Function && callback(null, cahPrd);
+            callback(null, cahPrd);
             break;
           case 500:
             if (count < maxCount) {
@@ -125,7 +125,7 @@ module.exports = async (cahPrd, callback) => {
           default:
         }
       } else {
-        callback instanceof Function && callback(result.data, cahPrd);
+        callback(result.data, cahPrd);
       }
     } catch (e) {
       console.error(e);

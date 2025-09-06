@@ -2,6 +2,7 @@ const cahProduct = require("../../schemas/cah/cahProduct");
 const package = require("../inv/package");
 const { isAfterTodayStart, saveImg } = require("../common");
 const getProductDetails = require("./getProductDetails");
+const searchProduct = require("./searchProduct");
 const {
   isProductInStock,
   interpretCAHData,
@@ -113,7 +114,7 @@ const updateProductCallback = async (data, _cahPrd, option) => {
         if (alternative?.cahProduct) {
           return exports.updateProduct(alternative.cahProduct);
         } else {
-          // searchProduct and callback upsertPackage
+          searchProduct(cahPrd.package.ndc11, searchProductCallback);
           return;
         }
       }
@@ -158,7 +159,8 @@ const updateProductCallback = async (data, _cahPrd, option) => {
       if (alternative.isBranded === true) {
         await alternative.updateOne({ $set: { cahProduct: cahPrd } });
       } else if (alternative.isBranded === false && source) {
-        if (source === result) {
+        // if orangebook code is not provided, the result will be set for alternative.cahProduct
+        if (!source || source === result) {
           await alternative.updateOne({ $set: { cahProduct: cahPrd } });
         } else if (!skipUpdateSource) {
           const { ndc } = source;
@@ -168,7 +170,9 @@ const updateProductCallback = async (data, _cahPrd, option) => {
             const pkg = await upsertPackage(ndc, "ndc11");
             // if not new, cahProduct field exists and call updateProduct
             if (pkg.cahProduct) {
-              exports.updateProduct(pkg.cahProduct);
+              exports.updateProduct(
+                await exports.refreshProduct(pkg.cahProduct)
+              );
             }
           }
         }
@@ -179,7 +183,37 @@ const updateProductCallback = async (data, _cahPrd, option) => {
     console.error(e);
   }
 };
-
+/**
+ * @param {getProductDetails.Data|null} data
+ * @returns {void}
+ */
+const searchProductCallback = async (data) => {
+  if (data == null) {
+    return;
+  }
+  const result = data.data;
+  const source = selectSource(result);
+  if (!source || source === result) {
+    const { gtin: _gtin, ndc: _ndc } = result;
+    let gtin, ndc11;
+    interpretCAHData(_gtin) && (gtin = _gtin);
+    interpretCAHData(_ndc) && (ndc11 = _ndc);
+    if (gtin && ndc11) {
+      await package.upsertCompletePackage({ gtin, ndc11 });
+    } else if (ndc11) {
+      await package.upsertPackage(ndc11, "ndc11");
+    }
+  } else {
+    const { ndc } = source;
+    if (ndc) {
+      const { upsertPackage } = require("../inv/package");
+      const pkg = await upsertPackage(ndc, "ndc11");
+      if (pkg.cahProduct) {
+        exports.updateProduct(await exports.refreshProduct(pkg.cahProduct));
+      }
+    }
+  }
+};
 /**
  * @param {getProductDetails.Result} result
  * @returns {getProductDetails.PurchaseHistoryEval}
