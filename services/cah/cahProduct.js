@@ -1,4 +1,5 @@
 const cahProduct = require("../../schemas/cah/cahProduct");
+const package = require("../inv/package");
 const { isAfterTodayStart, saveImg } = require("../common");
 const getProductDetails = require("./getProductDetails");
 const {
@@ -8,6 +9,7 @@ const {
   isProductEligible,
   interpretBooleanIcon,
   interpretBooleanText,
+  calculateSize,
 } = require("./common");
 const { stringToNumber } = require("../convert");
 
@@ -78,6 +80,7 @@ const needsUpdate = (cahPrd) => {
  * Request a puppet to update a CAHProduct.
  * @param {CAHProduct} cahPrd
  * @param {UpdateOption} option
+ * @returns {void}
  */
 exports.updateProduct = (cahPrd, option = {}) => {
   (option.force || needsUpdate(cahPrd)) &&
@@ -108,12 +111,12 @@ const updateProductCallback = async (data, _cahPrd, option) => {
         const { package } = cahPrd;
         const { alternative } = package;
         if (alternative?.cahProduct) {
-          exports.updateProduct(alternative.cahProduct);
+          return exports.updateProduct(alternative.cahProduct);
         } else {
           // searchProduct and callback upsertPackage
+          return;
         }
       }
-      return;
     }
     const result = data.data;
     const {
@@ -146,6 +149,7 @@ const updateProductCallback = async (data, _cahPrd, option) => {
       },
     };
     await cahPrd.updateOne(updateParam);
+    await updatePackageSizeAndName(cahPrd);
 
     const { package } = cahPrd;
     const { alternative } = package;
@@ -309,4 +313,25 @@ const selectAlt = (alts, orangeBookCode) => {
     }
   });
   return { cheapSrcInStock, cheapSrc, cheap };
+};
+
+/**
+ * Updates the size & name fields of the linked Package document.
+ * @param {CAHProduct} cahPrd
+ * @returns {Promise<Awaited<ReturnType<Package["updateOne"]>>|undefined>}
+ */
+const updatePackageSizeAndName = async (cahPrd) => {
+  try {
+    let { package: pkg, size } = await cahPrd.populate("package");
+    if (!size) {
+      const { size: _size } = await exports.refreshProduct(cahPrd);
+      size = _size;
+    }
+    if (size && !pkg.size) {
+      await pkg.updateOne({ $set: { size: calculateSize(size) } });
+      await package.updateName(await package.refreshPackage(pkg));
+    }
+  } catch (e) {
+    console.error(e);
+  }
 };

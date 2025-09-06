@@ -65,6 +65,9 @@ const mapInventoryRows = (packages) => {
           invoiceRef: item.invoiceRef,
         });
       });
+      id += 1;
+      rows.push({ label: true, _id: pkg._id, id, lot: `Total ${count} items` });
+      count = 0;
     }
   });
   return { rows, count };
@@ -111,7 +114,7 @@ const mapUsageRows = async (items) => {
           { path: "alternative", populate: [{ path: "cahProduct" }] },
         ]);
         const { name, alternative, cahProduct } = pkg;
-        table[gtin].name = name;
+        table[gtin].name = name; // define a function to select name
         const { cahProduct: cahSource } = alternative;
       }
     } else {

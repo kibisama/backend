@@ -13,7 +13,6 @@ const {
   ndc11StringToNDCRegExp,
   ndcToNDC11,
 } = require("../convert");
-const { calculateSize } = require("../cah/common");
 
 /** Constants **/
 const CREATE_CAHPRODUCT = true;
@@ -269,7 +268,6 @@ exports.updatePackage = async (pkg, option = {}) => {
     }
     if (CREATE_CAHPRODUCT) {
       const _cahProduct = await cahPrd.upsertProduct(_pkg);
-      // callback update size
       if (!cahProduct) {
         await _pkg.updateOne({ $set: { cahProduct: _cahProduct } });
       }
@@ -372,31 +370,6 @@ exports.updateName = async (pkg, name) => {
     console.error(e);
   }
 };
-
-// /**
-//  * @param {Package} pkg
-//  * @returns {Promise<Package|undefined>}
-//  */
-// const updateSizeViaCAH = async (pkg) => {
-//   try {
-//     const { _id, cahProduct } = await pkg.populate("cahProduct");
-//     if (cahProduct) {
-//       const { size, ndc } = cahProduct;
-//       if (size) {
-//         const _size = calculateSize(size);
-//         if (_size) {
-//           return await package.findByIdAndUpdate(
-//             _id,
-//             { $set: { size: _size } },
-//             { new: true }
-//           );
-//         }
-//       }
-//     }
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
 
 /**
  * @param {string} gtin
