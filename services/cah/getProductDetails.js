@@ -4,7 +4,7 @@ const { ndcToNDC11 } = require("../convert");
 const { setDelay } = require("../common");
 
 /**
- * @typedef {import("../../schemas/cah/cahProduct").CAHProduct} CAHProduct
+ * @typedef {import("./cahProduct").CAHProduct} CAHProduct
  * @typedef {import("../../schemas/cah/cahProduct").CAHData} CAHData
  * @typedef {import("../../schemas/cah/cahProduct").StockStatus} StockStatus
  * @typedef {import("../../schemas/cah/cahProduct").BooleanIcon} BooleanIcon
@@ -72,7 +72,7 @@ const { setDelay } = require("../common");
  * @property {"ndc"} [type]
  */
 /**
- * @param {CAHProduct} cahPrd
+ * @param {CAHProduct} cahPrd populated
  * @returns {Body|undefined}
  */
 const selectQuery = (cahPrd) => {
@@ -93,10 +93,7 @@ const selectQuery = (cahPrd) => {
  * @returns {Promise<void>}
  */
 module.exports = async (cahPrd, callback) => {
-  await cahPrd.populate({
-    path: "package",
-    populate: { path: "alternative" },
-  });
+  await cahPrd.populate({ path: "package" });
   const query = selectQuery(cahPrd);
   if (!query) {
     return;

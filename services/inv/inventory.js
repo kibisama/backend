@@ -32,8 +32,9 @@ const getRowLabel = (pkg) => {
   const mfrName = pkg.mfrName || pkg.mfr;
   return `${
     (mfrName ? mfrName : "") +
-    (pkg.gtin ? ` | ${pkg.gtin}` : "") +
-    (pkg.size ? ` | ${pkg.size}` : "")
+    (pkg.gtin ? ` | GTIN ${pkg.gtin}` : "") +
+    (pkg.ndc11 ? ` | NDC ${pkg.ndc11}` : "") +
+    (pkg.size ? ` | SIZE ${pkg.size}` : "")
   }`;
 };
 /**
@@ -67,18 +68,25 @@ const mapInventoryRows = (packages) => {
         });
       });
       id += 1;
-      rows.push({ label: true, _id: pkg._id, id, lot: `Total ${count} items` });
+      rows.push({
+        label: true,
+        _id: pkg._id,
+        id,
+        lot: `Total ${count} item(s)`,
+      });
       count = 0;
     }
   });
-  return { rows, count };
+  return rows;
 };
 /**
  * @param {string|ObjectId} _id
  * @param {boolean} filled
  */
 exports.getInventories = async (_id, filled) => {
-  const packages = await alt.getPackagesWithInventories(_id);
+  const packages = await alt.getPackagesWithInventories(_id, {
+    dateReceived: -1,
+  });
   if (packages?.length > 0) {
     if (filled) {
       for (let i = 0; i < packages.length; i++) {
@@ -86,7 +94,9 @@ exports.getInventories = async (_id, filled) => {
         if (!gtin) {
           continue;
         }
-        packages[i].inventories = await item.findItemsByGTIN(gtin);
+        packages[i].inventories = await item.findItemsByGTIN(gtin, {
+          dateReceived: -1,
+        });
         await packages[i].populate({ path: "inventories" });
       }
     }
@@ -107,7 +117,8 @@ const mapUsageRows = async (items) => {
     if (!table[gtin]) {
       id += 1;
       table[gtin] = { id, time: dateFilled, qty: 1 };
-      rows.push(table[gtin]);
+      const row = table[gtin];
+      rows.push(row);
       const pkg = await package.findPackageByGTIN(gtin);
       if (pkg) {
         await pkg.populate([
@@ -115,7 +126,12 @@ const mapUsageRows = async (items) => {
           { path: "alternative", populate: [{ path: "cahProduct" }] },
         ]);
         const { name, alternative, cahProduct } = pkg;
-        table[gtin].name = name; // define a function to select name
+        if (cahProduct) {
+          const { estNetCost, netUoiCost } = cahProduct;
+          row.cah_estNetCost = estNetCost;
+          row.cah_netUoiCost = netUoiCost;
+        }
+        row.name = name || alternative?.name || alternative?.defaultName;
         const { cahProduct: cahSource } = alternative;
       }
     } else {

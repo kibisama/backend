@@ -3,6 +3,7 @@ const package = require("../../schemas/inv/package");
 const item = require("./item");
 const alt = require("./alternative");
 const cahPrd = require("../cah/cahProduct");
+const psPkg = require("../ps/psPackage");
 const getNDCStatus = require("../rxnav/getNDCStatus");
 const getNDCProperties = require("../rxnav/getNDCProperties");
 const {
@@ -15,7 +16,8 @@ const {
 } = require("../convert");
 
 /** Constants **/
-const CREATE_CAHPRODUCT = true;
+const ENABLE_CARDINAL = true;
+const ENABLE_PHARMSAVER = true;
 
 /**
  * @typedef {package.Package} Package
@@ -230,8 +232,17 @@ exports.updatePackage = async (pkg, option = {}) => {
     if (!_pkg) {
       return;
     }
-    let { rxcui, ndc11, mfr, mfrName, alternative, ndc, cahProduct, name } =
-      _pkg;
+    let {
+      rxcui,
+      ndc11,
+      mfr,
+      mfrName,
+      alternative,
+      ndc,
+      cahProduct,
+      psPackage,
+      name,
+    } = _pkg;
     const [arg, type] = selectArg(_pkg);
     if (force || !rxcui || !ndc11) {
       const ndcStatus = await getNDCStatus(arg, type);
@@ -266,10 +277,16 @@ exports.updatePackage = async (pkg, option = {}) => {
           !name && exports.updateName(await exports.refreshPackage(_pkg)),
       });
     }
-    if (CREATE_CAHPRODUCT) {
+    if (ENABLE_CARDINAL) {
       const _cahProduct = await cahPrd.upsertProduct(_pkg);
       if (!cahProduct) {
         await _pkg.updateOne({ $set: { cahProduct: _cahProduct } });
+      }
+    }
+    if (ENABLE_PHARMSAVER) {
+      const _psPkg = await psPkg.upsertPsPackage(_pkg);
+      if (!psPackage) {
+        await _pkg.updateOne({ $set: { psPackage: _psPkg } });
       }
     }
     if (callback instanceof Function) {

@@ -1,45 +1,17 @@
 // const dayjs = require("dayjs");
-// const psPackage = require("../../schemas/psPackage");
+const PsPackage = require("../../schemas/ps/psPackage");
+const { isAfterTodayStart } = require("../common");
+const getSearchResults = require("./getSearchResults");
 // const { refreshPackage } = require("../inv/package");
 
-// /**
-//  * @typedef {psPackage.PSPackage} PSPackage
-//  * @typedef {import("../inv/package").Package} Package
-//  * @typedef {Parameters<psPackage["findOneAndUpdate"]>["0"]} Filter
-//  * @typedef {Parameters<psPackage["findOneAndUpdate"]>["1"]} UpdateParam
-//  */
+/**
+ * @typedef {import("mongoose").ObjectId} ObjectId
+ * @typedef {PsPackage.PSPackage} PsPackage
+ * @typedef {import("../inv/package").Package} Package
+ * @typedef {Parameters<PsPackage["findOneAndUpdate"]>["0"]} Filter
+ * @typedef {Parameters<PsPackage["findOneAndUpdate"]>["1"]} UpdateParam
+ */
 
-// /**
-//  * @param {Date} date
-//  * @returns {boolean}
-//  */
-// const isOld = (date) => {
-//   return dayjs(date).isBefore(dayjs().startOf("day"));
-// };
-
-// /**
-//  * @returns {UpdateParam}
-//  */
-// const createUpdateParam = () => {
-//   return { $set: { lastUpdated: new Date() } };
-// };
-// /**
-//  * @param {Package} package
-//  * @returns {Filter}
-//  */
-// const createFilter = (package) => {
-//   return { package: package._id };
-// };
-// /**
-//  * @param {Package} package
-//  * @returns {typeof psPackage.schema.obj}
-//  */
-// const createBase = (package) => {
-//   return {
-//     lastUpdated: new Date(),
-//     package: package._id,
-//   };
-// };
 // /**
 //  * @param {Package} package
 //  * @returns {Promise<PSPackage|undefined>}
@@ -86,43 +58,79 @@
 //     console.log(e);
 //   }
 // };
-// /**
-//  * @param {Package} package
-//  * @returns {Promise<PSPackage|undefined>}
-//  */
-// const upsertItem = async (package) => {
-//   try {
-//     const item = await findItem(package);
-//     if (!item) {
-//       return await createItem(package);
-//     }
-//     return item;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * @param {Package|ObjectId} package
+ * @returns {Promise<PsPackage|undefined>}
+ */
+exports.upsertPsPackage = async (package) => {
+  try {
+    const psPkg = await PsPackage.findOneAndUpdate(
+      { package },
+      {},
+      { new: true, upsert: true }
+    );
+    // update
+    return psPkg;
+  } catch (e) {
+    console.error(e);
+  }
+};
+/**
+ * Refreshes a PsPackage documnet.
+ * @param {PsPackage|ObjectId} psPkg
+ * @returns {Promise<PsPackage|undefined>}
+ */
+exports.refreshProduct = async (psPkg) => {
+  try {
+    return await PsPackage.findById(psPkg);
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @param {Package} pkg
-//  * @returns {Promise<boolean|undefined>}
-//  */
-// const needsUpdate = async (pkg) => {
-//   try {
-//     const package = await refreshPackage(pkg);
-//     if (package.psPackage) {
-//       const populated = await package.populate([
-//         { path: "psPackage", select: ["lastUpdated"] },
-//       ]);
-//       if (isOld(populated.psPackage.lastUpdated)) {
-//         return true;
-//       }
-//       return false;
-//     }
-//     return true;
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * @param {PsPackage} psPkg
+ * @returns {boolean}
+ */
+const needsUpdate = (psPkg) => {
+  const { lastRequested } = psPkg;
+  if (!lastRequested || isAfterTodayStart(lastRequested)) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * @typedef {object} UpdateOption
+ * @property {boolean} [force]
+ * @property {Function} [callback]
+ */
+
+/**
+ * Request a puppet to update a CAHProduct.
+ * @param {PsPackage} psPkg
+ * @param {UpdateOption} option
+ * @returns {void}
+ */
+exports.updatePsPackage = async (psPkg, option = {}) => {
+  try {
+    // (option.force || needsUpdate(psPkg)) &&
+    //   getSearchResults(psPkg, (data, psPkg) =>
+    //     updateProductCallback(data, psPkg, option)
+    //   ) &&
+    //   (await psPkg.updateOne({ $set: { lastRequested: new Date() } }));
+  } catch (e) {
+    console.error(e);
+  }
+};
+/**
+ * @param {getProductDetails.Data|null} data
+ * @param {CAHProduct} psPkg
+ * @param {UpdateOption} option
+ * @returns {void}
+ */
+const updateProductCallback = async (data, psPkg, option) => {};
+
 // /**
 //  * @param {Package} package
 //  * @param {import("./getSearchResults").Result} result

@@ -113,11 +113,12 @@ exports.isItemExpired = (item) => {
 };
 /**
  * @param {string} gtin
+ * @param {} [sort]
  * @returns {Promise<[Item]|undefined>}
  */
-exports.findItemsByGTIN = async (gtin) => {
+exports.findItemsByGTIN = async (gtin, sort) => {
   try {
-    return await Item.find({ gtin });
+    return await Item.find({ gtin }, {}, { sort });
   } catch (e) {
     console.error(e);
   }

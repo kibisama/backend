@@ -239,9 +239,10 @@ exports.getAllDocuments = async (refresh) => {
 
 /**
  * @param {string|ObjectId} _id
+ * @param {} sort
  * @returns {Promise<[Package]|undefined>}
  */
-exports.getPackagesWithInventories = async (_id) => {
+exports.getPackagesWithInventories = async (_id, sort) => {
   try {
     const result = await alternative.findById(
       _id,
@@ -251,6 +252,7 @@ exports.getPackagesWithInventories = async (_id) => {
           path: "packages",
           populate: {
             path: "inventories",
+            options: { sort },
           },
         },
       }

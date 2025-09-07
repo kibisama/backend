@@ -1,10 +1,9 @@
 // const dayjs = require("dayjs");
-// const { scheduleJob } = require("node-schedule");
-// const { ps } = require("../../api/puppet");
-// const psPackage = require("./psPackage");
+const { scheduleJob } = require("node-schedule");
+const { ps } = require("../../api/puppet");
 // const psAlt = require("./psAlternative");
-// const { ndcToCMSNDC11, stringToNumber } = require("../convert");
-// const { setOptionParameters, isShortDated } = require("../common");
+const { ndcToCMSNDC11 } = require("../convert");
+const { setDelay } = require("../common");
 
 // /**
 //  * @typedef {psPackage.Package} Package
@@ -13,6 +12,12 @@
 //  * @property {string} value
 //  * @property {[Result]} results
 //  */
+/**
+ * @typedef {import("./psPackage").PsPackage} PsPackage
+ * @typedef {object} Data
+ * @property {string|undefined} inputValue
+ * @property {[import("../../schemas/ps/psAlternative").Result]} results
+ */
 
 // /**
 //  * Returns a native Date object indicating m minutes from now.
@@ -37,25 +42,6 @@
 //  */
 // const gtinToQuery = (gtin) => {
 //   return gtin.slice(3, 13);
-// };
-
-// /**
-//  * @typedef {object} Body
-//  * @property {string} [ndc11]
-//  * @property {string} [query]
-//  */
-
-// /**
-//  * @param {Package} package
-//  * @returns {Body}
-//  */
-// const selectQuery = (package) => {
-//   const { ndc, gtin } = package;
-//   if (ndc) {
-//     return { ndc11: ndcToCMSNDC11(ndc) };
-//   } else if (gtin) {
-//     return { query: gtinToQuery(gtin) };
-//   }
 // };
 
 // /**
@@ -163,70 +149,64 @@
 //   }
 // };
 
-// /**
-//  * @param {Package} package
-//  * @param {boolean} force
-//  * @param {Function} [callback]
-//  * @returns {undefined}
-//  */
-// const requestPuppet = async (package, force, callback) => {
-//   let count = 0;
-//   const maxCount = 99;
-//   async function request() {
-//     try {
-//       if (!(force || (await psPackage.needsUpdate(package)))) {
-//         return;
-//       }
-//       const result = await ps.getSearchResults(selectQuery(package));
-//       if (result instanceof Error) {
-//         switch (result.status) {
-//           case 404:
-//             await handle404(package);
-//             if (callback instanceof Function) {
-//               callback();
-//             }
-//             break;
-//           case 500:
-//             if (count < maxCount) {
-//               count++;
-//               scheduleJob(setDelay(5), request);
-//             }
-//             break;
-//           case 503:
-//             scheduleJob(setDelay(3), request);
-//             break;
-//           default:
-//         }
-//       } else {
-//         await handle200(package, result.data);
-//         if (callback instanceof Function) {
-//           callback();
-//         }
-//       }
-//     } catch (e) {
-//       console.log(e);
-//     }
-//   }
-//   request();
-// };
+/**
+ * @typedef {object} Body
+ * @property {string} ndc11
+ */
 
-// /**
-//  * @typedef {object} RequestOption
-//  * @property {boolean} [force]
-//  * @property {Function} [callback]
-//  */
+/**
+ * @param {PsPackage} psPackage populated
+ * @returns {Body|undefined}
+ */
+const selectQuery = (psPackage) => {
+  const { ndc, ndc11 } = psPackage.package;
+  if (ndc11) {
+    return { ndc11: ndc11.replaceAll("-", "") };
+  } else if (ndc) {
+    return { ndc11: ndcToCMSNDC11(ndc) };
+  }
+};
 
-// /**
-//  * @param {Package} package
-//  * @param {RequestOption} [option]
-//  * @returns {Promise<undefined>}
-//  */
-// module.exports = async (package, option) => {
-//   try {
-//     const defaultOption = { force: false };
-//     const { force, callback } = setOptionParameters(defaultOption, option);
-//     requestPuppet(package, force, callback);
-//   } catch (e) {
-//     console.log(e);
-//   }
-// };
+/**
+ * @param {PsPackage} psPackage
+ * @param {function} callback
+ * @returns {Promise<void>}
+ */
+module.exports = async (psPackage, callback) => {
+  await psPackage.populate({ path: "package" });
+  const query = selectQuery(psPackage);
+  if (!query) {
+    return;
+  }
+  let count = 0;
+  const maxCount = 9;
+  async function request() {
+    try {
+      const result = await ps.getSearchResults(query);
+      if (result instanceof Error) {
+        switch (result.status) {
+          case 400:
+            break;
+          case 404:
+            callback(null, psPackage);
+            break;
+          case 500:
+            if (count < maxCount) {
+              count++;
+              scheduleJob(setDelay(15), request);
+            }
+            break;
+          case 503:
+            scheduleJob(setDelay(3), request);
+            break;
+          default:
+        }
+      } else {
+        callback(result.data, psPackage);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  request();
+};
