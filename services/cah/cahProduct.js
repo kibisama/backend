@@ -144,6 +144,7 @@ const updateProductCallback = async (data, _cahPrd, option) => {
       $set: {
         lastUpdated: new Date(),
         cin,
+        stockStatus,
         ...rest,
         active: isProductEligible(stockStatus),
         rebateEligible: interpretBooleanIcon(rebateEligible),
