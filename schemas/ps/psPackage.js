@@ -30,6 +30,6 @@ const psPackageSchema = new Schema({
 });
 const model = mongoose.model("PharmSaver Package", psPackageSchema);
 /**
- * @typedef {Awaited<ReturnType<model["create"]>>[0]} PSPackage
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} PsPackage
  */
 module.exports = model;

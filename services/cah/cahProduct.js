@@ -119,8 +119,7 @@ const updateProductCallback = async (data, _cahPrd, option) => {
         if (alternative?.cahProduct) {
           return exports.updateProduct(alternative.cahProduct);
         } else {
-          searchProduct(cahPrd.package.ndc11, searchProductCallback);
-          return;
+          return searchProduct(cahPrd.package.ndc11, searchProductCallback);
         }
       }
     }
@@ -183,7 +182,8 @@ const updateProductCallback = async (data, _cahPrd, option) => {
         }
       }
     }
-    callback instanceof Function && callback();
+    callback instanceof Function &&
+      callback(await exports.refreshProduct(pkg.cahProduct));
   } catch (e) {
     console.error(e);
   }

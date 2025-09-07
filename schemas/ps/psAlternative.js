@@ -51,6 +51,6 @@ const psAlternativeSchema = new Schema({
 
 const model = mongoose.model("PharmSaver Alternative", psAlternativeSchema);
 /**
- * @typedef {Awaited<ReturnType<model["create"]>>[0]} PSAlternative
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} PsAlternative
  */
 module.exports = model;

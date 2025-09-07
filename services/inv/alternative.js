@@ -2,12 +2,15 @@ const alternative = require("../../schemas/inv/alternative");
 const family = require("./family");
 const getRxcuiHistoryStatus = require("../rxnav/getRxcuiHistoryStatus");
 const getAllRelatedInfo = require("../rxnav/getAllRelatedInfo");
-const { isAfterTodayStart } = require("../common");
+const { upsertPsAlternative } = require("../ps/psAlternative");
+
 /**
  * @typedef {import("mongoose").ObjectId} ObjectId
  * @typedef {alternative.Alternative} Alternative
  * @typedef {import("./package").Package} Package
  */
+
+const ENABLE_PHARMSAVER = true;
 
 /**
  * Upserts an Alternative document.
@@ -65,8 +68,18 @@ exports.refreshAlternative = async (alt) => {
 exports.updateAlternative = async (alt, option = {}) => {
   try {
     const { force, callback } = option;
-    const { defaultName, isBranded: _isBranded, genAlt, family, rxcui } = alt;
-
+    const {
+      defaultName,
+      isBranded: _isBranded,
+      genAlt,
+      family,
+      rxcui,
+      psAlternative,
+    } = alt;
+    if (ENABLE_PHARMSAVER && !psAlternative) {
+      const psAlternative = await upsertPsAlternative(alt);
+      await alt.updateOne({ $set: { psAlternative } });
+    }
     if (force || _isBranded == undefined || !family || !defaultName) {
       const rxcuiStatus = await getRxcuiHistoryStatus(rxcui);
       if (!rxcuiStatus) {
