@@ -2,6 +2,7 @@ const dayjs = require("dayjs");
 const item = require("./item");
 const package = require("./package");
 const alt = require("./alternative");
+const { interpretCAHData } = require("../cah/common");
 
 exports.getAlternatives = async () => {
   return (await alt.getAllDocuments()).map((v) => ({
@@ -81,12 +82,19 @@ const mapInventoryRows = (packages) => {
 };
 /**
  * @param {string|ObjectId} _id
+ * @param {"dateReceived"|"dateFilled"|"exp"} sort
  * @param {boolean} filled
  */
-exports.getInventories = async (_id, filled) => {
-  const packages = await alt.getPackagesWithInventories(_id, {
-    dateReceived: -1,
-  });
+exports.getInventories = async (_id, sort, filled) => {
+  var sort =
+    sort === "dateReceived"
+      ? { dateReceived: -1 }
+      : sort === "dateFilled"
+      ? { dateFilled: -1 }
+      : sort === "exp"
+      ? { exp: -1 }
+      : {};
+  const packages = await alt.getPackagesWithInventories(_id, sort);
   if (packages?.length > 0) {
     if (filled) {
       for (let i = 0; i < packages.length; i++) {
@@ -94,9 +102,7 @@ exports.getInventories = async (_id, filled) => {
         if (!gtin) {
           continue;
         }
-        packages[i].inventories = await item.findItemsByGTIN(gtin, {
-          dateReceived: -1,
-        });
+        packages[i].inventories = await item.findItemsByGTIN(gtin, sort);
         await packages[i].populate({ path: "inventories" });
       }
     }
@@ -122,17 +128,87 @@ const mapUsageRows = async (items) => {
       const pkg = await package.findPackageByGTIN(gtin);
       if (pkg) {
         await pkg.populate([
+          {
+            path: "alternative",
+            populate: [
+              {
+                path: "cahProduct",
+                populate: { path: "package", populate: "psPackage" },
+              },
+              { path: "psAlternative" },
+            ],
+          },
           { path: "cahProduct" },
-          { path: "alternative", populate: [{ path: "cahProduct" }] },
+          { path: "psPackage" },
         ]);
-        const { name, alternative, cahProduct } = pkg;
-        if (cahProduct) {
-          const { estNetCost, netUoiCost } = cahProduct;
-          row.cah_estNetCost = estNetCost;
-          row.cah_netUoiCost = netUoiCost;
+        const {
+          name,
+          alternative,
+          cahProduct,
+          psPackage,
+          ndc11,
+          ndc,
+          gtin,
+          mfrName,
+          mfr,
+        } = pkg;
+        const cah = alternative?.cahProduct || cahProduct;
+        row.name =
+          name ||
+          alternative?.name ||
+          alternative?.defaultName ||
+          cah?.name ||
+          psPackage?.description ||
+          ndc11 ||
+          ndc ||
+          gtin;
+        row.mfr = mfrName || mfr || cah?.mfr || psPackage?.manufacturer || "";
+        row.ndc = ndc11;
+        if (cah) {
+          switch (cah.active) {
+            case true:
+              row.cah_status = "ACTIVE";
+              row.cah_cin = cah.cin;
+              row.cah_brandName = interpretCAHData(cah.brandName);
+              row.cah_contract = cah.contract;
+              row.cah_estNetCost = cah.estNetCost;
+              row.cah_netUoiCost = cah.netUoiCost;
+              row.cah_stockStatus = cah.stockStatus;
+              row.cah_stock = cah.stock;
+              row.cah_lastSFDCDate = interpretCAHData(cah.lastSFDCDate);
+              row.cah_lastSFDCCost = interpretCAHData(cah.lastSFDCCost);
+              break;
+            case undefined:
+              row.cah_status = "PENDING";
+              break;
+            case false:
+              row.cah_status = "NA";
+              break;
+            default:
+          }
         }
-        row.name = name || alternative?.name || alternative?.defaultName;
-        const { cahProduct: cahSource } = alternative;
+        const ps = cah?.package.psPackage?.active
+          ? cah.package.psPackage
+          : psPackage;
+        if (ps) {
+          switch (ps.active) {
+            case true:
+              row.ps_status = "ACTIVE";
+              row.ps_ndc = ps.ndc;
+              row.ps_pkgPrice = ps.pkgPrice;
+              row.ps_unitPrice = ps.unitPrice;
+              break;
+            case undefined:
+              row.ps_status = "PENDING";
+              break;
+            case false:
+              //
+              break;
+              const { size } = ps;
+          }
+        }
+      } else {
+        // handle without package info
       }
     } else {
       table[gtin].qty += 1;
@@ -150,10 +226,11 @@ exports.getUsages = async (date) => {
   // if date is today use cache else map a new array
   const day = typeof date === "string" ? dayjs(date, "MMDDYYYY") : dayjs(date);
   if (day.isSame(dayjs(), "d")) {
-    return (
-      __invUsageToday ||
-      (__invUsageToday = await mapUsageRows(await item.findItemsByFilledDate()))
-    );
+    // return (
+    //   __invUsageToday ||
+    //   (__invUsageToday = await mapUsageRows(await item.findItemsByFilledDate()))
+    // );
+    return await mapUsageRows(await item.findItemsByFilledDate());
   }
   return await mapUsageRows(await item.findItemsByFilledDate(date));
 };

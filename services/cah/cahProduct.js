@@ -138,7 +138,7 @@ const updateProductCallback = async (data, _cahPrd, option) => {
     if (img && img !== defaultImgUrl) {
       await saveImg(`${saveImgPath + cin}.jpg`, img);
     }
-    Object.assign(result, evalHist(result));
+    Object.assign(rest, evalHist(result));
     /** @type {UpdateParam} */
     const updateParam = {
       $set: {
@@ -154,11 +154,13 @@ const updateProductCallback = async (data, _cahPrd, option) => {
         serialized: serialized && interpretBooleanText(serialized),
       },
     };
+    // should be initialized before updateOne
+    const { package } = cahPrd;
+    const { alternative } = package;
+
     await cahPrd.updateOne(updateParam);
     await updatePackageSizeAndName(cahPrd);
 
-    const { package } = cahPrd;
-    const { alternative } = package;
     if (alternative) {
       const source = selectSource(result);
       if (alternative.isBranded === true) {
@@ -357,12 +359,12 @@ const selectAlt = (alts, orangeBookCode) => {
 
 /**
  * Updates the size & name fields of the linked Package document.
- * @param {CAHProduct} cahPrd
+ * @param {CAHProduct} cahPrd populated
  * @returns {Promise<Awaited<ReturnType<Package["updateOne"]>>|undefined>}
  */
 const updatePackageSizeAndName = async (cahPrd) => {
   try {
-    let { package: pkg, size } = await cahPrd.populate("package");
+    let { package: pkg, size } = cahPrd;
     if (!size) {
       const { size: _size } = await exports.refreshProduct(cahPrd);
       size = _size;

@@ -15,11 +15,15 @@ exports.getAlternatives = async (req, res, next) => {
 
 exports.getInventories = async (req, res, next) => {
   try {
-    const { _id, filled } = req.query;
+    const { _id, sort, filled } = req.query;
     if (!_id) {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
-    const data = await inventory.getInventories(_id, filled === "true" && true);
+    const data = await inventory.getInventories(
+      _id,
+      sort,
+      filled === "true" && true
+    );
     if (data) {
       return res.status(200).send({ code: 200, data });
     }
