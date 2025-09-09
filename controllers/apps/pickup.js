@@ -1,7 +1,11 @@
-const Pickup = require("../../schemas/apps/pickup");
 const fs = require("fs");
 const dayjs = require("dayjs");
-const { init, emitAll } = require("../../services/apps/pickup");
+const {
+  init,
+  emitAll,
+  search: searchPickups,
+  findPickupById,
+} = require("../../services/apps/pickup");
 
 const path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
 
@@ -74,79 +78,17 @@ exports.post = async (req, res, next) => {
   }
 };
 
-/**
- * @typedef {object} Row
- * @property {number} id
- * @property {import("mongoose").ObjectId} _id
- * @property {string} rxNumber
- * @property {Date} deliveryDate
- * @property {Pickup.Relation} relation
- * @property {string} notes
- */
-
-/**
- * @param {Pickup.Relation} relation
- * @returns {"Self"|"Family/Friend"|"Guardian/Caregiver"|"Other"}
- */
-const relationToString = (relation) => {
-  switch (relation) {
-    case "self":
-      return "Self";
-    case "ff":
-      return "Family/Friend";
-    case "gc":
-      return "Guardian/Caregiver";
-    case "other":
-      return "Other";
-  }
-};
-
-/**
- * @param {[Pickup.Pickup]} pickups
- * @return {[Row]}
- */
-const mapSearchResults = (pickups) => {
-  const mappedResults = [];
-  let id = 0;
-  pickups.forEach((v, i) => {
-    id += 1;
-    v.rxNumber.forEach((w, j) => {
-      j !== 0 && (id += 1);
-      mappedResults.push({
-        id,
-        _id: v._id,
-        rxNumber: w,
-        deliveryDate: v.deliveryDate,
-        relation: relationToString(v.relation),
-        notes: v.notes,
-      });
-    });
-  });
-  return mappedResults;
-};
-
 exports.search = async (req, res, next) => {
   try {
     const { rxNumber, date } = req.query;
-    const $and = [];
-    rxNumber && $and.push({ rxNumber });
-    if (date) {
-      const day = dayjs(date);
-      $and.push({
-        deliveryDate: {
-          $gte: day.startOf("d"),
-          $lte: day.endOf("d"),
-        },
-      });
-    }
-    if ($and.length === 0) {
+    if (!(rxNumber || date)) {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
-    const results = await Pickup.find({ $and });
-    if (results.length === 0) {
+    const data = await searchPickups(rxNumber, date);
+    if (data.length === 0) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }
-    return res.status(200).send({ code: 200, data: mapSearchResults(results) });
+    return res.status(200).send({ code: 200, data });
   } catch (e) {
     console.error(e);
     next(e);
@@ -165,7 +107,7 @@ exports.png = (req, res) => {
 exports.report = async (req, res) => {
   try {
     const { _id, rxNumber } = req.params;
-    const { deliveryDate, relation, notes } = await Pickup.findById(_id);
+    const { deliveryDate, relation, notes } = await findPickupById(_id);
     res.status(200).send({
       code: 200,
       data: {
