@@ -3,8 +3,8 @@ const dayjs = require("dayjs");
 const {
   init,
   emitAll,
-  search: searchPickups,
-  findPickupById,
+  searchPickups,
+  generateReport,
 } = require("../../services/apps/pickup");
 
 const path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
@@ -107,15 +107,14 @@ exports.png = (req, res) => {
 exports.report = async (req, res) => {
   try {
     const { _id, rxNumber } = req.params;
-    const { deliveryDate, relation, notes } = await findPickupById(_id);
-    res.status(200).send({
-      code: 200,
-      data: {
-        deliveryDate: dayjs(deliveryDate).format("M/DD/YYYY HH:mm"),
-        relation: relationToString(relation),
-        notes,
-      },
-    });
+    if (!_id) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const data = await generateReport(_id, rxNumber);
+    if (!data) {
+      return res.status(404).send({ code: 404, message: "Not Found" });
+    }
+    res.status(200).send({ code: 200, data });
   } catch (e) {
     console.log(e);
     next(e);

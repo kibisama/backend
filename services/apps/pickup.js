@@ -47,7 +47,6 @@ const relationToString = (relation) => {
  * @property {Pickup.Relation} relation
  * @property {string} notes
  */
-
 /**
  * @param {[Pickup]} pickups
  * @return {[Row]}
@@ -77,27 +76,46 @@ const mapSearchResults = (pickups) => {
  * @param {string} [date]
  * @returns {Promise<[Row]|undefined>}
  */
-exports.search = async (rxNumber, date) => {
-  const $and = [];
-  rxNumber && $and.push({ rxNumber });
-  if (date) {
-    const day = dayjs(date);
-    $and.push({
-      deliveryDate: {
-        $gte: day.startOf("d"),
-        $lte: day.endOf("d"),
-      },
-    });
+exports.searchPickups = async (rxNumber, date) => {
+  try {
+    const $and = [];
+    rxNumber && $and.push({ rxNumber });
+    if (date) {
+      const day = dayjs(date);
+      $and.push({
+        deliveryDate: {
+          $gte: day.startOf("d"),
+          $lte: day.endOf("d"),
+        },
+      });
+    }
+    return mapSearchResults(await Pickup.find({ $and }));
+  } catch (e) {
+    console.error(e);
   }
-  return mapSearchResults(await Pickup.find({ $and }));
 };
 /**
- * @param {string|Pickup|import("mongoose").ObjectId} _id
- * @returns {Promise<Pickup|undefined>}
+ * @typedef {object} PickupReport
+ * @param {string} deliveryDate
+ * @param {ReturnType<relationToString>} relation
+ * @param {string} notes
  */
-exports.findPickupById = async (_id) => {
+/**
+ * @param {string|Pickup|import("mongoose").ObjectId} _id
+ * @param {string} rxNumber
+ * @returns {Promise<PickupReport|undefined>}
+ */
+exports.generateReport = async (_id, rxNumber) => {
   try {
-    return await Pickup.findById(_id);
+    const pickup = await Pickup.findById(_id);
+    if (pickup) {
+      const { deliveryDate, relation, notes } = pickup;
+      return {
+        deliveryDate: dayjs(deliveryDate).format("M/DD/YYYY HH:mm"),
+        relation: relationToString(relation),
+        notes,
+      };
+    }
   } catch (e) {
     console.error(e);
   }
