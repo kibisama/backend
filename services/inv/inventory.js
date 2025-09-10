@@ -151,6 +151,7 @@ const mapUsageRows = async (items) => {
           mfrName,
           mfr,
         } = pkg;
+        const isBranded = alternative?.isBranded;
         const cah = alternative?.cahProduct || cahProduct;
         row.name =
           name ||
@@ -245,10 +246,11 @@ const mapUsageRows = async (items) => {
               }
               const _ps_alt =
                 ps_alt_same_description || ps_alt_same_size || ps_alt.items[0];
+              row.ps_alt_status = "ACTIVE";
               row.ps_alt_ndc = _ps_alt.ndc;
               row.ps_alt_pkgPrice = _ps_alt.pkgPrice;
               row.ps_alt_unitPrice = _ps_alt.unitPrice;
-              if (row.ps_status === "NA") {
+              if (row.ps_status === "NA" && isBranded === false) {
                 row.ps_status = "ACTIVE";
                 row.ps_ndc = _ps_alt.ndc;
                 row.ps_pkgPrice = _ps_alt.pkgPrice;
