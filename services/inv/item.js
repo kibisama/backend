@@ -3,6 +3,7 @@ const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const Item = require("../../schemas/inv/item");
 const { checkItemCondition } = require("../cah/returnRequest");
+const { useInvUsageChecker } = require("./inventory");
 
 /**
  * @typedef {Item.Item} Item
@@ -69,11 +70,11 @@ exports.upsertItem = async (dm, method, invoiceRef) => {
  * @param {ScanReq} scanReq
  * @param {Date} [date]
  * @param {Item} [item]
- * @returns {Promise<Awaited<ReturnType<Item["updateOne"]>>|Item|undefined>}
+ * @returns {Promise<void>}
  */
 exports.updateItem = async (scanReq, date, item) => {
   try {
-    const { mode, source, cost } = scanReq;
+    const { mode, source, cost, gtin } = scanReq;
     const now = date instanceof Date ? date : new Date();
     /** @type {Parameters<Item["findOneAndUpdate"]>["1"]} */
     const update = {};
@@ -95,11 +96,19 @@ exports.updateItem = async (scanReq, date, item) => {
       default:
     }
     if (item) {
-      return await item.updateOne(update);
+      await item.updateOne(update);
+    } else {
+      await Item.findOneAndUpdate(createFilter(scanReq), update, {
+        new: true,
+      });
     }
-    return await Item.findOneAndUpdate(createFilter(scanReq), update, {
-      new: true,
-    });
+    /** Updating __invUsageChecker: call after updating **/
+    if (mode === "FILL") {
+      const day = dayjs(now);
+      if (day.isSame(dayjs(), "d")) {
+        useInvUsageChecker(day.format("MMDDYYYY"), gtin, true);
+      }
+    }
   } catch (e) {
     console.error(e);
   }
