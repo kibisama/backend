@@ -237,6 +237,10 @@ const linkWithFamily = async (alt, scdf) => {
 
 /** Caching sortedAllDocuments **/
 let __allDocuments;
+/**
+ * @param {true} [refresh]
+ * @returns {[Alternative]}
+ */
 exports.getAllDocuments = async (refresh) => {
   try {
     if (refresh || !__allDocuments) {

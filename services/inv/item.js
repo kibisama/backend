@@ -91,7 +91,6 @@ exports.updateItem = async (scanReq, date, item) => {
         break;
       case "RETURN":
         update.$set = { dateReturned: now };
-        update.$unset = { dateFilled: 1 };
         break;
       default:
     }
@@ -103,10 +102,11 @@ exports.updateItem = async (scanReq, date, item) => {
       });
     }
     /** Updating __invUsageChecker: call after updating **/
-    if (mode === "FILL") {
+    if (mode === "FILL" || mode === "REVERSE") {
       const day = dayjs(now);
       if (day.isSame(dayjs(), "d")) {
         useInvUsageChecker(day.format("MMDDYYYY"), gtin, true);
+        // refresh __invUsageToday cache
       }
     }
   } catch (e) {
