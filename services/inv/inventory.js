@@ -122,7 +122,7 @@ const mapUsageRows = async (items) => {
     const { gtin, dateFilled } = items[i];
     if (!table[gtin]) {
       id += 1;
-      table[gtin] = { id, time: dateFilled, qty: 1 };
+      table[gtin] = { id, gtin, time: dateFilled, qty: 1 };
       const row = table[gtin];
       rows.push(row);
       const pkg = await package.findPackageByGTIN(gtin);
@@ -148,12 +148,10 @@ const mapUsageRows = async (items) => {
           psPackage,
           ndc11,
           ndc,
-          gtin,
           mfrName,
           mfr,
         } = pkg;
         const cah = alternative?.cahProduct || cahProduct;
-        row.gtin = gtin;
         row.name =
           name ||
           alternative?.name ||
@@ -165,6 +163,7 @@ const mapUsageRows = async (items) => {
           gtin;
         row.mfr = mfrName || mfr || cah?.mfr || psPackage?.manufacturer || "";
         row.ndc = ndc11;
+        let size = pkg.size;
         if (cah) {
           switch (cah.active) {
             case true:
@@ -187,10 +186,13 @@ const mapUsageRows = async (items) => {
               break;
             default:
           }
+          cah.package.size && (size = cah.package.size);
         }
         const ps = cah?.package.psPackage?.active
           ? cah.package.psPackage
           : psPackage;
+        let psDescription;
+        let psSize;
         if (ps) {
           switch (ps.active) {
             case true:
@@ -203,9 +205,62 @@ const mapUsageRows = async (items) => {
               row.ps_status = "PENDING";
               break;
             case false:
-              //
+              if (psPackage) {
+                switch (psPackage.active) {
+                  case true:
+                    row.ps_status = "ACTIVE";
+                    row.ps_ndc = psPackage.ndc;
+                    row.ps_pkgPrice = psPackage.pkgPrice;
+                    row.ps_unitPrice = psPackage.unitPrice;
+                    break;
+                  case undefined:
+                    row.ps_status = "PENDING";
+                    break;
+                  case false:
+                    row.ps_status = "NA";
+                    break;
+                  default:
+                }
+              }
               break;
-              const { size } = ps;
+            default:
+          }
+          psDescription = ps.description;
+          psSize = ps.pkg;
+        }
+        const ps_alt = alternative?.psAlternative;
+        let ps_alt_same_description;
+        let ps_alt_same_size;
+        if (ps_alt) {
+          switch (ps_alt.active) {
+            case true:
+              for (let i = 0; i < ps_alt.items.length; i++) {
+                psDescription === ps_alt.items[i].description &&
+                  (ps_alt_same_description = ps_alt.items[i]);
+                (psSize || size) === ps_alt.items[i].pkg &&
+                  (ps_alt_same_size = ps_alt.items[i]);
+                if (ps_alt_same_description && ps_alt_same_size) {
+                  break;
+                }
+              }
+              const _ps_alt =
+                ps_alt_same_description || ps_alt_same_size || ps_alt.items[0];
+              row.ps_alt_ndc = _ps_alt.ndc;
+              row.ps_alt_pkgPrice = _ps_alt.pkgPrice;
+              row.ps_alt_unitPrice = _ps_alt.unitPrice;
+              if (row.ps_status === "NA") {
+                row.ps_status = "ACTIVE";
+                row.ps_ndc = _ps_alt.ndc;
+                row.ps_pkgPrice = _ps_alt.pkgPrice;
+                row.ps_unitPrice = _ps_alt.unitPrice;
+              }
+              break;
+            case undefined:
+              row.ps_alt_status = "PENDING";
+              break;
+            case false:
+              row.ps_alt_status = "NA";
+              break;
           }
         }
       } else {
@@ -239,7 +294,7 @@ exports.getUsages = async (date) => {
 /** inv/Usage Checker **/
 exports.__invUsageChecker = {};
 /**
- * @param {string} date
+ * @param {string} date MMDDYYYY
  * @param {string} gtin
  * @param {true} [reset]
  * @returns {Object.<string, boolean>}
