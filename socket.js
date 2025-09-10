@@ -3,6 +3,10 @@ const {
   init: APPS_PICKUP_init,
   emitAll: APPS_PICKUP_emitAll,
 } = require("./services/apps/pickup");
+const {
+  useInvUsageChecker,
+  __invUsageChecker,
+} = require("./services/inv/inventory");
 
 module.exports = (server, app) => {
   const io = SocketIO(server, {
@@ -74,6 +78,25 @@ module.exports = (server, app) => {
     });
     socket.on("refresh", () => {
       APPS_PICKUP_emitAll(socket, app);
+    });
+  });
+  /**
+   * inv/Usage Checker
+   */
+  const invUsage = io.of("/invUsage");
+  invUsage.on("connect", (socket) => {
+    const req = socket.request;
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    console.log(ip, socket.id, "invUsage Namespace Connected");
+    socket.on("disconnect", () => {
+      console.log(ip, socket.id, "invUsage Namespace Disconnected");
+    });
+    socket.on("check", (date, gtin) => {
+      const data = useInvUsageChecker(date, gtin);
+      invUsage.emit("refresh", data);
+    });
+    socket.on("refresh", (date) => {
+      socket.emit("refresh", __invUsageChecker[date] || {});
     });
   });
 };

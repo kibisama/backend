@@ -153,6 +153,7 @@ const mapUsageRows = async (items) => {
           mfr,
         } = pkg;
         const cah = alternative?.cahProduct || cahProduct;
+        row.gtin = gtin;
         row.name =
           name ||
           alternative?.name ||
@@ -233,4 +234,28 @@ exports.getUsages = async (date) => {
     return await mapUsageRows(await item.findItemsByFilledDate());
   }
   return await mapUsageRows(await item.findItemsByFilledDate(date));
+};
+
+/** inv/Usage Checker **/
+exports.__invUsageChecker = {};
+/**
+ * @param {string} date
+ * @param {string} gtin
+ * @param {true} [reset]
+ * @returns {Object.<string, boolean>}
+ */
+exports.useInvUsageChecker = (date, gtin, reset) => {
+  const __invUsageChecker = exports.__invUsageChecker;
+  if (!__invUsageChecker[date]) {
+    __invUsageChecker[date] = {};
+  }
+  const table = __invUsageChecker[date];
+  if (reset) {
+    delete table[gtin];
+  } else if (table[gtin]) {
+    table[gtin] = false;
+  } else {
+    table[gtin] = true;
+  }
+  return __invUsageChecker[date];
 };
