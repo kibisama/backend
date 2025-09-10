@@ -1,5 +1,9 @@
+const fs = require("fs");
 const Pickup = require("../../schemas/apps/pickup");
 const dayjs = require("dayjs");
+
+exports.path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
+const path = exports.path;
 
 exports.init = (app) => {
   app.set("apps_pickup_state", "standby");
@@ -22,6 +26,41 @@ exports.emitAll = (socket, app) => {
  * @typedef {Pickup.Pickup} Pickup
  */
 
+/**
+ * @param {[string]} items
+ * @param {Date} date
+ * @returns {Promise<[Pickup]|undefined>}
+ */
+exports.findEx = async (items, date) => {
+  try {
+    const day = dayjs(date);
+    return await Pickup.find({
+      deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+      rxNumber: { $in: items },
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+/**
+ * @param {typeof Pickup.schema.obj} params
+ * @param {string} base64
+ * @returns {Promise<Pickup|undefined>}
+ */
+exports.createPickup = async (params, base64) => {
+  try {
+    const pickup = await Pickup.create(params);
+    const binaryData = Buffer.from(base64, "base64");
+    const fileName = pickup._id + ".png";
+    if (!fs.existsSync(path)) {
+      fs.mkdirSync(path);
+    }
+    fs.writeFileSync(path + "/" + fileName, binaryData);
+    return pickup;
+  } catch (e) {
+    console.error(e);
+  }
+};
 /**
  * @param {Pickup.Relation} relation
  * @returns {"Self"|"Family/Friend"|"Guardian/Caregiver"|"Other"}

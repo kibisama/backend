@@ -1,13 +1,12 @@
-const fs = require("fs");
-const dayjs = require("dayjs");
 const {
   init,
   emitAll,
+  findEx,
+  createPickup,
   searchPickups,
   generateReport,
+  path,
 } = require("../../services/apps/pickup");
-
-const path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
 
 exports.post = async (req, res, next) => {
   const pickup = req.app.get("io").of("/pickup");
@@ -16,17 +15,13 @@ exports.post = async (req, res, next) => {
   const relation = req.app.get("apps_pickup_relation");
   const date = new Date();
   const _date = req.app.get("apps_pickup_date");
-  const day = dayjs(_date || date);
-
+  const deliveryDate = _date || date;
   try {
     if (items.length === 0 || !canvas) {
       throw new Error();
     }
     const { notes } = req.body;
-    const exDoc = await Pickup.find({
-      deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
-      rxNumber: { $in: items },
-    });
+    const exDoc = await findEx(items, deliveryDate);
     if (exDoc.length > 0) {
       pickup.emit("state", "error");
       req.app.set("apps_pickup_state", "standby");
@@ -48,20 +43,16 @@ exports.post = async (req, res, next) => {
         )}`,
       });
     }
-    const { _id } = await Pickup.create({
-      rxNumber: items,
-      relation,
-      date,
-      notes,
-      deliveryDate: _date ? day : date,
-    });
-    const base64Data = canvas.replace(/^data:image\/png;base64,/, "");
-    const binaryData = Buffer.from(base64Data, "base64");
-    const fileName = _id + ".png";
-    if (!fs.existsSync(path)) {
-      fs.mkdirSync(path);
-    }
-    fs.writeFileSync(path + "/" + fileName, binaryData);
+    await createPickup(
+      {
+        rxNumber: items,
+        relation,
+        date,
+        notes,
+        deliveryDate,
+      },
+      canvas.replace(/^data:image\/png;base64,/, "")
+    );
     init(req.app);
     emitAll(pickup, req.app);
     return res
