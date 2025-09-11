@@ -301,7 +301,7 @@ exports.getUsages = async (date, refresh) => {
   // if date is today use cache else map a new array
   const day = typeof date === "string" ? dayjs(date, "MMDDYYYY") : dayjs(date);
   if (day.isSame(dayjs(), "d")) {
-    if (refresh || __invUsageToday) {
+    if (refresh || !__invUsageToday) {
       __invUsageToday = await mapUsageRows(await item.findItemsByFilledDate());
     }
     return __invUsageToday;
