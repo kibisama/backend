@@ -289,6 +289,9 @@ exports.updatePackage = async (pkg, option = {}) => {
         await _pkg.updateOne({ $set: { psPackage: _psPkg } });
       }
     }
+    /** Refreshing  __invUsageToday **/
+    const { getUsages } = require("./inventory");
+    getUsages(undefined, true);
     if (callback instanceof Function) {
       return callback(await exports.refreshPackage(_pkg));
     }

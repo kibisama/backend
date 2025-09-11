@@ -175,7 +175,7 @@ const mapUsageRows = async (items) => {
           gtin;
         row.mfr = mfrName || mfr || cah?.mfr || psPackage?.manufacturer || "";
         row.ndc = ndc11;
-        let size = cah.package.size || pkg.size;
+        let size = cah?.package.size || pkg.size;
         if (cah) {
           switch (cah.active) {
             case true:
