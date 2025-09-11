@@ -6,7 +6,7 @@ const dayjs = require("dayjs");
  */
 
 /**
- * @param {Date} date
+ * @param {Date|string} [date]
  * @returns {Promise<SystemLog|undefined>}
  */
 exports.upsertSl = async (date) => {

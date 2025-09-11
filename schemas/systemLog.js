@@ -3,7 +3,8 @@ const { Schema } = mongoose;
 
 const systemLogSchema = new Schema({
   date: { type: String, required: true, unique: true }, // "MM/DD/YYYY"
-  CAH_LAST_UPSERT_ITEMS_VIA_DSCSA: Boolean,
+  CAH_UPSERT_ITEMS_VIA_DSCSA: Boolean,
+  CAH_RETURN_REQUEST: Boolean,
 });
 
 const model = mongoose.model("System Log", systemLogSchema);

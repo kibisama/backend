@@ -293,7 +293,7 @@ const mapUsageRows = async (items) => {
 /** Caching today's usage **/
 let __invUsageToday;
 /**
- * @param {string|Date|undefined} date
+ * @param {string|Date} [date]
  * @param {true} [refresh]
  * @returns {}
  */

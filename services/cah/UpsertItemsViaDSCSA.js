@@ -6,7 +6,7 @@ const { upsertSl } = require("../systemLog");
 const { scheduleJob } = require("node-schedule");
 const { isStoreOpen, isShortDated, setDelay } = require("../common");
 const { hyphenateNDC11 } = require("../convert");
-const nodeMailer = require("../nodeMailer");
+const nodemailer = require("../nodemailer");
 
 /**
  * Returns a Date of the date string if it is not today.
@@ -71,7 +71,7 @@ const generateHtmlTable = (results) => {
 const mailReport = (result) => {
   const { results, number, shortDated } = result;
   try {
-    nodeMailer.sendMail(
+    nodemailer.sendMail(
       {
         from: process.env.MAILER_EMAIL,
         to: process.env.MAILER_EMAIL,
@@ -162,7 +162,7 @@ const handleResults = async (results, date) => {
       mailReport({ results, number, shortDated });
       const sl = await upsertSl({ date });
       await sl.updateOne({
-        $set: { CAH_LAST_UPSERT_ITEMS_VIA_DSCSA: true },
+        $set: { CAH_UPSERT_ITEMS_VIA_DSCSA: true },
       });
     } else {
       // DSCSA data not yet updated
@@ -225,14 +225,12 @@ const getNextScheduleDate = () => {
   }
 };
 /**
- * @returns {void}
+ * @returns {Promise<void>}
  */
 const scheduleUpsert = async () => {
   if (isStoreOpen()) {
-    const { date, CAH_LAST_UPSERT_ITEMS_VIA_DSCSA } = await upsertSl(
-      new Date()
-    );
-    !CAH_LAST_UPSERT_ITEMS_VIA_DSCSA && requestPuppet(date);
+    const { date, CAH_UPSERT_ITEMS_VIA_DSCSA } = await upsertSl();
+    !CAH_UPSERT_ITEMS_VIA_DSCSA && requestPuppet(date);
   }
   scheduleJob(getNextScheduleDate(), scheduleUpsert);
 };

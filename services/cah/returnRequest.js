@@ -1,10 +1,21 @@
 const dayjs = require("dayjs");
-// const { scheduleJob } = require("node-schedule");
+const { scheduleJob } = require("node-schedule");
 const item = require("../inv/item");
-// const package = require("../inv/package");
-// const nodeMailer = require("../nodeMailer");
-// const { getSettings } = require("../apps/settings");
+const { findPackageByGTIN } = require("../inv/package");
+const nodemailer = require("../nodemailer");
+const settings = require("../apps/settings");
 const common = require("../common");
+
+/**
+ * @typedef {object} ReturnItem
+ * @property {string} gtin
+ * @property {string} sn
+ * @property {string} invoiceRef
+ * @property {string} [cost]
+ * @property {string} [cin]
+ * @property {string} [ndc]
+ * @typedef {item.Item} Item
+ */
 
 /**
  * @param {Item} item
@@ -57,201 +68,198 @@ exports.checkItemCondition = (item) => {
 };
 
 /**
- * @typedef {object} ReturnItem
- * @property {string} gtin
- * @property {string} sn
- * @property {string} [invoiceRef]
- * @property {string} [cost]
- * @property {string} [cin]
- * @property {string} [ndc]
- * @typedef {item.Item} Item
+ * @returns {Promise<[Item]|undefined>}
  */
+const findReturnedItems = async () => {
+  try {
+    return await item.findReturnedItems(undefined, "CARDINAL");
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @returns {Promise<[Item]|undefined>}
-//  */
-// const findReturnedItems = async () => {
-//   try {
-//     return await item.findReturnedItems(dayjs(), "CARDINAL");
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {[Item]} items
+ * @returns {Promise<[ReturnItem]|undefined>}
+ */
+const mapItems = async (items) => {
+  try {
+    const table = {};
+    items.forEach(async (v) => {
+      const { gtin } = v;
+      if (!table[gtin]) {
+        try {
+          const package = await findPackageByGTIN(gtin);
+          await package.populate("cahProduct");
+          const _ = (table[gtin] = {});
+          _.ndc = package.ndc11;
+          _.cin = package.cahProduct.cin;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+    const returnItems = [];
+    items.forEach((v) => {
+      (table[v.gtin]?.cin || table[v.gitn]?.ndc) &&
+        returnItems.push({
+          gtin: v.gtin,
+          sn: v.sn,
+          invoiceRef: v.invoiceRef,
+          cost: v.cost,
+          cin: table[v.gtin]?.cin,
+          ndc: table[v.gitn]?.ndc,
+        });
+    });
+    return returnItems;
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @param {[Item]} items
-//  * @returns {Promise<[{}]|undefined>}
-//  */
-// const mapItems = async (items) => {
-//   try {
-//     const table = {};
-//     items.forEach(async (v) => {
-//       const { gtin } = v;
-//       if (!table[gtin]) {
-//         try {
-//           const _package = await (
-//             await package.findPackage(gtin, "gtin")
-//           ).populate({ path: "cahProduct", select: "cin" });
-//           table[gtin] = {};
-//           table[gtin].ndc = _package.ndc11 || "";
-//           table[gtin].cin = _package.cahProduct.cin || "";
-//         } catch (e) {
-//           console.error(e);
-//         }
-//       }
-//     });
-//     return items.map((v) => {
-//       return {
-//         invoiceRef: v.invoiceRef,
-//         cin: table[v.gtin].ndc,
-//         ndc: table[v.gtin].cin,
-//         sn: v.sn,
-//       };
-//     });
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @returns {Promise<void>}
+ */
+const requestReturns = async () => {
+  try {
+    const items = await findReturnedItems();
+    if (items.length > 0) {
+      const returnItems = await mapItems(items);
+      mailReport(returnItems, await settings.getSettings());
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @returns {Promise<undefined>}
-//  */
-// const processReturns = async () => {
-//   if (common.isStoreOpen()) {
-//     try {
-//       const items = await findReturnedItems();
-//       if (items.length > 0) {
-//         const _items = await mapItems(items);
-//         mailReport(_items);
-//       }
-//     } catch (e) {
-//       console.error(e);
-//     }
-//   }
-//   scheduleJob(getNextScheduleDate(), processReturns);
-// };
+/**
+ * @param {[ReturnItem]} items
+ * @param {settings.Settings} settings
+ * @returns {void}
+ */
+const mailReport = (items, settings) => {
+  const acctNumber = process.env.CARDINAL_ACCOUNT_NUMBER;
+  const acctName = process.env.CARDINAL_ACCOUNT_NAME;
+  if (!(acctNumber && acctName)) {
+    return;
+  }
+  try {
+    const {
+      storeName,
+      storeAddress,
+      storeCity,
+      storeState,
+      storeZip,
+      storePhone,
+      storeFax,
+      storeEmail,
+    } = settings;
+    nodemailer.sendMail(
+      {
+        from: process.env.MAILER_EMAIL,
+        //
+        to: process.env.MAILER_EMAIL,
+        subject: "RMA request",
+        html: `
+        <div>
+          <p>
+            Account Name: ${acctName}
+            <br/>
+            Account Number: ${acctNumber}
+            <br/>
+            Contact Information:
+            <br/>
+            ${storeName}
+            <br/>
+            ${storeAddress}
+            <br/>
+            ${storeCity}, ${storeState} ${storeZip}
+            <br/>
+            Phone ${storePhone}
+            <br/>
+            Fax ${storeFax}
+            <br/>
+            Email ${storeEmail}
+          </p>
+          <br/>
+          <p>Please create MRA for the following item(s).</p>
+          <br/>
+        ${generateHtmlTable(items)}
+        </div>
+        `,
+      },
+      (err, info) => {
+        if (err) {
+          console.error(err);
+        }
+      }
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @returns {dayjs.Dayjs}
-//  */
-// const getNextScheduleDate = () => {
-//   return dayjs()
-//     .add(1, "day")
-//     .set("hour", 23)
-//     .set("minute", 55)
-//     .set("second", 0)
-//     .toDate();
-// };
+/**
+ * @param {[ReturnItem]} items
+ * @returns {string}
+ */
+const generateHtmlTable = (items) => {
+  return `
+              <div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Invoice #</th>
+                      <th>CIN/NDC</th>
+                      <th>GTIN</th>
+                      <th>Serial #</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${items
+                      .map(
+                        (v, i) => `
+                    <tr>
+                      <td>${(i + 1).toString()}</td>
+                      <td>${v.invoiceRef}</td>
+                      <td>${v.cin || v.ndc}</td>
+                      <td>${v.gtin}</td>
+                      <td>${v.sn}</td>
+                      <td>Overstock</td>
+                    </tr>
+                    `
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+              </div>
+              `;
+};
 
-// /**
-//  * @returns {dayjs.Dayjs}
-//  */
-// const getScheduleDate = () => {
-//   return dayjs().set("hour", 23).set("minute", 55).set("second", 0).toDate();
-// };
-
-// /**
-//  * @returns {undefined}
-//  */
-// exports.scheduleMailer = () => {
-//   scheduleJob(getScheduleDate(), processReturns);
-// };
-
-// /**
-//  * @param {[ReturnItem]} items
-//  * @returns {Promise<undefined>}
-//  */
-// const mailReport = async (items) => {
-//   try {
-//     const {
-//       storeName,
-//       storeAddress,
-//       storeCity,
-//       storeState,
-//       storeZip,
-//       storePhone,
-//       storeFax,
-//       storeEmail,
-//     } = await getSettings();
-//     nodeMailer.sendMail(
-//       {
-//         from: process.env.MAILER_EMAIL,
-//         to: process.env.MAILER_EMAIL,
-//         subject: "RMA request",
-//         html: `
-//         <div>
-//           <p>
-//             Account Name: ${process.env.CARDINAL_ACCOUNT_NAME}
-//             <br/>
-//             Account Number: ${process.env.CARDINAL_ACCOUNT_NUMBER}
-//             <br/>
-//             Contact Information:
-//             <br/>
-//             ${storeName}
-//             <br/>
-//             ${storeAddress}
-//             <br/>
-//             ${storeCity}, ${storeState} ${storeZip}
-//             <br/>
-//             Phone ${storePhone}
-//             <br/>
-//             Fax ${storeFax}
-//             <br/>
-//             Email ${storeEmail}
-//           </p>
-//           <br/>
-//           <p>Please create MRA for the following item(s).</p>
-//           <br/>
-//         ${generateHtmlTable(items)}
-//         </div>
-//         `,
-//       },
-//       (err, info) => {
-//         if (err) {
-//           console.error(err);
-//         }
-//       }
-//     );
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
-
-// /**
-//  * @param {[ReturnItem]} items
-//  * @returns {string}
-//  */
-// const generateHtmlTable = (items) => {
-//   return `
-//               <div>
-//                 <table>
-//                   <thead>
-//                     <tr>
-//                       <th>#</th>
-//                       <th>Invoice #</th>
-//                       <th>CIN/NDC</th>
-//                       <th>GTIN</th>
-//                       <th>Serial #</th>
-//                       <th>Reason</th>
-//                     </tr>
-//                   </thead>
-//                   <tbody>
-//                     ${items
-//                       .map(
-//                         (v, i) => `
-//                     <tr>
-//                       <td>${(i + 1).toString()}</td>
-//                       <td>${v.invoiceRef || ""}</td>
-//                       <td>${v.cin || v.ndc}</td>
-//                       <td>${v.gtin}</td>
-//                       <td>${v.sn}</td>
-//                       <td>Overstock</td>
-//                     </tr>
-//                     `
-//                       )
-//                       .join("")}
-//                   </tbody>
-//                 </table>
-//               </div>
-//               `;
-// };
+/**
+ * @returns {dayjs.Dayjs}
+ */
+const getNextScheduleDate = () => {
+  const now = dayjs();
+  const scheduledTime = dayjs()
+    .set("hour", 21)
+    .set("minute", 0)
+    .set("second", 0);
+  if (now.isBefore(scheduledTime)) {
+    return scheduledTime;
+  } else {
+    return scheduledTime.add(1, "day");
+  }
+};
+/**
+ * @returns {Pormise<void>}
+ */
+exports.scheduleRequest = async () => {
+  if (common.isStoreOpen()) {
+    const { CAH_RETURN_REQUEST } = await upsertSl();
+    !CAH_RETURN_REQUEST && requestReturns();
+  }
+  scheduleJob(getNextScheduleDate(), exports.scheduleRequest);
+};

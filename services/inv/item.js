@@ -158,24 +158,28 @@ exports.preprocessReturn = (item) => {
     console.error(e);
   }
 };
-// /**
-//  * @param {dayjs.Dayjs} day
-//  * @param {Source} source
-//  * @returns {Promise<[Item]|undefined>}
-//  */
-// exports.findReturnedItems = async (day, source) => {
-//   try {
-//     return await Item.find({
-//       dateReturned: { $gte: day.startOf("d"), $lte: day.endOf("d") },
-//       source,
-//     });
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
 
 /**
- * @param {string|Date|undefined} date
+ * @param {string|Date} [date] MMDDYYYY
+ * @param {Source} [source]
+ * @returns {Promise<[Item]|undefined>}
+ */
+exports.findReturnedItems = async (date, source) => {
+  try {
+    const day =
+      typeof date === "string" ? dayjs(date, "MMDDYYYY") : dayjs(date);
+    const filter = {
+      dateReturned: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+    };
+    source && (filter.source = source);
+    return await Item.find(filter);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @param {string|Date} [date]
  * @returns {Promise<[Item]|undefined>}
  */
 exports.findItemsByFilledDate = async (date) => {
