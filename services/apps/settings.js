@@ -51,7 +51,11 @@ const createPreset = async () => {
  */
 exports.updateSettings = async (param) => {
   try {
-    return await Settings.findOneAndUpdate({}, { $set: param }, { new: true });
+    return (__settings = await Settings.findOneAndUpdate(
+      {},
+      { $set: param },
+      { new: true }
+    ));
   } catch (e) {
     console.error(e);
   }
