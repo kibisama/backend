@@ -3,6 +3,7 @@ const item = require("./item");
 const package = require("./package");
 const alt = require("./alternative");
 const { interpretCAHData } = require("../cah/common");
+const { stringToNumber } = require("../convert");
 
 exports.getAlternatives = async () => {
   return (await alt.getAllDocuments()).map((v) => ({
@@ -82,7 +83,7 @@ const mapInventoryRows = (packages) => {
 };
 /**
  * @param {string|ObjectId} _id
- * @param {"dateReceived"|"dateFilled"|"exp"} sort
+ * @param {"dateReceived"|"dateFilled"|"dateReturned"|"exp"} sort
  * @param {boolean} filled
  */
 exports.getInventories = async (_id, sort, filled) => {
@@ -91,6 +92,8 @@ exports.getInventories = async (_id, sort, filled) => {
       ? { dateReceived: -1 }
       : sort === "dateFilled"
       ? { dateFilled: -1 }
+      : sort === "dateReturned"
+      ? { dateReturned: -1 }
       : sort === "exp"
       ? { exp: -1 }
       : {};
@@ -110,6 +113,7 @@ exports.getInventories = async (_id, sort, filled) => {
   }
 };
 
+const forms = [];
 /**
  * @param {[item.Item]} items
  * @returns {}
@@ -152,7 +156,14 @@ const mapUsageRows = async (items) => {
           mfr,
         } = pkg;
         const isBranded = alternative?.isBranded;
-        const cah = alternative?.cahProduct || cahProduct;
+        const selectOriginal =
+          cahProduct?.active &&
+          (cahProduct.form === "OINTMENT" ||
+            cahProduct.form === "CREAM" ||
+            cahProduct.form === "DROPS");
+        const cah = selectOriginal
+          ? cahProduct
+          : alternative?.cahProduct || cahProduct;
         row.name =
           name ||
           alternative?.name ||
@@ -164,7 +175,7 @@ const mapUsageRows = async (items) => {
           gtin;
         row.mfr = mfrName || mfr || cah?.mfr || psPackage?.manufacturer || "";
         row.ndc = ndc11;
-        let size = pkg.size;
+        let size = cah.package.size || pkg.size;
         if (cah) {
           switch (cah.active) {
             case true:
@@ -232,20 +243,24 @@ const mapUsageRows = async (items) => {
         const ps_alt = alternative?.psAlternative;
         let ps_alt_same_description;
         let ps_alt_same_size;
+        let ps_alt_lowest;
         if (ps_alt) {
           switch (ps_alt.active) {
             case true:
               for (let i = 0; i < ps_alt.items.length; i++) {
-                psDescription === ps_alt.items[i].description &&
-                  (ps_alt_same_description = ps_alt.items[i]);
-                (psSize || size) === ps_alt.items[i].pkg &&
-                  (ps_alt_same_size = ps_alt.items[i]);
-                if (ps_alt_same_description && ps_alt_same_size) {
-                  break;
-                }
+                const item = ps_alt.items[i];
+                psDescription === item.description &&
+                  (ps_alt_same_description = item);
+                (psSize || size) === item.pkg &&
+                  item.bG === "G" &&
+                  (ps_alt_same_size = item);
+                (!ps_alt_lowest ||
+                  stringToNumber(ps_alt_lowest.unitPrice) >
+                    stringToNumber(item.unitPrice)) &&
+                  (ps_alt_lowest = item);
               }
               const _ps_alt =
-                ps_alt_same_description || ps_alt_same_size || ps_alt.items[0];
+                ps_alt_same_description || ps_alt_same_size || ps_alt_lowest;
               row.ps_alt_status = "ACTIVE";
               row.ps_alt_ndc = _ps_alt.ndc;
               row.ps_alt_pkgPrice = _ps_alt.pkgPrice;
@@ -278,7 +293,7 @@ const mapUsageRows = async (items) => {
 /** Caching today's usage **/
 let __invUsageToday;
 /**
- * @param {string} date
+ * @param {string|Date|undefined} date
  * @param {true} [refresh]
  * @returns {}
  */
@@ -286,14 +301,10 @@ exports.getUsages = async (date, refresh) => {
   // if date is today use cache else map a new array
   const day = typeof date === "string" ? dayjs(date, "MMDDYYYY") : dayjs(date);
   if (day.isSame(dayjs(), "d")) {
-    // if (refresh) {
-    //  __invUsageToday = await mapUsageRows(await item.findItemsByFilledDate())
-    // }
-    // return (
-    //   __invUsageToday ||
-    //   (__invUsageToday = await mapUsageRows(await item.findItemsByFilledDate()))
-    // );
-    return await mapUsageRows(await item.findItemsByFilledDate());
+    if (refresh || __invUsageToday) {
+      __invUsageToday = await mapUsageRows(await item.findItemsByFilledDate());
+    }
+    return __invUsageToday;
   }
   return await mapUsageRows(await item.findItemsByFilledDate(date));
 };

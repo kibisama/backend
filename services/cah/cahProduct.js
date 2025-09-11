@@ -113,6 +113,9 @@ const updateProductCallback = async (data, _cahPrd, option) => {
       await cahPrd.updateOne({
         $set: { lastUpdated: new Date(), active: false },
       });
+      /** Refreshing  __invUsageToday **/
+      const { getUsages } = require("../inv/inventory");
+      getUsages(undefined, true);
       if (!skipUpdateSource) {
         const { package } = cahPrd;
         const { alternative } = package;
@@ -185,6 +188,9 @@ const updateProductCallback = async (data, _cahPrd, option) => {
         }
       }
     }
+    /** Refreshing  __invUsageToday **/
+    const { getUsages } = require("../inv/inventory");
+    getUsages(undefined, true);
     callback instanceof Function &&
       callback(await exports.refreshProduct(pkg.cahProduct));
   } catch (e) {

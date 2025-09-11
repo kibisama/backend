@@ -104,6 +104,9 @@ const updatePsPackageCallback = async (data, _psPkg, option) => {
         const { psAlternative } = alternative;
         psAlternative && (await psAlternative.updateOne(updateParam));
       }
+      /** Refreshing  __invUsageToday **/
+      const { getUsages } = require("../inv/inventory");
+      getUsages(undefined, true);
       return;
     }
     /** @type {import("./getSearchResults").Data} **/
@@ -127,6 +130,9 @@ const updatePsPackageCallback = async (data, _psPkg, option) => {
       const { psAlternative } = alternative;
       psAlternative && (await updatePsAlternative(psAlternative, items));
     }
+    /** Refreshing  __invUsageToday **/
+    const { getUsages } = require("../inv/inventory");
+    getUsages(undefined, true);
     callback instanceof Function &&
       callback(await exports.refreshPsPackage(psPkg));
   } catch (e) {

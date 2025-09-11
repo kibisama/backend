@@ -3,7 +3,6 @@ const customParseFormat = require("dayjs/plugin/customParseFormat");
 dayjs.extend(customParseFormat);
 const Item = require("../../schemas/inv/item");
 const { checkItemCondition } = require("../cah/returnRequest");
-const { useInvUsageChecker } = require("./inventory");
 
 /**
  * @typedef {Item.Item} Item
@@ -87,7 +86,7 @@ exports.updateItem = async (scanReq, date, item) => {
         break;
       case "REVERSE":
         update.$set = { dateReversed: now };
-        update.$unset = { dateFilled: 1 };
+        update.$unset = { dateFilled: 1, dateReturned: 1 };
         break;
       case "RETURN":
         update.$set = { dateReturned: now };
@@ -101,12 +100,13 @@ exports.updateItem = async (scanReq, date, item) => {
         new: true,
       });
     }
-    /** Updating __invUsageChecker: call after updating **/
+    /** Updating __invUsageChecker && __invUsageToday **/
     if (mode === "FILL" || mode === "REVERSE") {
       const day = dayjs(now);
       if (day.isSame(dayjs(), "d")) {
+        const { useInvUsageChecker, getUsages } = require("./inventory");
         useInvUsageChecker(day.format("MMDDYYYY"), gtin, true);
-        // refresh __invUsageToday cache
+        getUsages(undefined, true);
       }
     }
   } catch (e) {

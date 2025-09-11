@@ -239,7 +239,7 @@ const linkWithFamily = async (alt, scdf) => {
 let __allDocuments;
 /**
  * @param {true} [refresh]
- * @returns {[Alternative]}
+ * @returns {Promise<[Alternative]>|[Alternative]}
  */
 exports.getAllDocuments = async (refresh) => {
   try {
