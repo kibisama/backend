@@ -68,7 +68,7 @@ const generateHtmlTable = (results) => {
  * @param {} result
  * @returns {void}
  */
-const mailReport = (result) => {
+const mailReport = (result, date) => {
   const { results, number, shortDated } = result;
   nodemailer.sendMail(
     {
@@ -160,7 +160,7 @@ const handleResults = async (results, date) => {
           number++;
         }
       }
-      mailReport({ results, number, shortDated });
+      mailReport({ results, number, shortDated }, date);
     } else {
       // DSCSA data not yet updated
       // make attempt failed notification
