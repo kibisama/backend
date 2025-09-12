@@ -64,7 +64,7 @@ exports.refreshProduct = async (cahPrd) => {
  */
 const needsUpdate = (cahPrd) => {
   const { lastRequested } = cahPrd;
-  if (!lastRequested || isAfterTodayStart(lastRequested)) {
+  if (!lastRequested || !isAfterTodayStart(lastRequested)) {
     return true;
   }
   return false;

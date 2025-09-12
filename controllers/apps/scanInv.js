@@ -6,7 +6,10 @@ exports.post = async (req, res, next) => {
   try {
     /** @type {item.ScanReq} **/
     const scanReq = req.body;
-    const { gtin, mode } = scanReq;
+    const { gtin, mode, sn, lot, exp } = scanReq;
+    if (!(mode && gtin && sn && lot && exp)) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
     const _package = await package.upsertPackage(gtin, "gtin");
     if (!_package) {
       res

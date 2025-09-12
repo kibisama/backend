@@ -50,7 +50,7 @@ exports.refreshPsPackage = async (psPkg) => {
  */
 const needsUpdate = (psPkg) => {
   const { lastRequested } = psPkg;
-  if (!lastRequested || isAfterTodayStart(lastRequested)) {
+  if (!lastRequested || !isAfterTodayStart(lastRequested)) {
     return true;
   }
   return false;
