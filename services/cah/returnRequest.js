@@ -126,7 +126,8 @@ const requestReturns = async () => {
     const items = await findReturnedItems();
     if (items.length > 0) {
       const returnItems = await mapItems(items);
-      mailReport(returnItems, await settings.getSettings());
+      returnItems.length > 0 &&
+        mailReport(returnItems, await settings.getSettings());
     }
   } catch (e) {
     console.error(e);
