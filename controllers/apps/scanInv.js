@@ -43,10 +43,16 @@ exports.post = async (req, res, next) => {
         //
         break;
       case "RETURN":
+        if (_item.dateReturned) {
+          return res.status(208).send({
+            code: 208,
+            message: "The item has been already reported as returned.",
+          });
+        }
         const _response = item.preprocessReturn(_item);
         const { code } = _response;
         if (code === 200 || code === 202) {
-          response = _response;
+          Object.assign(response, _response);
         } else {
           return res.status(code).send(_response);
         }
