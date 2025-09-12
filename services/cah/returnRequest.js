@@ -190,10 +190,15 @@ const mailReport = (items, settings) => {
         </div>
         `,
       },
-      (err, info) => {
+      async (err, info) => {
         if (err) {
           console.error(err);
+          return;
         }
+        const sl = await upsertSl();
+        await sl.updateOne({
+          $set: { CAH_RETURN_REQUEST: true },
+        });
       }
     );
   } catch (e) {

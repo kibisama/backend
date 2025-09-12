@@ -92,10 +92,15 @@ const mailReport = (result) => {
         </div>
         `,
       },
-      (err, info) => {
+      async (err, info) => {
         if (err) {
           console.error(err);
+          return;
         }
+        const sl = await upsertSl(date);
+        await sl.updateOne({
+          $set: { CAH_UPSERT_ITEMS_VIA_DSCSA: true },
+        });
       }
     );
   } catch (e) {
@@ -160,10 +165,6 @@ const handleResults = async (results, date) => {
         }
       }
       mailReport({ results, number, shortDated });
-      const sl = await upsertSl({ date });
-      await sl.updateOne({
-        $set: { CAH_UPSERT_ITEMS_VIA_DSCSA: true },
-      });
     } else {
       // DSCSA data not yet updated
       // make attempt failed notification
