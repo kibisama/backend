@@ -257,10 +257,13 @@ const getNextScheduleDate = () => {
 /**
  * @returns {Pormise<void>}
  */
-exports.scheduleRequest = async () => {
+const returnItems = async () => {
   if (common.isStoreOpen()) {
     const { CAH_RETURN_REQUEST } = await upsertSl();
     !CAH_RETURN_REQUEST && requestReturns();
   }
-  scheduleJob(getNextScheduleDate(), exports.scheduleRequest);
+  scheduleJob(getNextScheduleDate(), returnItems);
 };
+
+exports.scheduleRequest = async () =>
+  scheduleJob(getNextScheduleDate(), returnItems);

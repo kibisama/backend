@@ -227,12 +227,15 @@ const getNextScheduleDate = () => {
 /**
  * @returns {Promise<void>}
  */
-const scheduleUpsert = async () => {
+const upsertItems = async () => {
   if (isStoreOpen()) {
     const { date, CAH_UPSERT_ITEMS_VIA_DSCSA } = await upsertSl();
     !CAH_UPSERT_ITEMS_VIA_DSCSA && requestPuppet(date);
   }
-  scheduleJob(getNextScheduleDate(), scheduleUpsert);
+  scheduleJob(getNextScheduleDate(), upsertItems);
 };
+
+const scheduleUpsert = async () =>
+  scheduleJob(getNextScheduleDate(), upsertItems);
 
 module.exports = { requestPuppet, scheduleUpsert };
