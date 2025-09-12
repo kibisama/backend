@@ -38,25 +38,25 @@ exports.checkItemCondition = (item) => {
     };
   }
   const dayDateReceived = dayjs(dateReceived);
-  if (dayDateReceived.isAfter(today.add(1, "year"))) {
+  if (dayDateReceived.isBefore(today.subtract(1, "year"))) {
     return {
       code: 409,
       message:
         "Cardinal does not accept returning items passed more than 1 year.",
     };
-  } else if (dayDateReceived.isAfter(today.add(350, "days"))) {
+  } else if (dayDateReceived.isBefore(today.subtract(350, "days"))) {
     return {
       code: 202,
       message:
         "The item has passed more than 350 days. Cardinal might not issue RMA.",
     };
-  } else if (dayDateReceived.isAfter(today.add(180, "day"))) {
+  } else if (dayDateReceived.isBefore(today.subtract(180, "day"))) {
     return {
       code: 202,
       message:
         "The item has passed more than 180 days. Cardinal will not issue the full credit.",
     };
-  } else if (dayDateReceived.isAfter(today.add(170, "day"))) {
+  } else if (dayDateReceived.isBefore(today.subtract(170, "day"))) {
     return {
       code: 202,
       message:

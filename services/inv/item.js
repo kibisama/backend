@@ -22,6 +22,19 @@ const { checkItemCondition } = require("../cah/returnRequest");
  */
 
 /**
+ * Refreshes an Item documnet.
+ * @param {Item|ObjectId} item
+ * @returns {Promise<Item|undefined>}
+ */
+exports.refreshItem = async (item) => {
+  try {
+    return await Item.findById(item);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
  * @param {DataMatrix} dm
  * @returns {{gtin: string, sn: string}}
  */

@@ -66,6 +66,7 @@ const mapInventoryRows = (packages) => {
           cost: item.cost,
           dateFilled: item.dateFilled,
           dateReceived: item.dateReceived,
+          dateReturned: item.dateReturned,
           invoiceRef: item.invoiceRef,
         });
       });

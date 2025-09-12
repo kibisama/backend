@@ -11,6 +11,7 @@ const pickupSchema = new mongoose.Schema({
   },
   relation: {
     type: String,
+    enum: ["self", "ff", "gc", "other"],
     required: true,
   },
   notes: String,
