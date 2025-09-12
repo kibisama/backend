@@ -70,13 +70,12 @@ const generateHtmlTable = (results) => {
  */
 const mailReport = (result) => {
   const { results, number, shortDated } = result;
-  try {
-    nodemailer.sendMail(
-      {
-        from: process.env.MAILER_EMAIL,
-        to: process.env.MAILER_EMAIL,
-        subject: "Cardinal DSCSA Transaction Report",
-        html: `
+  nodemailer.sendMail(
+    {
+      from: process.env.MAILER_EMAIL,
+      to: process.env.MAILER_EMAIL,
+      subject: "Cardinal DSCSA Transaction Report",
+      html: `
         <div>
           <p>Total ${number} transactions were recorded in our system.</p>
           <br/>
@@ -91,21 +90,18 @@ const mailReport = (result) => {
         ${generateHtmlTable(results)}
         </div>
         `,
-      },
-      async (err, info) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-        const sl = await upsertSl(date);
-        await sl.updateOne({
-          $set: { CAH_UPSERT_ITEMS_VIA_DSCSA: true },
-        });
+    },
+    async (err, info) => {
+      if (err) {
+        console.error(err);
+        return;
       }
-    );
-  } catch (e) {
-    console.error(e);
-  }
+      const sl = await upsertSl(date);
+      await sl.updateOne({
+        $set: { CAH_UPSERT_ITEMS_VIA_DSCSA: true },
+      });
+    }
+  );
 };
 /**
  * Formats a Result date string into a DM date string.

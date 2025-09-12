@@ -145,24 +145,23 @@ const mailReport = (items, settings) => {
   if (!(acctNumber && acctName)) {
     return;
   }
-  try {
-    const {
-      storeName,
-      storeAddress,
-      storeCity,
-      storeState,
-      storeZip,
-      storePhone,
-      storeFax,
-      storeEmail,
-    } = settings;
-    nodemailer.sendMail(
-      {
-        from: process.env.MAILER_EMAIL,
-        //
-        to: process.env.MAILER_EMAIL,
-        subject: "RMA request",
-        html: `
+  const {
+    storeName,
+    storeAddress,
+    storeCity,
+    storeState,
+    storeZip,
+    storePhone,
+    storeFax,
+    storeEmail,
+  } = settings;
+  nodemailer.sendMail(
+    {
+      from: process.env.MAILER_EMAIL,
+      //
+      to: process.env.MAILER_EMAIL,
+      subject: "RMA request",
+      html: `
         <div>
           <p>
             Account Name: ${acctName}
@@ -189,21 +188,18 @@ const mailReport = (items, settings) => {
         ${generateHtmlTable(items)}
         </div>
         `,
-      },
-      async (err, info) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-        const sl = await upsertSl();
-        await sl.updateOne({
-          $set: { CAH_RETURN_REQUEST: true },
-        });
+    },
+    async (err, info) => {
+      if (err) {
+        console.error(err);
+        return;
       }
-    );
-  } catch (e) {
-    console.error(e);
-  }
+      const sl = await upsertSl();
+      await sl.updateOne({
+        $set: { CAH_RETURN_REQUEST: true },
+      });
+    }
+  );
 };
 
 /**
