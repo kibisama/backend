@@ -5,6 +5,7 @@ const { findPackageByGTIN } = require("../inv/package");
 const nodemailer = require("../nodemailer");
 const settings = require("../apps/settings");
 const common = require("../common");
+const { upsertSl } = require("../systemLog");
 
 /**
  * @typedef {object} ReturnItem

@@ -40,7 +40,7 @@ app.use((err, req, res, next) => {
 const server = app.listen(app.get("port"), () => {
   console.log("Listening on port", app.get("port"));
 });
-// require("./services/schedule")();
+require("./services/schedule")();
 
 const io = require("./socket");
 io(server, app);
