@@ -155,7 +155,7 @@ const mailReport = (items, settings) => {
   nodemailer.sendMail(
     {
       from: process.env.MAILER_EMAIL,
-      //
+      // to: process.env.CARDINAL_CS_EMAIL || process.env.MAILER_EMAIL,
       to: process.env.MAILER_EMAIL,
       subject: "RMA request",
       html: `
@@ -180,7 +180,7 @@ const mailReport = (items, settings) => {
             Email ${storeEmail}
           </p>
           <br/>
-          <p>Please create MRA for the following item(s).</p>
+          <p>Please create MRA for the following item(s):</p>
           <br/>
         ${generateHtmlTable(items)}
         </div>
@@ -205,22 +205,22 @@ const mailReport = (items, settings) => {
  */
 const generateHtmlTable = (items) => {
   return `
-              <div>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Invoice #</th>
-                      <th>CIN/NDC</th>
-                      <th>GTIN</th>
-                      <th>Serial #</th>
-                      <th>Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${items
-                      .map(
-                        (v, i) => `
+          <div>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Invoice #</th>
+                  <th>CIN/NDC</th>
+                  <th>GTIN</th>
+                  <th>Serial #</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items
+                  .map(
+                    (v, i) => `
                     <tr>
                       <td>${(i + 1).toString()}</td>
                       <td>${v.invoiceRef}</td>
@@ -230,12 +230,12 @@ const generateHtmlTable = (items) => {
                       <td>Overstock</td>
                     </tr>
                     `
-                      )
-                      .join("")}
-                  </tbody>
-                </table>
-              </div>
-              `;
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+          `;
 };
 
 /**
