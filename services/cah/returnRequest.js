@@ -86,20 +86,17 @@ const findReturnedItems = async () => {
 const mapItems = async (items) => {
   try {
     const table = {};
-    items.forEach(async (v) => {
-      const { gtin } = v;
+    for (let i = 0; i < items.length; i++) {
+      const { gtin } = items[i];
       if (!table[gtin]) {
-        try {
-          const package = await findPackageByGTIN(gtin);
-          await package.populate("cahProduct");
-          const _ = (table[gtin] = {});
-          _.ndc = package.ndc11;
-          _.cin = package.cahProduct.cin;
-        } catch (e) {
-          console.error(e);
-        }
+        const package = await findPackageByGTIN(gtin);
+        await package.populate("cahProduct");
+        table[gtin] = {};
+        const _ = (table[gtin] = {});
+        _.ndc = package.ndc11;
+        _.cin = package.cahProduct.cin;
       }
-    });
+    }
     const returnItems = [];
     items.forEach((v) => {
       (table[v.gtin]?.cin || table[v.gitn]?.ndc) &&
