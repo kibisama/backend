@@ -179,7 +179,7 @@ const mailReport = (items, settings) => {
             Email ${storeEmail}
           </p>
           <br/>
-          <p>Please create MRA for the following item(s):</p>
+          <p style="font-size: 14px;">Please create MRA for the following item(s):</p>
           <br/>
         ${generateHtmlTable(items)}
         </div>
@@ -206,37 +206,37 @@ const generateHtmlTable = (items) => {
   return `
           <div>
             <table style="border-collapse: collapse;border: 3px solid black;">
-              <thead style="border-bottom: 3px solid black;background: #CFCFCF;background: -moz-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);background: -webkit-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);background: linear-gradient(to bottom, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);font-size: 15px;font-weight: bold;color: black;">
+              <thead style="border-bottom: 3px solid black;background: #CFCFCF;background: -moz-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);background: -webkit-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);background: linear-gradient(to bottom, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);font-size: 16px;font-weight: bold;color: black;">
                 <tr>
                   <th style="padding: 5px 4px;border: 1px solid black;min-width: 60px;">#</th>
                   <th style="padding: 5px 4px;border: 1px solid black;min-width: 140px;">Invoice #</th>
-                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 120px;">CIN/NDC</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 140px;">CIN/NDC</th>
                   <th style="padding: 5px 4px;border: 1px solid black;min-width: 160px;">GTIN</th>
                   <th style="padding: 5px 4px;border: 1px solid black;min-width: 200px;">Serial #</th>
                   <th style="padding: 5px 4px;border: 1px solid black;min-width: 140px;">Reason</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody style="font-size: 14px;">
                 ${items
                   .map(
                     (v, i) => `
                     <tr>
-                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${(
+                      <td style="padding: 5px 4px;border: 1px solid black;">${(
                         i + 1
                       ).toString()}</td>
-                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                      <td style="padding: 5px 4px;border: 1px solid black;">${
                         v.invoiceRef
                       }</td>
-                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                      <td style="padding: 5px 4px;border: 1px solid black;">${
                         v.cin || v.ndc
                       }</td>
-                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                      <td style="padding: 5px 4px;border: 1px solid black;">${
                         v.gtin
                       }</td>
-                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                      <td style="padding: 5px 4px;border: 1px solid black;">${
                         v.sn
                       }</td>
-                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">Overstock</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;">Overstock</td>
                     </tr>
                     `
                   )
