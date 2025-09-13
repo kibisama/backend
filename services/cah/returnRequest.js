@@ -155,8 +155,7 @@ const mailReport = (items, settings) => {
   nodemailer.sendMail(
     {
       from: process.env.MAILER_EMAIL,
-      // to: process.env.CARDINAL_CS_EMAIL || process.env.MAILER_EMAIL,
-      to: process.env.MAILER_EMAIL,
+      to: process.env.CARDINAL_CS_EMAIL || process.env.MAILER_EMAIL,
       subject: "RMA request",
       html: `
         <div>
@@ -206,15 +205,15 @@ const mailReport = (items, settings) => {
 const generateHtmlTable = (items) => {
   return `
           <div>
-            <table>
-              <thead>
+            <table style="border-collapse: collapse;border: 3px solid black;">
+              <thead style="border-bottom: 3px solid black;background: #CFCFCF;background: -moz-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);background: -webkit-linear-gradient(top, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);background: linear-gradient(to bottom, #dbdbdb 0%, #d3d3d3 66%, #CFCFCF 100%);font-size: 15px;font-weight: bold;color: black;">
                 <tr>
-                  <th>#</th>
-                  <th>Invoice #</th>
-                  <th>CIN/NDC</th>
-                  <th>GTIN</th>
-                  <th>Serial #</th>
-                  <th>Reason</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 60px;">#</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 140px;">Invoice #</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 120px;">CIN/NDC</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 160px;">GTIN</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 200px;">Serial #</th>
+                  <th style="padding: 5px 4px;border: 1px solid black;min-width: 140px;">Reason</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,12 +221,22 @@ const generateHtmlTable = (items) => {
                   .map(
                     (v, i) => `
                     <tr>
-                      <td>${(i + 1).toString()}</td>
-                      <td>${v.invoiceRef}</td>
-                      <td>${v.cin || v.ndc}</td>
-                      <td>${v.gtin}</td>
-                      <td>${v.sn}</td>
-                      <td>Overstock</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${(
+                        i + 1
+                      ).toString()}</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                        v.invoiceRef
+                      }</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                        v.cin || v.ndc
+                      }</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                        v.gtin
+                      }</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">${
+                        v.sn
+                      }</td>
+                      <td style="padding: 5px 4px;border: 1px solid black;font-size: 13px;">Overstock</td>
                     </tr>
                     `
                   )
