@@ -210,12 +210,11 @@ const requestPuppet = (date) => {
  * @returns {dayjs.Dayjs}
  */
 const getNextScheduleDate = () => {
-  const now = dayjs();
   const scheduledTime = dayjs()
     .set("hour", 8)
     .set("minute", 0)
     .set("second", 0);
-  if (now.isBefore(scheduledTime)) {
+  if (dayjs().isBefore(scheduledTime)) {
     return scheduledTime;
   } else {
     return scheduledTime.add(1, "day");

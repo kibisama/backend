@@ -10,12 +10,10 @@ exports.importCSV = async (req, res) => {
     if (data.length > 0 && dRx.verifyFields(data[0])) {
       const n = await dRx.importDRxs(data);
       if (n !== data.length - 1) {
-        return res
-          .status(500)
-          .send({
-            code: 500,
-            message: "An unexpected error occurred. Please try again.",
-          });
+        return res.status(500).send({
+          code: 500,
+          message: "An unexpected error occurred. Please try again.",
+        });
       }
       // update last update history
       return res.status(200).send({
@@ -25,6 +23,28 @@ exports.importCSV = async (req, res) => {
     } else {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+exports.scanQR = async (req, res) => {
+  try {
+    const { data, deliveryStation, delimiter } = req.body;
+    const a = data.split(delimiter || "|").map((v) => v.trim());
+    if (a.length !== 10) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const result = await dRx.upsertWithQR(a, deliveryStation);
+    if (result) {
+      return res.status(200).send({ code: 200, data: result });
+    }
+    return res
+      .status(500)
+      .send({
+        code: 500,
+        message: "An unexpected error occurred. Please try again.",
+      });
   } catch (e) {
     console.error(e);
   }

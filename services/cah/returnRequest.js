@@ -251,22 +251,24 @@ const generateHtmlTable = (items) => {
  * @returns {dayjs.Dayjs}
  */
 const getNextScheduleDate = () => {
-  const now = dayjs();
-  const scheduledTime = dayjs()
-    .set("hour", 21)
-    .set("minute", 0)
-    .set("second", 0);
-  if (now.isBefore(scheduledTime)) {
+  const scheduledTime = getScheduleTime();
+  if (dayjs().isBefore(scheduledTime)) {
     return scheduledTime;
   } else {
     return scheduledTime.add(1, "day");
   }
 };
 /**
+ * @returns {dayjs.Dayjs}
+ */
+const getScheduleTime = () =>
+  dayjs().set("hour", 21).set("minute", 0).set("second", 0);
+
+/**
  * @returns {Pormise<void>}
  */
 exports.scheduleRequest = async () => {
-  if (common.isStoreOpen()) {
+  if (common.isStoreOpen() && dayjs().add(1, "s").isAfter(getScheduleTime())) {
     const { CAH_RETURN_REQUEST } = await upsertSl();
     !CAH_RETURN_REQUEST && requestReturns();
   }

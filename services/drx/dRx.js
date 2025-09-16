@@ -7,6 +7,7 @@ const plan = require("./plan");
  * @typedef {DRx.RxStatus} RxStatus
  * @typedef {DRx.RxStatusFin} RxStatusFin
  * @typedef {typeof DRx.schema.obj} DRxSchema
+ * @typedef {import("mongoose").ObjectId} ObjectId
  */
 
 exports.map_fields = {
@@ -156,39 +157,36 @@ exports.importDRxs = async (csvData) => {
   }
 };
 
-// /**
-//  * @param {string} data
-//  * @param {string} delimiter
-//  * @param {string} deliveredTo
-//  * @returns {Promise<undefined>}
-//  */
-// exports.upsertWithQR = async (data, delimiter, deliveredTo) => {
-//   try {
-//     const a = data.split(delimiter);
-//     const patient = await pt.upsertPatient({
-//       patientID: a[3],
-//       patientLastName: a[4],
-//       patientFirstName: a[5],
-//       patientDOB: a[6],
-//       lastLocation: deliveredTo,
-//     });
-//     await _upsertDRx({
-//       rxID: a[0],
-//       rxNumber: a[1],
-//       rxDate: a[2],
-//       drugNDC: a[7],
-//       drugName: a[8],
-//       rxQty: a[9],
-//       refills: a[10],
-//       doctorName: a[11],
-//       patPay: a[12],
-//       patient: patient._id,
-//       deliveredTo,
-//     });
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {[string]} a
+ * @param {string|ObjectId} [deliveryStation]
+ * @returns {Promise<DRx|undefined>}
+ */
+exports.upsertWithQR = async (a, deliveryStation) => {
+  try {
+    const _pt = await pt.upsertPatient({
+      patientID: a[3],
+      patientLastName: a[4],
+      patientFirstName: a[5],
+    });
+    const _plan = await plan.upsertPlan({ planID: a[9] });
+    const dRxSchema = {
+      rxID: a[0],
+      rxNumber: a[1],
+      rxDate: a[2],
+      drugName: a[6],
+      rxQty: a[7],
+      refills: a[8],
+      patPay: a[10],
+      patient: _pt._id,
+      plan: _plan._id,
+    };
+    deliveryStation && (dRxSchema.deliveryStation = deliveryStation);
+    return await upsertDRx(dRxSchema);
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // /**
 //  * @param {DRxObj} dRxObj
