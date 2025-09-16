@@ -1,67 +1,160 @@
-// const DRX = require("../../schemas/dRx/dRx");
-// const pt = require("./patient");
-// const plan = require("./plan");
-// const { upsertPackage } = require("../inv/package");
-// const { hasUndefinedProperties } = require("../common");
-// const { hyphenateNDC11 } = require("../convert");
+const DRx = require("../../schemas/dRx/dRx");
+const pt = require("./patient");
+const plan = require("./plan");
 
-// /**
-//  * @typedef {DRX.DigitalRx} DRx
-//  * @typedef {DRX.RxStatus} RxStatus
-//  * @typedef {DRX.RxStatusFin} RxStatusFin
-//  * @typedef {typeof DRX.schema.obj} DRxObj
-//  */
+/**
+ * @typedef {DRx.DigitalRx} DRx
+ * @typedef {DRx.RxStatus} RxStatus
+ * @typedef {DRx.RxStatusFin} RxStatusFin
+ * @typedef {typeof DRx.schema.obj} DRxSchema
+ */
 
-// const _mapIndex = (csvHeader) => {
-//   const table = {};
-//   csvHeader.forEach((v, i) => {
-//     table[v] = i;
-//   });
-//   return {
-//     /* Rx data */
-//     rxID: table.RxID,
-//     createdDate: table.CreatedDate,
-//     createdBy: table.createdby,
-//     rxNumber: table.RxNumber,
-//     fillNo: table.FillNo,
-//     rxDateWritten: table.RxDateWritten,
-//     effectiveDate: table.Effectivedate,
-//     nextFillDate: table.NextFillDate,
-//     rxDate: table.RxDate,
-//     deliveredDate: table.DeliveredDate,
-//     daw: table.Daw,
-//     sig: table.Sig,
-//     qtyWritten: table.QtyWritten,
-//     refills: table.Refills,
-//     rxQty: table.RxQty,
-//     qtyRemaining: table.QtyRemaining,
-//     daysSupply: table.Dayssupply,
-//     rxOrigCode: table.RxOrigCode,
-//     rxNotes: table.RxNotes,
-//     rxStatus: table.RxStatus,
-//     rxStatusFin: table.RxStatusFin,
-//     /* Doctor data */
-//     doctorName: table.DoctorName,
-//     doctorNPI: table.DoctorNPI,
-//     doctorDEA: table.DoctorDea,
-//     /* Drug data */
-//     drugName: table.DrugName,
-//     drugNDC: table.DrugNDC,
-//     drugDEA: table.DrugDea,
-//     drugRxOTC: table.DrugRxOTC,
-//     bG: table["Brand/Generic"],
-//     genericFor: table.GenericFor,
-//     /* Payment data */
-//     totalPaid: table.TotalPaid,
-//     patPay: table.PatPAy,
-//     insPaid: table.InsPaid,
-//     dispFeePaid: table.DispFeePaid,
-//     /* Insurance data */
-//     insuredID: table.Insured_id,
-//     cardNumber: table.CardNumber,
-//     groupNumber: table.GroupNumber,
-//   };
-// };
+exports.map_fields = {
+  /* Rx data */
+  RxID: "rxID",
+  CreatedDate: "createdDate",
+  createdby: "createdBy",
+  RxNumber: "rxNumber",
+  FillNo: "fillNo",
+  RxDateWritten: "rxDateWritten",
+  Effectivedate: "effectiveDate",
+  NextFillDate: "nextFillDate",
+  RxDate: "rxDate",
+  DeliveredDate: "deliveredDate",
+  Daw: "daw",
+  Sig: "sig",
+  QtyWritten: "qtyWritten",
+  Refills: "refills",
+  RxQty: "rxQty",
+  QtyRemaining: "qtyRemaining",
+  Dayssupply: "daysSupply",
+  RxOrigCode: "rxOrigCode",
+  RxNotes: "rxNotes",
+  RxStatus: "rxStatus",
+  RxStatusFin: "rxStatusFin",
+  /* Doctor data */
+  DoctorName: "doctorName",
+  DoctorNPI: "doctorNPI",
+  DoctorDea: "doctorDEA",
+  /* Drug data */
+  DrugName: "drugName",
+  DrugNDC: "drugNDC",
+  DrugDea: "drugDEA",
+  DrugRxOTC: "drugRxOTC",
+  ["Brand/Generic"]: "bG",
+  GenericFor: "genericFor",
+  /* Payment data */
+  TotalPaid: "totalPaid",
+  PatPAy: "patPay",
+  InsPaid: "insPaid",
+  DispFeePaid: "dispFeePaid",
+  /* Insurance data */
+  Insured_id: "insuredID",
+  CardNumber: "cardNumber",
+  GroupNumber: "groupNumber",
+};
+
+/**
+ * Returns an array of strings of all required fields for importing a csv file.
+ * @returns {[string]}
+ */
+exports.getRequiredFields = () => {
+  return [
+    ...Object.keys(exports.map_fields),
+    ...Object.keys(pt.map_fields),
+    ...Object.keys(plan.map_fields),
+  ];
+};
+
+/**
+ * @param {[string]} csvHeader
+ * @returns {boolean}
+ */
+exports.verifyFields = (csvHeader) => {
+  const table = {};
+  csvHeader.forEach((v) => (table[v] = true));
+  const reqFields = exports.getRequiredFields();
+  for (let i = 0; i < reqFields.length; i++) {
+    if (!table[reqFields[i]]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+/**
+ * @param {DRxSchema} dRxSchema
+ * @returns {Promise<DRx|undefined>}
+ */
+const upsertDRx = async (dRxSchema) => {
+  try {
+    const { rxID } = dRxSchema;
+    if (!rxID) {
+      return;
+    }
+    return await DRx.findOneAndUpdate(
+      { rxID },
+      { $set: dRxSchema },
+      { new: true, upsert: true }
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * Upserts dRx documents from a CSV json.
+ * @param {[[string]]} csvData
+ * @returns {Promise<number|void>}
+ */
+exports.importDRxs = async (csvData) => {
+  try {
+    const csvHeader = csvData[0];
+    const dRxIndexTable = {};
+    const ptIndexTable = {};
+    const planIndexTable = {};
+    csvHeader.forEach((v, i) => {
+      if (exports.map_fields[v]) {
+        dRxIndexTable[exports.map_fields[v]] = i;
+      } else if (pt.map_fields[v]) {
+        ptIndexTable[pt.map_fields[v]] = i;
+      } else if (plan.map_fields[v]) {
+        planIndexTable[plan.map_fields[v]] = i;
+      }
+    });
+    const ptIdTable = {};
+    const planIdTable = {};
+    let n = 0;
+    for (let i = 1; i < csvData.length; i++) {
+      const data = csvData[i];
+      const ptSchema = {};
+      for (const field in ptIndexTable) {
+        ptSchema[field] = data[ptIndexTable[field]].trim();
+      }
+      const planSchema = {};
+      for (const field in planIndexTable) {
+        planSchema[field] = data[planIndexTable[field]].trim();
+      }
+      const dRxSchema = {};
+      for (const field in dRxIndexTable) {
+        dRxSchema[field] = data[dRxIndexTable[field]].trim();
+      }
+      if (!ptIdTable[ptSchema.patientID]) {
+        ptIdTable[ptSchema.patientID] = await pt.upsertPatient(ptSchema);
+      }
+      if (!planIdTable[planSchema.planID]) {
+        planIdTable[planSchema.planID] = await plan.upsertPlan(planSchema);
+      }
+      dRxSchema.patient = ptIdTable[ptSchema.patientID];
+      dRxSchema.plan = planIdTable[planSchema.planID];
+      await upsertDRx(dRxSchema);
+      n++;
+    }
+    return n;
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // /**
 //  * @param {string} data
@@ -98,40 +191,6 @@
 // };
 
 // /**
-//  * @param {ReturnType<_mapIndex>} indexTable
-//  * @param {[string]} rxReportRow
-//  * @returns {DRxObj}
-//  */
-// const _createDRxObj = (indexTable, rxReportRow) => {
-//   const dRxObj = {};
-//   Object.keys(indexTable).forEach((v) => {
-//     dRxObj[v] = rxReportRow[indexTable[v]].trim();
-//   });
-//   return dRxObj;
-// };
-
-// /**
-//  * Also Updates the document.
-//  * @param {DRxObj} dRxObj
-//  * @returns {Promise<DRx|undefined>}
-//  */
-// const _upsertDRx = async (dRxObj) => {
-//   try {
-//     const rxID = dRxObj.rxID;
-//     if (!rxID) {
-//       throw new Error();
-//     }
-//     return await DRX.findOneAndUpdate(
-//       { rxID },
-//       { $set: dRxObj },
-//       { new: true, upsert: true }
-//     );
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
-
-// /**
 //  * @param {DRxObj} dRxObj
 //  * @returns {undefined}
 //  */
@@ -139,66 +198,6 @@
 //   !exports.isFileOnly(dRxObj) &&
 //     exports.isRxOnly(dRxObj) &&
 //     upsertPackage(hyphenateNDC11(dRxObj.drugNDC), "ndc11");
-// };
-
-// /**
-//  * Upserts & updates dRx documents thoroughly from the whole CSV Json.
-//  * @param {[[string]]} csvData
-//  * @returns {Promise<|undefined>}
-//  */
-// exports.upsertManyRx = async (csvData) => {
-//   try {
-//     const csvHeader = csvData[0];
-//     const dRxMap = _mapIndex(csvHeader);
-//     const ptMap = pt.mapIndex(csvHeader);
-//     const planMap = plan.mapIndex(csvHeader);
-//     /** @type {Object<string, pt.Patient>} */
-//     const ptTable = {};
-//     /** @type {Object<string, plan.Plan>} */
-//     const planTable = {};
-//     /** @type {Object<string, string>} */
-//     const packageTable = {};
-//     for (let i = 1; i < csvData.length; i++) {
-//       const data = csvData[i];
-//       const dRxObj = _createDRxObj(dRxMap, data);
-//       const dRx = await _upsertDRx(dRxObj);
-//       const ptObj = pt.createPtObj(ptMap, data);
-//       if (!ptTable[ptObj.patientID]) {
-//         ptTable[ptObj.patientID] = await pt.upsertPatient(ptObj);
-//         await dRx.updateOne({ patient: ptTable[ptObj.patientID]._id });
-//       }
-//       const planObj = plan.createPlanObj(planMap, data);
-//       if (planObj.planID && !planTable[planObj.planID]) {
-//         planTable[planObj.planID] = await plan.upsertPlan(planObj);
-//         await dRx.updateOne({ plan: planTable[planObj.planID]._id });
-//       }
-//       if (!packageTable[dRxObj.drugNDC]) {
-//         packageTable[dRxObj.drugNDC] = true;
-//         _upsertPackage(dRxObj);
-//       }
-//     }
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
-
-// /**
-//  * Checks if the CSV header contains all required.
-//  * @param {[string]} csvHeader
-//  * @returns {boolean}
-//  */
-// exports.checkCSVHeader = (csvHeader) => {
-//   const maps = [
-//     _mapIndex(csvHeader),
-//     pt.mapIndex(csvHeader),
-//     plan.mapIndex(csvHeader),
-//   ];
-//   for (let i = 0; i < maps.length; i++) {
-//     if (hasUndefinedProperties(maps[i])) {
-//       return false;
-//     }
-//   }
-//   return true;
 // };
 
 // /**

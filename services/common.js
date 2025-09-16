@@ -11,20 +11,6 @@ const { stringToNumber } = require("./convert");
 
 module.exports = {
   /**
-   * Returns true if any of the properties of an object is undefined
-   * @param {object} obj
-   * @returns {Boolean}
-   */
-  hasUndefinedProperties(obj) {
-    const keys = Object.keys(obj);
-    for (let i = 0; i < keys.length; i++) {
-      if (typeof obj[keys[i]] === "undefined") {
-        return true;
-      }
-    }
-    return false;
-  },
-  /**
    * Returns the highest number (type: string|number) and its index in an array
    * if there is a key, it compares the property of each element
    * @param {[number|string]} array
