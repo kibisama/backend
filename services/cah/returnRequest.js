@@ -268,7 +268,7 @@ const getScheduleTime = () =>
  * @returns {Pormise<void>}
  */
 exports.scheduleRequest = async () => {
-  if (common.isStoreOpen() && dayjs().add(1, "s").isAfter(getScheduleTime())) {
+  if (common.isStoreOpen() && dayjs().add(1, "ms").isAfter(getScheduleTime())) {
     const { CAH_RETURN_REQUEST } = await upsertSl();
     !CAH_RETURN_REQUEST && requestReturns();
   }
