@@ -10,6 +10,7 @@ exports.importCSV = async (req, res) => {
     if (data.length > 0 && dRx.verifyFields(data[0])) {
       const n = await dRx.importDRxs(data);
       if (n !== data.length - 1) {
+        //
         return res.status(500).send({
           code: 500,
           message: "An unexpected error occurred. Please try again.",
@@ -18,7 +19,7 @@ exports.importCSV = async (req, res) => {
       // update last update history
       return res.status(200).send({
         code: 200,
-        message: `Total ${n} Rx(s) have been updated.`,
+        message: `Total ${n} Rx(s) have been uploaded.`,
       });
     } else {
       return res.status(400).send({ code: 400, message: "Bad Request" });
@@ -39,12 +40,10 @@ exports.scanQR = async (req, res) => {
     if (result) {
       return res.status(200).send({ code: 200, data: result });
     }
-    return res
-      .status(500)
-      .send({
-        code: 500,
-        message: "An unexpected error occurred. Please try again.",
-      });
+    return res.status(500).send({
+      code: 500,
+      message: "An unexpected error occurred. Please try again.",
+    });
   } catch (e) {
     console.error(e);
   }

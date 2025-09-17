@@ -1,8 +1,5 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
-const {
-  Types: { ObjectId },
-} = Schema;
 
 const patientSchema = new Schema({
   patientID: { type: String, required: true, unique: true },
@@ -17,9 +14,6 @@ const patientSchema = new Schema({
   patientPhone: String,
   patientSSN: String,
   patNotes: String,
-
-  // extends
-  //   lastLocation: { type: ObjectId, ref: "Facility" },
 });
 
 const model = mongoose.model("DRx Patient", patientSchema);
