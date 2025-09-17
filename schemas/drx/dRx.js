@@ -50,7 +50,7 @@ const digitalRxSchema = new Schema({
   cardNumber: String,
   groupNumber: String,
   /* Relational */
-  //   deliveryStation: { type: ObjectId, ref: "Delivery Station" },
+  deliveryStation: { type: ObjectId, ref: "Delivery Station" },
 });
 
 const model = mongoose.model("DRx Rx", digitalRxSchema);
