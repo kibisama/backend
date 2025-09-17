@@ -1,109 +1,70 @@
-// const DeliveryGroup = require("../../schemas/apps/deliveryGroup");
+const DeliveryStation = require("../../schemas/apps/deliveryStation");
 
-// /**
-//  * @typedef {DeliveryGroup.DeliveryGroup} DeliveryGroup
-//  * @typedef {import('../../schemas/apps/deliveryStation').DeliveryStation} DeliveryStation
-//  */
+/**
+ * @typedef {DeliveryStation.DeliveryStation} DeliveryStation
+ * @typedef {typeof DeliveryStation.schema.obj} DeliveryStationSchema
+ */
 
-// const preset = {
-//   name: "Private",
-// };
+const reserved = ["PRIVATE"];
 
-// /**
-//  * @param {string} name
-//  * @returns {Promise<DeliveryGroup|undefined>}
-//  */
-// exports.createDeliveryGroup = async (name) => {
-//   try {
-//     return await DeliveryGroup.create({ name });
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @returns {Promise<[DeliveryStation]|undefined>}
+ */
+exports.getAllDeliveryStations = async () => {
+  try {
+    return await DeliveryStation.find({});
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @param {string} name
-//  * @returns {Promise<DeliveryGroup|undefined>}
-//  */
-// exports.findDeliveryGroup = async (name) => {
-//   try {
-//     return await DeliveryGroup.findOne({ name });
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {DeliveryStationSchema} schema
+ * @returns {Promise<DeliveryStation|import("../common").Response|undefined>}
+ */
+exports.createDeliveryStation = async (schema) => {
+  const id = schema.displayName.toUpperCase();
+  if (reserved.includes(id)) {
+    return {
+      code: 409,
+      message: `You may not use "${schema.displayName}" as a display name.`,
+    };
+  }
+  try {
+    return await DeliveryStation.create({
+      ...schema,
+      id,
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @returns {Promise<[DeliveryGroup]|undefined>}
-//  */
-// exports.getDeliveryGroups = async () => {
-//   try {
-//     return await DeliveryGroup.find({});
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {string} id
+ * @returns {Promise<DeliveryStation|undefined>}
+ */
+exports.findDeliveryStation = async (id) => {
+  try {
+    return await DeliveryStation.findOne({ id });
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-// /**
-//  * @returns {Promise<undefined>}
-//  */
-// exports.createPreset = async () => {
-//   try {
-//     const groups = await exports.getDeliveryGroups();
-//     if (groups.length === 0) {
-//       await DeliveryGroup.create(preset);
-//     }
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
-
-// /**
-//  * @param {import("mongoose").ObjectId} _id
-//  * @param {string} name
-//  * @returns {Promise<DeliveryGroup|undefined>}
-//  */
-// exports.updateName = async (_id, name) => {
-//   try {
-//     return await DeliveryGroup.findByIdAndUpdate(
-//       _id,
-//       { $set: { name } },
-//       { new: true }
-//     );
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
-
-// // /**
-// //  * @param {string} _id
-// //  * @param {Facility} facility
-// //  * @returns {Promise<FacilityGroup|undefined>}
-// //  */
-// // exports.addFacility = async (_id, facility) => {
-// //   try {
-// //     return await FacilityGroup.findByIdAndUpdate(
-// //       _id,
-// //       { $addToSet: { facilities: facility._id } },
-// //       { new: true }
-// //     );
-// //   } catch (e) {
-// //     console.error(e);
-// //   }
-// // };
-// // /**
-// //  * @param {string} _id
-// //  * @param {Facility} facility
-// //  * @returns {Promise<FacilityGroup|undefined>}
-// //  */
-// // exports.pullFacility = async (_id, facility) => {
-// //   try {
-// //     return await FacilityGroup.findByIdAndUpdate(
-// //       _id,
-// //       { $pull: { facilities: facility._id } },
-// //       { new: true }
-// //     );
-// //   } catch (e) {
-// //     console.error(e);
-// //   }
-// // };
+/**
+ * @param {string} id
+ * @param {DeliveryStationSchema} schema
+ * @returns {Promise<DeliveryGroup|undefined>}
+ */
+exports.updateDeliveryStation = async (id, schema) => {
+  try {
+    return await DeliveryStation.findOneAndUpdate(
+      { id },
+      { $set: schema },
+      { new: true }
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};

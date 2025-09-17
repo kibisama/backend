@@ -1,14 +1,15 @@
-// const delivery = require("../../services/apps/delivery");
+const dlvry = require("../../services/apps/delivery");
 
-// exports.get = async (req, res, next) => {
-//   try {
-//     const groups = await delivery.getDeliveryGroups();
-//     res.status(200).send({ code: 200, data: groups.map((v) => v.name) });
-//   } catch (e) {
-//     console.error(e);
-//     next(e);
-//   }
-// };
+exports.get = async (req, res) => {
+  try {
+    const stations = await dlvry.getAllDeliveryStations();
+    return res
+      .status(200)
+      .send({ code: 200, data: stations.map((v) => v.displayName) });
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // exports.post = async (req, res, next) => {
 //   const { method } = req.body;

@@ -6,14 +6,13 @@ const {
 
 const deliveryStationSchema = new Schema({
   id: { type: String, required: true, uppercase: true, unique: true },
-  name: { type: String, required: true },
   displayName: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
   address: { type: String, required: true },
   city: { type: String, required: true },
   state: { type: String, required: true },
   zip: { type: String, required: true },
   phone: { type: String, required: true },
-  email: String,
   plan: { type: ObjectId, ref: "DRx Plan" },
 });
 
