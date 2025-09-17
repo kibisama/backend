@@ -5,16 +5,6 @@ exports.get = async (req, res) => {
     const stations = await dlvry.getAllDeliveryStations();
     return res
       .status(200)
-      .send({ code: 200, data: stations.map((v) => v.displayName) });
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-exports.getAllStations = async (req, res) => {
-  try {
-    return res
-      .status(200)
       .send({ code: 200, data: await dlvry.getAllDeliveryStations() });
   } catch (e) {
     console.error(e);
