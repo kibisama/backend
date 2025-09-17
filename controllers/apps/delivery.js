@@ -11,6 +11,16 @@ exports.get = async (req, res) => {
   }
 };
 
+exports.getAllStations = async (req, res) => {
+  try {
+    return res
+      .status(200)
+      .send({ code: 200, data: await dlvry.getAllDeliveryStations() });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // exports.post = async (req, res, next) => {
 //   const { method } = req.body;
 //   const { name } = req.params;
