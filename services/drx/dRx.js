@@ -1,6 +1,7 @@
 const DRx = require("../../schemas/dRx/dRx");
 const pt = require("./patient");
 const plan = require("./plan");
+const dayjs = require("dayjs");
 
 /**
  * @typedef {DRx.DigitalRx} DRx
@@ -84,6 +85,52 @@ exports.verifyFields = (csvHeader) => {
 };
 
 /**
+ * @param {DRx|DRxSchema} dRx
+ * @returns {Boolean}
+ */
+exports.isFileOnly = (dRx) => {
+  switch (dRx.rxStatus) {
+    case "FILEONLY":
+    case "DC-FILEONLY":
+    case "FO-TRANSFERRED":
+    case "FUTURE BILL":
+      return true;
+    default:
+      return false;
+  }
+};
+/**
+ * @param {DRx|DRxSchema} dRx
+ * @returns {Boolean}
+ */
+exports.isBilled = (dRx) => {
+  if (dRx.rxStatusFin === "BILLED") {
+    return true;
+  }
+  return false;
+};
+/**
+ * @param {DRx|DRxSchema} dRx
+ * @returns {Boolean}
+ */
+exports.hasNoCopay = (dRx) => {
+  if (dRx.patPay === "0") {
+    return true;
+  }
+  return false;
+};
+/**
+ * @param {DRx|DRxSchema} dRx
+ * @returns {Boolean}
+ */
+exports.isRxOnly = (dRx) => {
+  if (dRx.drugRxOTC === "RX") {
+    return true;
+  }
+  return false;
+};
+
+/**
  * @param {DRxSchema} dRxSchema
  * @returns {Promise<DRx|undefined>}
  */
@@ -160,9 +207,10 @@ exports.importDRxs = async (csvData) => {
 /**
  * @param {[string]} a
  * @param {string} [station]
+ * @param {Date} [deliveryDate]
  * @returns {Promise<DRx|undefined>}
  */
-exports.upsertWithQR = async (a, station) => {
+exports.upsertWithQR = async (a, station, deliveryDate) => {
   try {
     const _pt = await pt.upsertPatient({
       patientID: a[3],
@@ -170,6 +218,7 @@ exports.upsertWithQR = async (a, station) => {
       patientFirstName: a[5],
     });
     const _plan = await plan.upsertPlan({ planID: a[9] });
+    /** @type {DRxSchema} **/
     const dRxSchema = {
       rxID: a[0],
       rxNumber: a[1],
@@ -181,12 +230,73 @@ exports.upsertWithQR = async (a, station) => {
       patient: _pt._id,
       plan: _plan._id,
     };
+    deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
     station && (dRxSchema.deliveryStation = station);
     return await upsertDRx(dRxSchema);
   } catch (e) {
     console.error(e);
   }
 };
+
+/**
+ * @param {import("../apps/delivery").DeliveryStation|ObjectId} deliveryStation
+ * @param {string} [deliveryDate] MMDDYYYY
+ * @param {import("../../schemas/apps/deliveryLog").DeliveryLog|ObjectId} [deliveryLog]
+ * @returns {Promise<[DRx]|undefined>}
+ */
+exports.findDRxByStationId = async (
+  deliveryStation,
+  deliveryDate,
+  deliveryLog
+) => {
+  const day = deliveryDate ? dayjs(deliveryDate, "MMDDYYYY") : dayjs();
+  const filter = {
+    $and: [
+      { deliveryStation },
+      { deliveryDate: { $gte: day.startOf("day"), $lte: day.endOf("day") } },
+    ],
+  };
+  if (deliveryLog) {
+    filter.$and.push({ deliveryLog });
+  } else {
+    filter.$and.push({ deliveryLog: { $exists: false } });
+  }
+  try {
+    return await DRx.find(filter);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @typedef {object} Row
+ * @property {number} id
+ * @property {ObjectId} _id
+ * @property {Date} time
+ * @property {Date} rxDate
+ * @property {string} rxNumber
+ * @property {string} patientName
+ * @property {string} drugName
+ * @property {string} rxQty
+ * @property {string} patPay
+ */
+
+/**
+ * @param {[DRx]} dRxes
+ * @returns {[Row]}
+ */
+exports.mapDeliveryLogs = (dRxes) =>
+  dRxes.map((v, i) => ({
+    id: i + 1,
+    _id: v._id,
+    time: v.deliveryDate,
+    rxDate: v.rxDate,
+    rxNumber: v.rxNumber,
+    // populate patient
+    drugName: v.drugName,
+    rxQty: v.rxQty,
+    patPay: v.patPay,
+  }));
 
 // /**
 //  * @param {DRxObj} dRxObj
@@ -196,52 +306,4 @@ exports.upsertWithQR = async (a, station) => {
 //   !exports.isFileOnly(dRxObj) &&
 //     exports.isRxOnly(dRxObj) &&
 //     upsertPackage(hyphenateNDC11(dRxObj.drugNDC), "ndc11");
-// };
-
-// /**
-//  * @param {DRxObj} dRx
-//  * @returns {Boolean}
-//  */
-// exports.isFileOnly = (dRx) => {
-//   /** @type {RxStatus} */
-//   const rxStatus = dRx.rxStatus;
-//   switch (rxStatus) {
-//     case "FILEONLY":
-//     case "DC-FILEONLY":
-//     case "FO-TRANSFERRED":
-//     case "FUTURE BILL":
-//       return true;
-//     default:
-//       return false;
-//   }
-// };
-// /**
-//  * @param {DRxObj} dRx
-//  * @returns {Boolean}
-//  */
-// exports.isBilled = (dRx) => {
-//   if (dRx.rxStatusFin === "BILLED") {
-//     return true;
-//   }
-//   return false;
-// };
-// /**
-//  * @param {DRxObj} dRx
-//  * @returns {Boolean}
-//  */
-// exports.hasNoCopay = (dRx) => {
-//   if (dRx.patPay === "0") {
-//     return true;
-//   }
-//   return false;
-// };
-// /**
-//  * @param {DRxObj} dRx
-//  * @returns {Boolean}
-//  */
-// exports.isRxOnly = (dRx) => {
-//   if (dRx.drugRxOTC === "RX") {
-//     return true;
-//   }
-//   return false;
 // };

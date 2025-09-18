@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
 const {
   Types: { ObjectId },
 } = Schema;
@@ -19,4 +20,9 @@ const deliveryLogSchema = new mongoose.Schema({
   },
   dRxs: [{ type: ObjectId, ref: "DRx Rx" }],
 });
-module.exports = mongoose.model("Delivery Log", deliveryLogSchema);
+const model = mongoose.model("Delivery Log", deliveryLogSchema);
+/**
+ * @typedef {Awaited<ReturnType<model["create"]>>[0]} DeliveryLog
+ */
+
+module.exports = model;

@@ -1,8 +1,11 @@
 const DeliveryStation = require("../../schemas/apps/deliveryStation");
+const DeliveryLog = require("../../schemas/apps/deliveryLog");
 
 /**
  * @typedef {DeliveryStation.DeliveryStation} DeliveryStation
  * @typedef {typeof DeliveryStation.schema.obj} DeliveryStationSchema
+ * @typedef {DeliveryLog.DeliveryLog} DeliveryLog
+ * @typedef {typeof DeliveryLog.schema.obj} DeliveryLogSchema
  * @typedef {import("mongoose").ObjectId} ObjectId
  */
 
@@ -58,6 +61,20 @@ exports.__allDeliveryStations = [];
     console.error(e);
   }
 })();
+
+/**
+ * @param {string} arg
+ * @param {"displayName"|"invoiceCode"|"id"} type
+ * @returns {ObjectId|undefined}
+ */
+exports.getDeliveryStationId = (arg, type) => {
+  for (let i = 0; i < exports.__allDeliveryStations.length; i++) {
+    const station = exports.__allDeliveryStations[i];
+    if (station[type] === arg) {
+      return station._id;
+    }
+  }
+};
 
 /**
  * @param {true} refresh

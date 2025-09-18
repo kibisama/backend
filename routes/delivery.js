@@ -1,7 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const { get } = require("../controllers/delivery");
+const {
+  get,
+  getStationId,
+  getSessions,
+  getLogs,
+} = require("../controllers/delivery");
+const dlvry = require("../services/apps/delivery");
 
 router.get("/", get);
+router.use("/:section", getStationId);
+// router.get("/:section/:date", getSessions);
+router.get("/:section/:date/:session", getLogs);
 
 module.exports = router;

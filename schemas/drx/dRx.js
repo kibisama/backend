@@ -14,6 +14,7 @@ const digitalRxSchema = new Schema({
   effectiveDate: Date,
   nextFillDate: Date,
   rxDate: Date,
+  // date of delivery from dRx if exists
   deliveredDate: Date,
   daw: String,
   sig: String,
@@ -51,6 +52,9 @@ const digitalRxSchema = new Schema({
   groupNumber: String,
   /* Relational */
   deliveryStation: { type: ObjectId, ref: "Delivery Station" },
+  // date of delivery recorded by service/apps/delivery
+  deliveryDate: Date,
+  deliveryLog: { type: ObjectId, ref: "Delivery Log" },
 });
 
 const model = mongoose.model("DRx Rx", digitalRxSchema);

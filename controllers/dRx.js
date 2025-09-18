@@ -39,7 +39,7 @@ exports.scanQR = async (req, res) => {
     if (a.length !== 11) {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
-    const result = await dRx.upsertWithQR(a, station);
+    const result = await dRx.upsertWithQR(a, station, new Date());
     if (result) {
       return res.status(200).send({ code: 200, data: result });
     }
