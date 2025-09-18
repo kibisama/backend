@@ -10,7 +10,7 @@ const reserved = ["PRIVATE", "MANAGE GROUPS"];
 /** @type {[DeliveryStationSchema]} **/
 const presets = [
   {
-    displayName: "CRI Detox",
+    displayName: "Pfleger Detox",
     name: "CRI-Help Inc. Pfleger Detox",
     invoiceCode: "CPD",
     address: "11027 Burbank Blvd.",
@@ -20,7 +20,7 @@ const presets = [
     phone: "(818) 761-1652",
   },
   {
-    displayName: "CRI Res",
+    displayName: "Pfleger Res",
     name: "CRI-Help Inc. Pfleger Residential",
     invoiceCode: "CPR",
     address: "11027 Burbank Blvd.",
@@ -41,22 +41,36 @@ const presets = [
   },
 ];
 
-let __allDeliveryStations;
+exports.__allDeliveryStations = [];
+(async function () {
+  try {
+    let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
+    if (stations.length === 0) {
+      await createPresets();
+      stations = exports.__allDeliveryStations = await DeliveryStation.find(
+        {}
+      ).sort({ displayName: 1 });
+    }
+    for (let i = 0; i < stations.length; i++) {
+      exports.__allDeliveryStations.push(stations[i]);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+})();
 
 /**
+ * @param {true} refresh
  * @returns {Promise<[DeliveryStation]|undefined>}
  */
-exports.getAllDeliveryStations = async () => {
+exports.getAllDeliveryStations = async (refresh) => {
   try {
-    if (!__allDeliveryStations) {
-      let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
-      if (stations.length === 0) {
-        await createPresets();
-        stations = await DeliveryStation.find({}).sort({ displayName: 1 });
-      }
-      __allDeliveryStations = stations;
+    if (refresh) {
+      exports.__allDeliveryStations = await DeliveryStation.find({}).sort({
+        displayName: 1,
+      });
     }
-    return __allDeliveryStations;
+    return exports.__allDeliveryStations;
   } catch (e) {
     console.error(e);
   }
@@ -85,40 +99,42 @@ exports.createDeliveryStation = async (schema) => {
     };
   }
   try {
-    return await DeliveryStation.create({
+    const station = await DeliveryStation.create({
       ...schema,
       id,
     });
+    exports.getAllDeliveryStations(true);
+    return station;
   } catch (e) {
     console.error(e);
   }
 };
 
-/**
- * @param {string|ObjectId} _id
- * @returns {Promise<DeliveryStation|undefined>}
- */
-exports.findDeliveryStation = async (_id) => {
-  try {
-    return await DeliveryStation.findById(_id);
-  } catch (e) {
-    console.error(e);
-  }
-};
+// /**
+//  * @param {string|ObjectId} _id
+//  * @returns {Promise<DeliveryStation|undefined>}
+//  */
+// exports.findDeliveryStation = async (_id) => {
+//   try {
+//     return await DeliveryStation.findById(_id);
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };
 
-/**
- * @param {string|ObjectId} _id
- * @param {DeliveryStationSchema} schema
- * @returns {Promise<DeliveryGroup|undefined>}
- */
-exports.updateDeliveryStation = async (_id, schema) => {
-  try {
-    return await DeliveryStation.findByIdAndUpdate(
-      _id,
-      { $set: schema },
-      { new: true }
-    );
-  } catch (e) {
-    console.error(e);
-  }
-};
+// /**
+//  * @param {string|ObjectId} _id
+//  * @param {DeliveryStationSchema} schema
+//  * @returns {Promise<DeliveryGroup|undefined>}
+//  */
+// exports.updateDeliveryStation = async (_id, schema) => {
+//   try {
+//     return await DeliveryStation.findByIdAndUpdate(
+//       _id,
+//       { $set: schema },
+//       { new: true }
+//     );
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };

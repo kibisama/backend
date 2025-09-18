@@ -31,12 +31,15 @@ exports.importCSV = async (req, res) => {
 
 exports.scanQR = async (req, res) => {
   try {
-    const { data, deliveryStation, delimiter } = req.body;
-    const a = data.split(delimiter || "|").map((v) => v.trim());
-    if (a.length !== 10) {
+    const { data, station, delimiter } = req.body;
+    if (typeof data !== "string") {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
-    const result = await dRx.upsertWithQR(a, deliveryStation);
+    const a = data.split(delimiter || "|").map((v) => v.trim());
+    if (a.length !== 11) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const result = await dRx.upsertWithQR(a, station);
     if (result) {
       return res.status(200).send({ code: 200, data: result });
     }

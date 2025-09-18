@@ -159,10 +159,10 @@ exports.importDRxs = async (csvData) => {
 
 /**
  * @param {[string]} a
- * @param {string|ObjectId} [deliveryStation]
+ * @param {string} [station]
  * @returns {Promise<DRx|undefined>}
  */
-exports.upsertWithQR = async (a, deliveryStation) => {
+exports.upsertWithQR = async (a, station) => {
   try {
     const _pt = await pt.upsertPatient({
       patientID: a[3],
@@ -181,7 +181,7 @@ exports.upsertWithQR = async (a, deliveryStation) => {
       patient: _pt._id,
       plan: _plan._id,
     };
-    deliveryStation && (dRxSchema.deliveryStation = deliveryStation);
+    station && (dRxSchema.deliveryStation = station);
     return await upsertDRx(dRxSchema);
   } catch (e) {
     console.error(e);

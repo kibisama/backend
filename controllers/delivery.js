@@ -1,8 +1,7 @@
-const dlvry = require("../../services/apps/delivery");
+const dlvry = require("../services/apps/delivery");
 
 exports.get = async (req, res) => {
   try {
-    const stations = await dlvry.getAllDeliveryStations();
     return res
       .status(200)
       .send({ code: 200, data: await dlvry.getAllDeliveryStations() });
