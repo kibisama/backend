@@ -285,19 +285,29 @@ exports.findDRxByStationId = async (
  * @param {[DRx]} dRxes
  * @returns {[Row]}
  */
-exports.mapDeliveryLogs = (dRxes) =>
-  dRxes.map((v, i) => ({
-    id: i + 1,
-    _id: v._id,
-    time: v.deliveryDate,
-    rxDate: v.rxDate,
-    rxNumber: v.rxNumber,
-    // populate patient
-    drugName: v.drugName,
-    rxQty: v.rxQty,
-    patPay: v.patPay,
-  }));
-
+exports.mapDeliveryLogs = async (dRxes) => {
+  const rows = [];
+  for (let i = 0; i < dRxes.length; i++) {
+    const dRx = dRxes[i];
+    await dRx.populate("patient");
+    /** @type {Row} **/
+    const row = {
+      id: i + 1,
+      _id: dRx._id,
+      time: dRx.deliveryDate,
+      rxDate: dRx.rxDate,
+      rxNumber: dRx.rxNumber,
+      drugName: dRx.drugName,
+      rxQty: dRx.rxQty,
+      patPay: dRx.patPay,
+    };
+    dRx.patient?.patientLastName &&
+      dRx.patient.patientFirstName &&
+      (row.patientName = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
+    rows.push(row);
+  }
+  return rows;
+};
 // /**
 //  * @param {DRxObj} dRxObj
 //  * @returns {undefined}
