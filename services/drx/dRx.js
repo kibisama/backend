@@ -217,22 +217,26 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
       patientLastName: a[4],
       patientFirstName: a[5],
     });
-    const _plan = await plan.upsertPlan({ planID: a[9] });
+    const _plan = await plan.upsertPlan({ planID: a[10] });
     /** @type {DRxSchema} **/
     const dRxSchema = {
       rxID: a[0],
       rxNumber: a[1],
       rxDate: a[2],
       drugName: a[6],
-      rxQty: a[7],
-      refills: a[8],
-      patPay: a[10],
+      doctorName: a[7],
+      rxQty: a[8],
+      refills: a[9],
+      patPay: a[11],
       patient: _pt._id,
       plan: _plan._id,
     };
     deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
     station && (dRxSchema.deliveryStation = station);
-    return await upsertDRx(dRxSchema);
+    const dRx = await upsertDRx(dRxSchema);
+    dRx.patient = _pt;
+    dRx.plan = _plan;
+    return dRx;
   } catch (e) {
     console.error(e);
   }
@@ -277,7 +281,9 @@ exports.findDRxByStationId = async (
  * @property {string} rxNumber
  * @property {string} patientName
  * @property {string} drugName
+ * @property {string} doctorName
  * @property {string} rxQty
+ * @property {string} plan
  * @property {string} patPay
  */
 
@@ -290,7 +296,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
   try {
     for (let i = 0; i < dRxes.length; i++) {
       const dRx = dRxes[i];
-      await dRx.populate("patient");
+      await dRx.populate(["patient", "plan"]);
       /** @type {Row} **/
       const row = {
         id: i + 1,
@@ -299,12 +305,16 @@ exports.mapDeliveryLogs = async (dRxes) => {
         rxDate: dRx.rxDate,
         rxNumber: dRx.rxNumber,
         drugName: dRx.drugName,
+        doctorName: dRx.doctorName,
         rxQty: dRx.rxQty,
         patPay: dRx.patPay,
       };
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
         (row.patientName = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
+      dRx.plan?.planName
+        ? (row.plan = dRx.plan.planName)
+        : dRx.plan?.planID && (row.plan = dRx.plan.planID);
       rows.push(row);
     }
     return rows;
