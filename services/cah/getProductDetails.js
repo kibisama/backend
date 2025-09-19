@@ -88,12 +88,17 @@ const selectQuery = (cahPrd) => {
 };
 
 /**
- * @param {CAHProduct} _cahPrd
+ * @param {CAHProduct} cahPrd
  * @param {function} callback
  * @returns {Promise<void>}
  */
 module.exports = async (cahPrd, callback) => {
-  await cahPrd.populate({ path: "package" });
+  try {
+    await cahPrd.populate({ path: "package" });
+  } catch (e) {
+    console.error(e);
+    return;
+  }
   const query = selectQuery(cahPrd);
   if (!query) {
     return;

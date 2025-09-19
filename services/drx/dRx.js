@@ -312,9 +312,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
         (row.patientName = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
-      dRx.plan?.planName
-        ? (row.plan = dRx.plan.planName)
-        : dRx.plan?.planID && (row.plan = dRx.plan.planID);
+      dRx.plan && (row.plan = dRx.plan.planName || dRx.plan.planID);
       rows.push(row);
     }
     return rows;

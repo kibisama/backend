@@ -21,14 +21,18 @@ exports.getStationId = (req, res, next) => {
   return res.status(404).send({ code: 404, message: "Not Found" });
 };
 
-// exports.getSessions = async (req, res) => {
-//   try {
-//     //
-//     return res.status(200).send({ code: 200 });
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+exports.getSessions = async (req, res) => {
+  try {
+    const { date } = req.params;
+    const stationId = res.locals.stationId;
+    const logs = await dlvry.findDeliveryLog(date, stationId);
+    return res
+      .status(200)
+      .send({ code: 200, data: logs.map((v) => v.session) });
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 exports.getLogs = async (req, res) => {
   const { date, session } = req.params;

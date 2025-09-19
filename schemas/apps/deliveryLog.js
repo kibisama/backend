@@ -6,11 +6,7 @@ const {
 
 const deliveryLogSchema = new mongoose.Schema({
   date: {
-    type: Date,
-    required: true,
-  },
-  session: {
-    type: Number,
+    type: String, // MMDDYYYY
     required: true,
   },
   station: {
@@ -18,9 +14,21 @@ const deliveryLogSchema = new mongoose.Schema({
     ref: "Delivery Station",
     required: true,
   },
-  dRxs: [{ type: ObjectId, ref: "DRx Rx" }],
+  session: {
+    type: String,
+    required: true,
+  },
+  dRxes: {
+    type: [{ type: ObjectId, ref: "DRx Rx" }],
+    validate: (v) => {
+      return v.length > 0;
+    },
+  },
 });
-const model = mongoose.model("Delivery Log", deliveryLogSchema);
+const model = mongoose.model(
+  "Delivery Log",
+  deliveryLogSchema.index({ date: 1, session: 1, station: 1 }, { unique: true })
+);
 /**
  * @typedef {Awaited<ReturnType<model["create"]>>[0]} DeliveryLog
  */

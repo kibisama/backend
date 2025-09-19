@@ -1,11 +1,13 @@
 const DeliveryStation = require("../../schemas/apps/deliveryStation");
 const DeliveryLog = require("../../schemas/apps/deliveryLog");
+const dayjs = require("dayjs");
 
 /**
  * @typedef {DeliveryStation.DeliveryStation} DeliveryStation
  * @typedef {typeof DeliveryStation.schema.obj} DeliveryStationSchema
  * @typedef {DeliveryLog.DeliveryLog} DeliveryLog
  * @typedef {typeof DeliveryLog.schema.obj} DeliveryLogSchema
+ * @typedef {import("../drx/dRx").DRx} DRx
  * @typedef {import("mongoose").ObjectId} ObjectId
  */
 
@@ -162,6 +164,56 @@ exports.createDeliveryStation = async (schema) => {
     console.error(e);
   }
 };
+
+let __DeliveryLogsToday = { date: dayjs().format("MMDDYYYY") };
+/**
+ * @param {string} date
+ * @param {string} stationId
+ * @returns {Promise<[DeliveryLog]|undefined>}
+ */
+exports.findDeliveryLog = async (date, station) => {
+  try {
+    if (date === dayjs().format("MMDDYYYY")) {
+      if (date === __DeliveryLogsToday.date) {
+        if (!__DeliveryLogsToday[station]) {
+          __DeliveryLogsToday[station] = await DeliveryLog.find({
+            date,
+            station,
+          });
+        }
+      } else {
+        __DeliveryLogsToday = {
+          date,
+          station: await DeliveryLog.find({ date, station }),
+        };
+      }
+      return __DeliveryLogsToday[station];
+    } else {
+      return await DeliveryLog.find({ date, station });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+// /**
+//  * @param {string|ObjectId} station
+//  * @param {[DRx|ObjectId]} dRxes
+//  */
+// exports.createDeliveryLog = async (station, dRxes) => {
+//   const date = dayjs().format("MM/DD/YYYY")
+//   if (date === __DeliveryLogsToday.date ) {
+//     if (__DeliveryLogsToday[station]) {
+
+//     } else {
+
+//     }
+//   }
+//   try {
+
+//   }catch(e) {
+//     console.error(e)
+//   }
+// }
 
 // /**
 //  * @param {string|ObjectId} _id
