@@ -50,9 +50,7 @@ exports.__allDeliveryStations = [];
     let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
     if (stations.length === 0) {
       await createPresets();
-      stations = exports.__allDeliveryStations = await DeliveryStation.find(
-        {}
-      ).sort({ displayName: 1 });
+      stations = await DeliveryStation.find({}).sort({ displayName: 1 });
     }
     for (let i = 0; i < stations.length; i++) {
       exports.__allDeliveryStations.push(stations[i]);

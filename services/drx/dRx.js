@@ -283,30 +283,34 @@ exports.findDRxByStationId = async (
 
 /**
  * @param {[DRx]} dRxes
- * @returns {[Row]}
+ * @returns {Promise<[Row]|undefined>}
  */
 exports.mapDeliveryLogs = async (dRxes) => {
   const rows = [];
-  for (let i = 0; i < dRxes.length; i++) {
-    const dRx = dRxes[i];
-    await dRx.populate("patient");
-    /** @type {Row} **/
-    const row = {
-      id: i + 1,
-      _id: dRx._id,
-      time: dRx.deliveryDate,
-      rxDate: dRx.rxDate,
-      rxNumber: dRx.rxNumber,
-      drugName: dRx.drugName,
-      rxQty: dRx.rxQty,
-      patPay: dRx.patPay,
-    };
-    dRx.patient?.patientLastName &&
-      dRx.patient.patientFirstName &&
-      (row.patientName = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
-    rows.push(row);
+  try {
+    for (let i = 0; i < dRxes.length; i++) {
+      const dRx = dRxes[i];
+      await dRx.populate("patient");
+      /** @type {Row} **/
+      const row = {
+        id: i + 1,
+        _id: dRx._id,
+        time: dRx.deliveryDate,
+        rxDate: dRx.rxDate,
+        rxNumber: dRx.rxNumber,
+        drugName: dRx.drugName,
+        rxQty: dRx.rxQty,
+        patPay: dRx.patPay,
+      };
+      dRx.patient?.patientLastName &&
+        dRx.patient.patientFirstName &&
+        (row.patientName = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
+      rows.push(row);
+    }
+    return rows;
+  } catch (e) {
+    console.error(e);
   }
-  return rows;
 };
 // /**
 //  * @param {DRxObj} dRxObj

@@ -21,28 +21,31 @@ exports.getStationId = (req, res, next) => {
   return res.status(404).send({ code: 404, message: "Not Found" });
 };
 
-exports.getSessions = async (req, res) => {
-  try {
-    //
-    return res.status(200).send({ code: 200 });
-  } catch (e) {
-    console.error(e);
-  }
-};
+// exports.getSessions = async (req, res) => {
+//   try {
+//     //
+//     return res.status(200).send({ code: 200 });
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };
 
 exports.getLogs = async (req, res) => {
   const { date, session } = req.params;
   const stationId = res.locals.stationId;
   let data;
+  let deliveryLog;
   try {
-    if (session === "0") {
-      data = await dRx.findDRxByStationId(stationId, date);
-    } else {
+    if (session !== "0") {
+      // deliveryLog = await
     }
+    data = await dRx.findDRxByStationId(stationId, date);
     if (data.length === 0) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }
-    return res.status(200).send({ code: 200, data: dRx.mapDeliveryLogs(data) });
+    return res
+      .status(200)
+      .send({ code: 200, data: await dRx.mapDeliveryLogs(data) });
   } catch (e) {
     console.error(e);
   }
