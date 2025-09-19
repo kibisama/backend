@@ -44,7 +44,7 @@ const presets = [
   },
 ];
 
-exports.__allDeliveryStations = [];
+let __allDeliveryStations = [];
 (async function () {
   try {
     let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
@@ -52,9 +52,7 @@ exports.__allDeliveryStations = [];
       await createPresets();
       stations = await DeliveryStation.find({}).sort({ displayName: 1 });
     }
-    for (let i = 0; i < stations.length; i++) {
-      exports.__allDeliveryStations.push(stations[i]);
-    }
+    __allDeliveryStations = stations;
   } catch (e) {
     console.error(e);
   }
@@ -66,8 +64,8 @@ exports.__allDeliveryStations = [];
  * @returns {ObjectId|undefined}
  */
 exports.getDeliveryStationId = (arg, type) => {
-  for (let i = 0; i < exports.__allDeliveryStations.length; i++) {
-    const station = exports.__allDeliveryStations[i];
+  for (let i = 0; i < __allDeliveryStations.length; i++) {
+    const station = __allDeliveryStations[i];
     if (station[type] === arg) {
       return station._id;
     }
@@ -81,11 +79,11 @@ exports.getDeliveryStationId = (arg, type) => {
 exports.getAllDeliveryStations = async (refresh) => {
   try {
     if (refresh) {
-      exports.__allDeliveryStations = await DeliveryStation.find({}).sort({
+      __allDeliveryStations = await DeliveryStation.find({}).sort({
         displayName: 1,
       });
     }
-    return exports.__allDeliveryStations;
+    return __allDeliveryStations;
   } catch (e) {
     console.error(e);
   }
