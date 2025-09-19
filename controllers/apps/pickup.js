@@ -8,7 +8,7 @@ const {
   path,
 } = require("../../services/apps/pickup");
 
-exports.post = async (req, res, next) => {
+exports.post = async (req, res) => {
   const pickup = req.app.get("io").of("/pickup");
   const canvas = req.app.get("apps_pickup_canvas");
   const items = req.app.get("apps_pickup_items");
@@ -86,7 +86,7 @@ exports.search = async (req, res, next) => {
   }
 };
 
-exports.png = (req, res) => {
+exports.png = (req, res, next) => {
   try {
     res.sendFile(path + `/${req.params._id}.png`);
   } catch (e) {
@@ -95,7 +95,7 @@ exports.png = (req, res) => {
   }
 };
 
-exports.report = async (req, res) => {
+exports.report = async (req, res, next) => {
   try {
     const { _id, rxNumber } = req.params;
     if (!_id) {

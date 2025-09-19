@@ -4,7 +4,7 @@ exports.getRequiredFields = (req, res) => {
   return res.status(200).send({ code: 200, data: dRx.getRequiredFields() });
 };
 
-exports.importCSV = async (req, res) => {
+exports.importCSV = async (req, res, next) => {
   try {
     const { data } = req.body;
     if (data.length > 0 && dRx.verifyFields(data[0])) {
@@ -26,10 +26,11 @@ exports.importCSV = async (req, res) => {
     }
   } catch (e) {
     console.error(e);
+    next(e);
   }
 };
 
-exports.scanQR = async (req, res) => {
+exports.scanQR = async (req, res, next) => {
   try {
     const { data, station, delimiter } = req.body;
     if (typeof data !== "string") {
@@ -49,5 +50,6 @@ exports.scanQR = async (req, res) => {
     });
   } catch (e) {
     console.error(e);
+    next(e);
   }
 };

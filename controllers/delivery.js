@@ -1,13 +1,14 @@
 const dlvry = require("../services/apps/delivery");
 const dRx = require("../services/dRx/dRx");
 
-exports.get = async (req, res) => {
+exports.get = async (req, res, next) => {
   try {
     return res
       .status(200)
       .send({ code: 200, data: await dlvry.getAllDeliveryStations() });
   } catch (e) {
     console.error(e);
+    next(e);
   }
 };
 
@@ -21,20 +22,24 @@ exports.getStationId = (req, res, next) => {
   return res.status(404).send({ code: 404, message: "Not Found" });
 };
 
-exports.getSessions = async (req, res) => {
+exports.getSessions = async (req, res, next) => {
   try {
     const { date } = req.params;
     const stationId = res.locals.stationId;
     const logs = await dlvry.findDeliveryLog(date, stationId);
+    if (!logs) {
+      return res.status(500).send({ code: 500 });
+    }
     return res
       .status(200)
       .send({ code: 200, data: logs.map((v) => v.session) });
   } catch (e) {
     console.error(e);
+    next(e);
   }
 };
 
-exports.getLogs = async (req, res) => {
+exports.getLogs = async (req, res, next) => {
   const { date, session } = req.params;
   const stationId = res.locals.stationId;
   let data;
@@ -52,6 +57,7 @@ exports.getLogs = async (req, res) => {
       .send({ code: 200, data: await dRx.mapDeliveryLogs(data) });
   } catch (e) {
     console.error(e);
+    next(e);
   }
 };
 

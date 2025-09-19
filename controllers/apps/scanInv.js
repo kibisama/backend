@@ -3,7 +3,7 @@ const package = require("../../services/inv/package");
 const cahProduct = require("../../services/cah/cahProduct");
 const psPackage = require("../../services/ps/psPackage");
 
-exports.post = async (req, res, next) => {
+exports.post = async (req, res) => {
   try {
     /** @type {item.ScanReq} **/
     const { method, ...scanReq } = req.body;
