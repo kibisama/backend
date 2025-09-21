@@ -1,5 +1,6 @@
 const DeliveryStation = require("../../schemas/apps/deliveryStation");
 const DeliveryLog = require("../../schemas/apps/deliveryLog");
+const dRx = require("../dRx/dRx");
 const dayjs = require("dayjs");
 
 /**
@@ -7,33 +8,13 @@ const dayjs = require("dayjs");
  * @typedef {typeof DeliveryStation.schema.obj} DeliveryStationSchema
  * @typedef {DeliveryLog.DeliveryLog} DeliveryLog
  * @typedef {typeof DeliveryLog.schema.obj} DeliveryLogSchema
- * @typedef {import("../drx/dRx").DRx} DRx
+ * @typedef {dRx.DRx} DRx
  * @typedef {import("mongoose").ObjectId} ObjectId
  */
 
 const reserved = ["PRIVATE", "MANAGE GROUPS"];
 /** @type {[DeliveryStationSchema]} **/
 const presets = [
-  {
-    displayName: "Pfleger Detox",
-    name: "CRI-Help Inc. Pfleger Detox",
-    invoiceCode: "CPD",
-    address: "11027 Burbank Blvd.",
-    city: "North Hollywood",
-    state: "CA",
-    zip: "91605",
-    phone: "(818) 761-1652",
-  },
-  {
-    displayName: "Pfleger Res",
-    name: "CRI-Help Inc. Pfleger Residential",
-    invoiceCode: "CPR",
-    address: "11027 Burbank Blvd.",
-    city: "North Hollywood",
-    state: "CA",
-    zip: "91605",
-    phone: "(818) 761-1652",
-  },
   {
     displayName: "CRTP",
     name: "Crisis Residential Treatment Program",
@@ -43,16 +24,6 @@ const presets = [
     state: "CA",
     zip: "91352",
     phone: "(818) 582-8832",
-  },
-  {
-    displayName: "Teen Project",
-    name: "The Teen Project",
-    invoiceCode: "TTP",
-    address: "14530 Sylvan St.",
-    city: "Van Nuys",
-    state: "CA",
-    zip: "91411",
-    phone: "(818) 582-8839",
   },
   {
     displayName: "LH Detox",
@@ -75,6 +46,26 @@ const presets = [
     phone: "(818) 761-1652",
   },
   {
+    displayName: "Pfleger Detox",
+    name: "CRI-Help Inc. Pfleger Detox",
+    invoiceCode: "CPD",
+    address: "11027 Burbank Blvd.",
+    city: "North Hollywood",
+    state: "CA",
+    zip: "91605",
+    phone: "(818) 761-1652",
+  },
+  {
+    displayName: "Pfleger Res",
+    name: "CRI-Help Inc. Pfleger Residential",
+    invoiceCode: "CPR",
+    address: "11027 Burbank Blvd.",
+    city: "North Hollywood",
+    state: "CA",
+    zip: "91605",
+    phone: "(818) 761-1652",
+  },
+  {
     displayName: "Socorro Detox",
     name: "CRI-Help Inc. Socorro Detox",
     invoiceCode: "CSD",
@@ -84,51 +75,64 @@ const presets = [
     zip: "90029",
     phone: "(818) 761-1652",
   },
+  {
+    displayName: "Teen Project",
+    name: "The Teen Project",
+    invoiceCode: "TTP",
+    address: "14530 Sylvan St.",
+    city: "Van Nuys",
+    state: "CA",
+    zip: "91411",
+    phone: "(818) 582-8839",
+  },
 ];
 
-let __allDeliveryStations = [];
+const __allDeliveryStations = {};
+let __DeliveryLogsToday = { date: dayjs().format("MMDDYYYY") };
 (async function () {
   try {
     let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
     if (stations.length === 0) {
       await createPresets();
-      stations = await DeliveryStation.find({}).sort({ displayName: 1 });
+    } else {
+      for (let i = 0; i < stations.length; i++) {
+        const station = stations[i];
+        __allDeliveryStations[station.id] = station;
+        __DeliveryLogsToday[station._id] = new Map();
+        const logs = await DeliveryLog.find({
+          date: __DeliveryLogsToday.date,
+          station: station._id,
+        });
+        for (let j = 0; j < logs.length; j++) {
+          __DeliveryLogsToday[station._id].set(
+            logs[j],
+            await dRx.findDRxByStation(station._id, logs[j]._id)
+          );
+        }
+      }
     }
-    __allDeliveryStations = stations;
   } catch (e) {
     console.error(e);
   }
 })();
 
 /**
- * @param {string} arg
- * @param {"displayName"|"invoiceCode"|"id"} type
- * @returns {ObjectId|undefined}
+ * @returns {Promise<[DeliveryStation]|undefined>}
  */
-exports.getDeliveryStationId = (arg, type) => {
-  for (let i = 0; i < __allDeliveryStations.length; i++) {
-    const station = __allDeliveryStations[i];
-    if (station[type] === arg) {
-      return station._id;
-    }
+exports.getAllDeliveryStations = async () => {
+  try {
+    return Object.values(__allDeliveryStations);
+  } catch (e) {
+    console.error(e);
   }
 };
 
 /**
- * @param {true} refresh
- * @returns {Promise<[DeliveryStation]|undefined>}
+ * @param {string} id
+ * @returns {DeliveryStation|undefined}
  */
-exports.getAllDeliveryStations = async (refresh) => {
-  try {
-    if (refresh) {
-      __allDeliveryStations = await DeliveryStation.find({}).sort({
-        displayName: 1,
-      });
-    }
-    return __allDeliveryStations;
-  } catch (e) {
-    console.error(e);
-  }
+exports.getDeliveryStation = (id) => {
+  return __allDeliveryStations[id];
 };
 
 const createPresets = async () => {
@@ -143,7 +147,7 @@ const createPresets = async () => {
 
 /**
  * @param {DeliveryStationSchema} schema
- * @returns {Promise<DeliveryStation|import("../common").Response|undefined>}
+ * @returns {Promise<import("../common").Response|undefined>}
  */
 exports.createDeliveryStation = async (schema) => {
   const id = schema.displayName.toUpperCase();
@@ -158,88 +162,115 @@ exports.createDeliveryStation = async (schema) => {
       ...schema,
       id,
     });
-    exports.getAllDeliveryStations(true);
-    return station;
+    __allDeliveryStations[station.id] = station;
+    __DeliveryLogsToday[station._id] = new Map();
+    return { code: 200, data: station };
   } catch (e) {
     console.error(e);
   }
 };
 
-let __DeliveryLogsToday = { date: dayjs().format("MMDDYYYY") };
 /**
- * @param {string} date
- * @param {string} stationId
- * @returns {Promise<[DeliveryLog]|undefined>}
+ * Refreshes __DeliveryLogsToday if expired
+ * @returns {Promise<void>}
  */
-exports.findDeliveryLog = async (date, station) => {
+const refreshLogsToday = async () => {
   try {
-    if (date === dayjs().format("MMDDYYYY")) {
-      if (date === __DeliveryLogsToday.date) {
-        if (!__DeliveryLogsToday[station]) {
-          __DeliveryLogsToday[station] = await DeliveryLog.find({
-            date,
-            station,
-          });
-        }
-      } else {
-        __DeliveryLogsToday = {
-          date,
-          station: await DeliveryLog.find({ date, station }),
-        };
+    const date = dayjs().format("MMDDYYYY");
+    if (__DeliveryLogsToday.date !== date) {
+      __DeliveryLogsToday = { date };
+      for (const station in __allDeliveryStations) {
+        __DeliveryLogsToday[__allDeliveryStations[station]._id] = new Map();
       }
-      return __DeliveryLogsToday[station];
-    } else {
-      return await DeliveryLog.find({ date, station });
     }
   } catch (e) {
     console.error(e);
   }
 };
+
+/**
+ * @param {string} date
+ * @param {string} stationId
+ * @returns {Promise<[DeliveryLog]|undefined>}
+ */
+exports.findDeliverySessions = async (date, stationId) => {
+  try {
+    if (date === dayjs().format("MMDDYYYY")) {
+      await refreshLogsToday(date);
+      return __DeliveryLogsToday[stationId];
+    } else {
+      return (await DeliveryLog.find({ date, station: stationId })).map(
+        (v) => v.session
+      );
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // /**
 //  * @param {string|ObjectId} station
 //  * @param {[DRx|ObjectId]} dRxes
+//  * @returns {Promise<[DeliveryLog]|undefined>}
 //  */
 // exports.createDeliveryLog = async (station, dRxes) => {
-//   const date = dayjs().format("MM/DD/YYYY")
-//   if (date === __DeliveryLogsToday.date ) {
-//     if (__DeliveryLogsToday[station]) {
-
-//     } else {
-
-//     }
-//   }
 //   try {
-
-//   }catch(e) {
-//     console.error(e)
-//   }
-// }
-
-// /**
-//  * @param {string|ObjectId} _id
-//  * @returns {Promise<DeliveryStation|undefined>}
-//  */
-// exports.findDeliveryStation = async (_id) => {
-//   try {
-//     return await DeliveryStation.findById(_id);
+//     const day = dayjs();
+//     const date = day.format("MMDDYYYY");
+//     const session = day.format("h:m:s A");
+//     await DeliveryLog.create({ date, station, session, dRxes });
+//     await refreshLogsToday();
+//     return __DeliveryLogsToday[station];
 //   } catch (e) {
 //     console.error(e);
 //   }
 // };
 
-// /**
-//  * @param {string|ObjectId} _id
-//  * @param {DeliveryStationSchema} schema
-//  * @returns {Promise<DeliveryGroup|undefined>}
-//  */
-// exports.updateDeliveryStation = async (_id, schema) => {
-//   try {
-//     return await DeliveryStation.findByIdAndUpdate(
-//       _id,
-//       { $set: schema },
-//       { new: true }
-//     );
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @typedef {object} Row
+ * @property {number|string} id
+ * @property {ObjectId} _id
+ * @property {Date} time
+ * @property {Date} rxDate
+ * @property {string} rxNumber
+ * @property {string} patient
+ * @property {string} drugName
+ * @property {string} doctorName
+ * @property {string} rxQty
+ * @property {string} plan
+ * @property {string} patPay
+ */
+
+/**
+ * @param {[DRx]} dRxes
+ * @returns {Promise<[Row]|undefined>}
+ */
+exports.mapDeliveryLogs = async (dRxes) => {
+  const rows = [];
+  try {
+    for (let i = 0; i < dRxes.length; i++) {
+      const dRx = dRxes[i];
+      await dRx.populate(["patient", "plan"]);
+      /** @type {Row} **/
+      const row = {
+        id: i + 1,
+        _id: dRx._id,
+        time: dRx.deliveryDate,
+        rxDate: dRx.rxDate,
+        rxNumber: dRx.rxNumber,
+        drugName: dRx.drugName,
+        doctorName: dRx.doctorName,
+        rxQty: dRx.rxQty,
+        patPay: dRx.patPay,
+      };
+      dRx.patient?.patientLastName &&
+        dRx.patient.patientFirstName &&
+        (row.patient = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
+      dRx.plan && (row.plan = dRx.plan.planName || dRx.plan.planID);
+      rows.push(row);
+    }
+    return rows;
+  } catch (e) {
+    console.error(e);
+  }
+};

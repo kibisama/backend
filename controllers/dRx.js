@@ -30,26 +30,26 @@ exports.importCSV = async (req, res, next) => {
   }
 };
 
-exports.scanQR = async (req, res, next) => {
-  try {
-    const { data, station, delimiter } = req.body;
-    if (typeof data !== "string") {
-      return res.status(400).send({ code: 400, message: "Bad Request" });
-    }
-    const a = data.split(delimiter || "|").map((v) => v.trim());
-    if (a.length !== 12) {
-      return res.status(400).send({ code: 400, message: "Bad Request" });
-    }
-    const result = await dRx.upsertWithQR(a, station, new Date());
-    if (result) {
-      return res.status(200).send({ code: 200, data: result });
-    }
-    return res.status(500).send({
-      code: 500,
-      message: "An unexpected error occurred. Please try again.",
-    });
-  } catch (e) {
-    console.error(e);
-    next(e);
-  }
-};
+// exports.scanQR = async (req, res, next) => {
+//   try {
+//     const { data, station, delimiter } = req.body;
+//     if (typeof data !== "string") {
+//       return res.status(400).send({ code: 400, message: "Bad Request" });
+//     }
+//     const a = data.split(delimiter || "|").map((v) => v.trim());
+//     if (a.length !== 12) {
+//       return res.status(400).send({ code: 400, message: "Bad Request" });
+//     }
+//     const result = await dRx.upsertWithQR(a, station, new Date());
+//     if (result) {
+//       return res.status(result.code).send(result);
+//     }
+//     return res.status(500).send({
+//       code: 500,
+//       message: "An unexpected error occurred. Please try again.",
+//     });
+//   } catch (e) {
+//     console.error(e);
+//     next(e);
+//   }
+// };

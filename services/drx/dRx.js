@@ -205,53 +205,15 @@ exports.importDRxs = async (csvData) => {
 };
 
 /**
- * @param {[string]} a
- * @param {string} [station]
- * @param {Date} [deliveryDate]
- * @returns {Promise<DRx|undefined>}
- */
-exports.upsertWithQR = async (a, station, deliveryDate) => {
-  try {
-    const _pt = await pt.upsertPatient({
-      patientID: a[3],
-      patientLastName: a[4],
-      patientFirstName: a[5],
-    });
-    const _plan = await plan.upsertPlan({ planID: a[10] });
-    /** @type {DRxSchema} **/
-    const dRxSchema = {
-      rxID: a[0],
-      rxNumber: a[1],
-      rxDate: a[2],
-      drugName: a[6],
-      doctorName: a[7],
-      rxQty: a[8],
-      refills: a[9],
-      patPay: a[11],
-      patient: _pt._id,
-      plan: _plan._id,
-    };
-    deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
-    station && (dRxSchema.deliveryStation = station);
-    const dRx = await upsertDRx(dRxSchema);
-    dRx.patient = _pt;
-    dRx.plan = _plan;
-    return dRx;
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-/**
- * @param {import("../apps/delivery").DeliveryStation|ObjectId} deliveryStation
- * @param {string} [deliveryDate] MMDDYYYY
+ * @param {import("../apps/delivery").DeliveryStation|ObjectId|string} deliveryStation
  * @param {import("../../schemas/apps/deliveryLog").DeliveryLog|ObjectId} [deliveryLog]
+ * @param {string} [deliveryDate] MMDDYYYY
  * @returns {Promise<[DRx]|undefined>}
  */
-exports.findDRxByStationId = async (
+exports.findDRxByStation = async (
   deliveryStation,
-  deliveryDate,
-  deliveryLog
+  deliveryLog,
+  deliveryDate
 ) => {
   const day = deliveryDate ? dayjs(deliveryDate, "MMDDYYYY") : dayjs();
   const filter = {
@@ -272,54 +234,63 @@ exports.findDRxByStationId = async (
   }
 };
 
-/**
- * @typedef {object} Row
- * @property {number} id
- * @property {ObjectId} _id
- * @property {Date} time
- * @property {Date} rxDate
- * @property {string} rxNumber
- * @property {string} patientName
- * @property {string} drugName
- * @property {string} doctorName
- * @property {string} rxQty
- * @property {string} plan
- * @property {string} patPay
- */
+// /**
+//  * @param {[string]} a
+//  * @param {string} [station]
+//  * @param {Date} [deliveryDate]
+//  * @returns {Promise<import("../common").Response|undefined>}
+//  */
+// exports.upsertWithQR = async (a, station, deliveryDate) => {
+//   try {
+//     const _dRx = await upsertDRx({ rxID: a[0] });
+//     if (_dRx.deliveryLog) {
+//       return { code: 409, message: "The Rx has already been delivered." };
+//     }
+//     const _pt = await pt.upsertPatient({
+//       patientID: a[3],
+//       patientLastName: a[4],
+//       patientFirstName: a[5],
+//     });
+//     const _plan = await plan.upsertPlan({ planID: a[10] });
+//     /** @type {DRxSchema} **/
+//     const dRxSchema = {
+//       rxID: a[0],
+//       rxNumber: a[1],
+//       rxDate: a[2],
+//       drugName: a[6],
+//       doctorName: a[7],
+//       rxQty: a[8],
+//       refills: a[9],
+//       patPay: a[11],
+//       patient: _pt._id,
+//       plan: _plan._id,
+//     };
+//     deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
+//     station && (dRxSchema.deliveryStation = station);
+//     const dRx = await upsertDRx(dRxSchema);
+//     return {
+//       code: 200,
+//       data: {
+//         id: dRx._id,
+//         _id: dRx._id,
+//         time: dRx.deliveryDate,
+//         rxDate: dRx.rxDate,
+//         rxNumber: dRx.rxNumber,
+//         patient: `${_pt.patientLastName}, ${_pt.patientFirstName}`,
+//         doctorName: dRx.doctorName,
+//         drugName: dRx.drugName,
+//         rxQty: dRx.rxQty,
+//         plan: _plan.planName || _plan.planID,
+//         patPay: dRx.patPay,
+//       },
+//     };
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };
 
-/**
- * @param {[DRx]} dRxes
- * @returns {Promise<[Row]|undefined>}
- */
-exports.mapDeliveryLogs = async (dRxes) => {
-  const rows = [];
-  try {
-    for (let i = 0; i < dRxes.length; i++) {
-      const dRx = dRxes[i];
-      await dRx.populate(["patient", "plan"]);
-      /** @type {Row} **/
-      const row = {
-        id: i + 1,
-        _id: dRx._id,
-        time: dRx.deliveryDate,
-        rxDate: dRx.rxDate,
-        rxNumber: dRx.rxNumber,
-        drugName: dRx.drugName,
-        doctorName: dRx.doctorName,
-        rxQty: dRx.rxQty,
-        patPay: dRx.patPay,
-      };
-      dRx.patient?.patientLastName &&
-        dRx.patient.patientFirstName &&
-        (row.patientName = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
-      dRx.plan && (row.plan = dRx.plan.planName || dRx.plan.planID);
-      rows.push(row);
-    }
-    return rows;
-  } catch (e) {
-    console.error(e);
-  }
-};
+//
+
 // /**
 //  * @param {DRxObj} dRxObj
 //  * @returns {undefined}

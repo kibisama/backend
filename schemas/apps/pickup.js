@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const pickupSchema = new mongoose.Schema({
   rxNumber: {
     type: [String],
+    index: true,
     validate: (v) => v.length > 0,
   },
   date: {

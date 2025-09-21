@@ -8,6 +8,7 @@ const deliveryLogSchema = new mongoose.Schema({
   date: {
     type: String, // MMDDYYYY
     required: true,
+    index: true,
   },
   station: {
     type: ObjectId,

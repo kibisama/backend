@@ -14,9 +14,9 @@ exports.get = async (req, res, next) => {
 
 exports.getStationId = (req, res, next) => {
   const { section } = req.params;
-  const stationId = dlvry.getDeliveryStationId(section, "displayName");
-  if (stationId) {
-    res.locals.stationId = stationId;
+  const station = dlvry.getDeliveryStation(section.toUpperCase());
+  if (station) {
+    res.locals.stationId = station._id;
     return next();
   }
   return res.status(404).send({ code: 404, message: "Not Found" });
@@ -25,8 +25,7 @@ exports.getStationId = (req, res, next) => {
 exports.getSessions = async (req, res, next) => {
   try {
     const { date } = req.params;
-    const stationId = res.locals.stationId;
-    const logs = await dlvry.findDeliveryLog(date, stationId);
+    const logs = await dlvry.findDeliveryLogs(date, res.locals.stationId);
     if (!logs) {
       return res.status(500).send({ code: 500 });
     }
@@ -39,27 +38,39 @@ exports.getSessions = async (req, res, next) => {
   }
 };
 
-exports.getLogs = async (req, res, next) => {
-  const { date, session } = req.params;
-  const stationId = res.locals.stationId;
-  let data;
-  let deliveryLog;
-  try {
-    if (session !== "0") {
-      // deliveryLog = await
-    }
-    data = await dRx.findDRxByStationId(stationId, date);
-    if (data.length === 0) {
-      return res.status(404).send({ code: 404, message: "Not Found" });
-    }
-    return res
-      .status(200)
-      .send({ code: 200, data: await dRx.mapDeliveryLogs(data) });
-  } catch (e) {
-    console.error(e);
-    next(e);
-  }
-};
+// exports.getLogs = async (req, res, next) => {
+//   const { date, session } = req.params;
+//   const stationId = res.locals.stationId;
+//   let data;
+//   let deliveryLog;
+//   try {
+//     if (session !== "0") {
+//       // deliveryLog = await
+//     } else {
+//       data = await dRx.findDRxByStationId(stationId, date);
+//     }
+//     if (data.length === 0) {
+//       return res.status(404).send({ code: 404, message: "Not Found" });
+//     }
+//     return res
+//       .status(200)
+//       .send({ code: 200, data: await dRx.mapDeliveryLogs(data) });
+//   } catch (e) {
+//     console.error(e);
+//     next(e);
+//   }
+// };
+
+// exports.postLog = async (req, res, next) => {
+//   try {
+//     const stationId = res.locals.stationId;
+//     const { dRxes } = req.body;
+//     await dlvry.createDeliveryLog(stationId, dRxes);
+//   } catch (e) {
+//     console.error(e);
+//     next(e);
+//   }
+// };
 
 // exports.post = async (req, res, next) => {
 //   const { method } = req.body;

@@ -28,7 +28,7 @@ const digitalRxSchema = new Schema({
   rxStatus: String,
   rxStatusFin: String,
   /* Patient Info */
-  patient: { type: ObjectId, ref: "DRx Patient" },
+  patient: { type: ObjectId, ref: "DRx Patient" }, // index
   /* Doctor Info */
   doctorName: String,
   doctorNPI: String,
@@ -51,10 +51,10 @@ const digitalRxSchema = new Schema({
   cardNumber: String,
   groupNumber: String,
   /* Relational */
-  deliveryStation: { type: ObjectId, ref: "Delivery Station" },
+  deliveryStation: { type: ObjectId, ref: "Delivery Station", index: true },
   // date of delivery recorded by service/apps/delivery
-  deliveryDate: Date,
-  deliveryLog: { type: ObjectId, ref: "Delivery Log" },
+  deliveryDate: { type: Date, index: true },
+  deliveryLog: { type: ObjectId, ref: "Delivery Log", index: true },
 });
 
 const model = mongoose.model("DRx Rx", digitalRxSchema);

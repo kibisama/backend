@@ -7,6 +7,7 @@ const { stringToNumber } = require("./convert");
  * @typedef {object} Response
  * @property {number} code
  * @property {string} [message]
+ * @property {any} [data]
  */
 
 module.exports = {
