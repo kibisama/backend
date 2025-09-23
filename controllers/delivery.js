@@ -25,13 +25,11 @@ exports.getStationId = (req, res, next) => {
 exports.getSessions = async (req, res, next) => {
   try {
     const { date } = req.params;
-    const logs = await dlvry.findDeliveryLogs(date, res.locals.stationId);
-    if (!logs) {
+    const data = await dlvry.findDeliverySessions(date, res.locals.stationId);
+    if (!data) {
       return res.status(500).send({ code: 500 });
     }
-    return res
-      .status(200)
-      .send({ code: 200, data: logs.map((v) => v.session) });
+    return res.status(200).send({ code: 200, data });
   } catch (e) {
     console.error(e);
     next(e);
