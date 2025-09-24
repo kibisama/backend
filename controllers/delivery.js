@@ -36,39 +36,72 @@ exports.getSessions = async (req, res, next) => {
   }
 };
 
-// exports.getLogs = async (req, res, next) => {
-//   const { date, session } = req.params;
-//   const stationId = res.locals.stationId;
-//   let data;
-//   let deliveryLog;
-//   try {
-//     if (session !== "0") {
-//       // deliveryLog = await
-//     } else {
-//       data = await dRx.findDRxByStationId(stationId, date);
-//     }
-//     if (data.length === 0) {
-//       return res.status(404).send({ code: 404, message: "Not Found" });
-//     }
-//     return res
-//       .status(200)
-//       .send({ code: 200, data: await dRx.mapDeliveryLogs(data) });
-//   } catch (e) {
-//     console.error(e);
-//     next(e);
-//   }
-// };
+exports.getLogItems = async (req, res, next) => {
+  const { date, session } = req.params;
+  const stationId = res.locals.stationId;
+  try {
+    const data = await dlvry.findDeliveryLogItems(date, stationId, session);
+    if (data.length === 0) {
+      return res.status(404).send({ code: 404, message: "Not Found" });
+    }
+    return res.status(200).send({ code: 200, data });
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
 
-// exports.postLog = async (req, res, next) => {
-//   try {
-//     const stationId = res.locals.stationId;
-//     const { dRxes } = req.body;
-//     await dlvry.createDeliveryLog(stationId, dRxes);
-//   } catch (e) {
-//     console.error(e);
-//     next(e);
-//   }
-// };
+exports.postLog = async (req, res, next) => {
+  try {
+    const stationId = res.locals.stationId;
+    const data = await dlvry.createDeliveryLog(stationId);
+    if (!data) {
+      return res
+        .status(500)
+        .send({ code: 500, message: "Internal Server Error" });
+    }
+    return res.status(200).send({ code: 200, data });
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
+exports.scanQR = async (req, res, next) => {
+  try {
+    const stationId = res.locals.stationId;
+    const { data, delimiter } = req.body;
+    const a = data?.split(delimiter || "|").map((v) => v.trim());
+    if (a?.length !== 12) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const _dRx = await dRx.upsertDRx({ rxID: a[0] });
+    const { deliveryLog, deliveryStation } = _dRx;
+    if (deliveryLog) {
+      return res.status(409).send({
+        code: 409,
+        message: "Unable to update because the Rx has already been delivered.",
+      });
+    }
+    let exStation;
+    deliveryStation && (exStation = deliveryStation);
+    const result = await dRx.upsertWithQR(a, stationId, new Date());
+    if (!result) {
+      return res.status(500).send({
+        code: 500,
+        message: "An unexpected error occurred. Please try again.",
+      });
+    }
+    if (exStation && !stationId.equals(exStation)) {
+      dlvry.setDeliveryStagesToday(exStation);
+    }
+    dlvry.setDeliveryStagesToday(stationId);
+    return res.status(200).send({ code: 200, data: result });
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
 
 // exports.post = async (req, res, next) => {
 //   const { method } = req.body;

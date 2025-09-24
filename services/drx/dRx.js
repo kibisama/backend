@@ -134,7 +134,7 @@ exports.isRxOnly = (dRx) => {
  * @param {DRxSchema} dRxSchema
  * @returns {Promise<DRx|undefined>}
  */
-const upsertDRx = async (dRxSchema) => {
+exports.upsertDRx = async (dRxSchema) => {
   try {
     const { rxID } = dRxSchema;
     if (!rxID) {
@@ -195,7 +195,7 @@ exports.importDRxs = async (csvData) => {
       }
       dRxSchema.patient = ptIdTable[ptSchema.patientID];
       dRxSchema.plan = planIdTable[planSchema.planID];
-      await upsertDRx(dRxSchema);
+      await exports.upsertDRx(dRxSchema);
       n++;
     }
     return n;
@@ -234,60 +234,52 @@ exports.findDRxByStation = async (
   }
 };
 
-// /**
-//  * @param {[string]} a
-//  * @param {string} [station]
-//  * @param {Date} [deliveryDate]
-//  * @returns {Promise<import("../common").Response|undefined>}
-//  */
-// exports.upsertWithQR = async (a, station, deliveryDate) => {
-//   try {
-//     const _dRx = await upsertDRx({ rxID: a[0] });
-//     if (_dRx.deliveryLog) {
-//       return { code: 409, message: "The Rx has already been delivered." };
-//     }
-//     const _pt = await pt.upsertPatient({
-//       patientID: a[3],
-//       patientLastName: a[4],
-//       patientFirstName: a[5],
-//     });
-//     const _plan = await plan.upsertPlan({ planID: a[10] });
-//     /** @type {DRxSchema} **/
-//     const dRxSchema = {
-//       rxID: a[0],
-//       rxNumber: a[1],
-//       rxDate: a[2],
-//       drugName: a[6],
-//       doctorName: a[7],
-//       rxQty: a[8],
-//       refills: a[9],
-//       patPay: a[11],
-//       patient: _pt._id,
-//       plan: _plan._id,
-//     };
-//     deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
-//     station && (dRxSchema.deliveryStation = station);
-//     const dRx = await upsertDRx(dRxSchema);
-//     return {
-//       code: 200,
-//       data: {
-//         id: dRx._id,
-//         _id: dRx._id,
-//         time: dRx.deliveryDate,
-//         rxDate: dRx.rxDate,
-//         rxNumber: dRx.rxNumber,
-//         patient: `${_pt.patientLastName}, ${_pt.patientFirstName}`,
-//         doctorName: dRx.doctorName,
-//         drugName: dRx.drugName,
-//         rxQty: dRx.rxQty,
-//         plan: _plan.planName || _plan.planID,
-//         patPay: dRx.patPay,
-//       },
-//     };
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {[string]} a
+ * @param {string} [station]
+ * @param {Date} [deliveryDate]
+ * @returns {Promise<import("../apps/delivery").Row|undefined>}
+ */
+exports.upsertWithQR = async (a, station, deliveryDate) => {
+  try {
+    const _pt = await pt.upsertPatient({
+      patientID: a[3],
+      patientLastName: a[4],
+      patientFirstName: a[5],
+    });
+    const _plan = await plan.upsertPlan({ planID: a[10] });
+    /** @type {DRxSchema} **/
+    const dRxSchema = {
+      rxID: a[0],
+      rxNumber: a[1],
+      rxDate: a[2],
+      drugName: a[6],
+      doctorName: a[7],
+      rxQty: a[8],
+      refills: a[9],
+      patPay: a[11],
+      patient: _pt._id,
+      plan: _plan._id,
+    };
+    deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
+    station && (dRxSchema.deliveryStation = station);
+    const dRx = await exports.upsertDRx(dRxSchema);
+    return {
+      id: dRx._id,
+      _id: dRx._id,
+      time: dRx.deliveryDate,
+      rxDate: dRx.rxDate,
+      rxNumber: dRx.rxNumber,
+      patient: `${_pt.patientLastName}, ${_pt.patientFirstName}`,
+      doctorName: dRx.doctorName,
+      drugName: dRx.drugName,
+      rxQty: dRx.rxQty,
+      plan: _plan.planName || _plan.planID,
+    };
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 //
 

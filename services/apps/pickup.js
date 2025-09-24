@@ -128,7 +128,9 @@ exports.searchPickups = async (rxNumber, date) => {
         },
       });
     }
-    return mapSearchResults(await Pickup.find({ $and }));
+    return mapSearchResults(
+      await Pickup.find({ $and }).sort({ deliveryDate: -1 })
+    );
   } catch (e) {
     console.error(e);
   }

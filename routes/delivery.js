@@ -4,15 +4,16 @@ const {
   get,
   getStationId,
   getSessions,
-  getLogs,
+  getLogItems,
   postLog,
+  scanQR,
 } = require("../controllers/delivery");
-const dlvry = require("../services/apps/delivery");
 
 router.get("/", get);
 router.use("/:section", getStationId);
-// router.post("/:section", postLog);
+router.post("/:section", postLog);
+router.post("/:section/qr", scanQR);
 router.get("/:section/:date", getSessions);
-// router.get("/:section/:date/:session", getLogs);
+router.get("/:section/:date/:session", getLogItems);
 
 module.exports = router;

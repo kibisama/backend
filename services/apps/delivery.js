@@ -87,38 +87,79 @@ const presets = [
   },
 ];
 
-const __allDeliveryStations = {};
-let __DeliveryLogsToday = { date: dayjs().format("MMDDYYYY") };
-let __DeliveryStagesToday = { date: dayjs().format("MMDDYYYY") }(
-  async function () {
-    try {
-      let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
-      if (stations.length === 0) {
-        await createPresets();
-      } else {
-        for (let i = 0; i < stations.length; i++) {
-          const station = stations[i];
-          __allDeliveryStations[station.id] = station;
-          __DeliveryLogsToday[station._id] = {};
-          const logs = await DeliveryLog.find(
-            {
-              date: __DeliveryLogsToday.date,
-              station: station._id,
-            },
-            {},
-            { populate: "dRxes" }
-          );
-          for (let j = 0; j < logs.length; j++) {
-            __DeliveryLogsToday[station._id][logs[j].session] =
-              await exports.mapDeliveryLogs(logs[j].dRxes);
-          }
-        }
+/**
+ * @param {string|ObjectId|DeliveryStation} stationId
+ * @returns {Promise<void>}
+ */
+const setDeliveryLogsToday = async (stationId) => {
+  try {
+    const logs = await DeliveryLog.find(
+      {
+        date: __DeliveryLogsToday.date,
+        station: stationId,
+      },
+      {},
+      {
+        populate: {
+          path: "dRxes",
+          select: {
+            _id: 1,
+            deliveryDate: 1,
+            rxDate: 1,
+            rxNumber: 1,
+            drugName: 1,
+            doctorName: 1,
+            rxQty: 1,
+            patPay: 1,
+            patient: 1,
+            plan: 1,
+          },
+        },
       }
-    } catch (e) {
-      console.error(e);
+    );
+    for (let j = 0; j < logs.length; j++) {
+      __DeliveryLogsToday[stationId][logs[j].session] =
+        await exports.mapDeliveryLogs(logs[j].dRxes);
     }
+  } catch (e) {
+    console.error(e);
   }
-)();
+};
+/**
+ * @param {string|ObjectId|DeliveryStation} stationId
+ * @returns {Promise<void>}
+ */
+exports.setDeliveryStagesToday = async (stationId) => {
+  try {
+    __DeliveryLogsToday.stages[stationId] = await exports.mapDeliveryLogs(
+      dRx.findDRxByStation(stationId)
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const __allDeliveryStations = {};
+let __DeliveryLogsToday = { date: dayjs().format("MMDDYYYY"), stages: {} };
+(async function () {
+  try {
+    let stations = await DeliveryStation.find({}).sort({ displayName: 1 });
+    if (stations.length === 0) {
+      await createPresets();
+    } else {
+      for (let i = 0; i < stations.length; i++) {
+        const station = stations[i];
+        __allDeliveryStations[station.id] = station;
+        const { _id } = station;
+        __DeliveryLogsToday[_id] = {};
+        await setDeliveryLogsToday(_id);
+        await exports.setDeliveryStagesToday(_id);
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+})();
 
 /**
  * @returns {Promise<[DeliveryStation]|undefined>}
@@ -168,7 +209,7 @@ exports.createDeliveryStation = async (schema) => {
     });
     __allDeliveryStations[station.id] = station;
     __DeliveryLogsToday[station._id] = {};
-    //
+    await setDeliveryLogsToday(station._id);
     return { code: 200, data: station };
   } catch (e) {
     console.error(e);
@@ -183,21 +224,12 @@ const refreshLogsToday = async () => {
   try {
     const date = dayjs().format("MMDDYYYY");
     if (__DeliveryLogsToday.date !== date) {
-      __DeliveryLogsToday = { date };
+      __DeliveryLogsToday = { date, stages: {} };
       for (const station in __allDeliveryStations) {
-        __DeliveryLogsToday[__allDeliveryStations[station]._id] = {};
-        const logs = await DeliveryLog.find(
-          {
-            date,
-            station: station._id,
-          },
-          {},
-          { populate: "dRxes" }
-        );
-        for (let i = 0; i < logs.length; i++) {
-          __DeliveryLogsToday[station._id][logs[i].session] =
-            await exports.mapDeliveryLogs(logs[i].dRxes);
-        }
+        const _id = __allDeliveryStations[station]._id;
+        __DeliveryLogsToday[_id] = {};
+        await setDeliveryLogsToday(_id);
+        await exports.setDeliveryStagesToday(_id);
       }
     }
   } catch (e) {
@@ -208,7 +240,7 @@ const refreshLogsToday = async () => {
 /**
  * @param {string} date
  * @param {string} stationId
- * @returns {Promise<[DeliveryLog]|undefined>}
+ * @returns {Promise<[string]|undefined>}
  */
 exports.findDeliverySessions = async (date, stationId) => {
   try {
@@ -225,23 +257,71 @@ exports.findDeliverySessions = async (date, stationId) => {
   }
 };
 
-// /**
-//  * @param {string|ObjectId} station
-//  * @param {[DRx|ObjectId]} dRxes
-//  * @returns {Promise<[DeliveryLog]|undefined>}
-//  */
-// exports.createDeliveryLog = async (station, dRxes) => {
-//   try {
-//     const day = dayjs();
-//     const date = day.format("MMDDYYYY");
-//     const session = day.format("h:m:s A");
-//     await DeliveryLog.create({ date, station, session, dRxes });
-//     await refreshLogsToday();
-//     return __DeliveryLogsToday[station];
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * @param {string} date
+ * @param {string} stationId
+ * @param {string} session
+ * @returns {Promise<[Row]|undefined>}
+ */
+exports.findDeliveryLogItems = async (date, stationId, session) => {
+  try {
+    if (date === dayjs().format("MMDDYYYY")) {
+      await refreshLogsToday();
+      if (session === "0") {
+        return __DeliveryLogsToday.stages[stationId];
+      }
+      return __DeliveryLogsToday[stationId][session];
+    } else {
+      const log = await DeliveryLog.findOne({
+        date,
+        station: stationId,
+        session,
+      }).populate({
+        path: "dRxes",
+        select: {
+          _id: 1,
+          deliveryDate: 1,
+          rxDate: 1,
+          rxNumber: 1,
+          drugName: 1,
+          doctorName: 1,
+          rxQty: 1,
+          patPay: 1,
+          patient: 1,
+          plan: 1,
+        },
+      });
+      if (!log) {
+        return [];
+      }
+      return await exports.mapDeliveryLogs(log.dRxes);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @param {string|ObjectId} station
+ * @returns {Promise<DeliveryLog|undefined>}
+ */
+exports.createDeliveryLog = async (station) => {
+  try {
+    const dRxes = __DeliveryLogsToday.stages[station];
+    if (dRxes.length === 0) {
+      return;
+    }
+    const day = dayjs();
+    const date = day.format("MMDDYYYY");
+    const session = day.format("h:m:s A");
+    const log = await DeliveryLog.create({ date, station, session, dRxes });
+    __DeliveryLogsToday[station][log.session] = dRxes;
+    __DeliveryLogsToday.stages[station] = [];
+    return log;
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 /**
  * @typedef {object} Row
