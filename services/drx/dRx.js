@@ -275,6 +275,7 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
       drugName: dRx.drugName,
       rxQty: dRx.rxQty,
       plan: _plan.planName || _plan.planID,
+      patPay: dRx.patPay,
     };
   } catch (e) {
     console.error(e);

@@ -132,7 +132,7 @@ const setDeliveryLogsToday = async (stationId) => {
 exports.setDeliveryStagesToday = async (stationId) => {
   try {
     __DeliveryLogsToday.stages[stationId] = await exports.mapDeliveryLogs(
-      dRx.findDRxByStation(stationId)
+      await dRx.findDRxByStation(stationId)
     );
   } catch (e) {
     console.error(e);
