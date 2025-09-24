@@ -1,7 +1,9 @@
 const DeliveryStation = require("../../schemas/apps/deliveryStation");
 const DeliveryLog = require("../../schemas/apps/deliveryLog");
+const DRx = require("../../schemas/dRx/dRx");
 const dRx = require("../dRx/dRx");
 const dayjs = require("dayjs");
+const mongoose = require("mongoose");
 
 /**
  * @typedef {DeliveryStation.DeliveryStation} DeliveryStation
@@ -208,8 +210,10 @@ exports.createDeliveryStation = async (schema) => {
       id,
     });
     __allDeliveryStations[station.id] = station;
-    __DeliveryLogsToday[station._id] = {};
-    await setDeliveryLogsToday(station._id);
+    const { _id } = station;
+    __DeliveryLogsToday[_id] = {};
+    await setDeliveryLogsToday(_id);
+    await exports.setDeliveryStagesToday(_id);
     return { code: 200, data: station };
   } catch (e) {
     console.error(e);
@@ -306,17 +310,37 @@ exports.findDeliveryLogItems = async (date, stationId, session) => {
  * @returns {Promise<DeliveryLog|undefined>}
  */
 exports.createDeliveryLog = async (station) => {
+  const dRxes = __DeliveryLogsToday.stages[station];
+  if (dRxes.length === 0) {
+    return;
+  }
+  const day = dayjs();
+  const date = day.format("MMDDYYYY");
+  const session = day.format("h:m:ss A");
   try {
-    const dRxes = __DeliveryLogsToday.stages[station];
-    if (dRxes.length === 0) {
-      return;
-    }
-    const day = dayjs();
-    const date = day.format("MMDDYYYY");
-    const session = day.format("h:m:s A");
-    const log = await DeliveryLog.create({ date, station, session, dRxes });
-    __DeliveryLogsToday[station][log.session] = dRxes;
-    __DeliveryLogsToday.stages[station] = [];
+    const tx = await mongoose.startSession();
+    const log = await tx.withTransaction(async () => {
+      try {
+        const log = (
+          await DeliveryLog.create([{ date, station, session, dRxes }], {
+            session: tx,
+          })
+        )[0];
+        for (let i = 0; i < dRxes.length; i++) {
+          await DRx.findByIdAndUpdate(
+            dRxes[i]._id,
+            { $set: { deliveryLog: log._id } },
+            { session: tx }
+          );
+        }
+        __DeliveryLogsToday[station][log.session] = dRxes;
+        __DeliveryLogsToday.stages[station] = [];
+        return log;
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    tx.endSession();
     return log;
   } catch (e) {
     console.error(e);
@@ -336,6 +360,7 @@ exports.createDeliveryLog = async (station) => {
  * @property {string} rxQty
  * @property {string} plan
  * @property {string} patPay
+ * @property {ObjectId} log
  */
 
 /**
@@ -359,6 +384,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
         doctorName: dRx.doctorName,
         rxQty: dRx.rxQty,
         patPay: dRx.patPay,
+        log: dRx.deliveryLog,
       };
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
