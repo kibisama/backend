@@ -12,20 +12,25 @@ exports.get = async (req, res, next) => {
   }
 };
 
-exports.getStationId = (req, res, next) => {
+exports.getStation = (req, res, next) => {
   const { section } = req.params;
   const station = dlvry.getDeliveryStation(section.toUpperCase());
   if (station) {
-    res.locals.stationId = station._id;
+    res.locals.station = station;
     return next();
   }
   return res.status(404).send({ code: 404, message: "Not Found" });
 };
 
+exports.getStationInfo = (req, res) => {
+  return res.status(200).send({ code: 200, data: res.locals.station });
+};
+
 exports.getSessions = async (req, res, next) => {
   try {
     const { date } = req.params;
-    const data = await dlvry.findDeliverySessions(date, res.locals.stationId);
+    const { _id } = res.locals.station;
+    const data = await dlvry.findDeliverySessions(date, _id);
     if (!data) {
       return res.status(500).send({ code: 500 });
     }
@@ -38,9 +43,9 @@ exports.getSessions = async (req, res, next) => {
 
 exports.getLogItems = async (req, res, next) => {
   const { date, session } = req.params;
-  const stationId = res.locals.stationId;
+  const { _id } = res.locals.station;
   try {
-    const data = await dlvry.findDeliveryLogItems(date, stationId, session);
+    const data = await dlvry.findDeliveryLogItems(date, _id, session);
     if (data.length === 0) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }
@@ -53,8 +58,8 @@ exports.getLogItems = async (req, res, next) => {
 
 exports.postLog = async (req, res, next) => {
   try {
-    const stationId = res.locals.stationId;
-    const data = await dlvry.createDeliveryLog(stationId);
+    const { _id } = res.locals.station;
+    const data = await dlvry.createDeliveryLog(_id);
     if (!data) {
       return res
         .status(500)
@@ -69,7 +74,7 @@ exports.postLog = async (req, res, next) => {
 
 exports.scanQR = async (req, res, next) => {
   try {
-    const stationId = res.locals.stationId;
+    const { _id } = res.locals.station;
     const { data, delimiter } = req.body;
     const a = data?.split(delimiter || "|").map((v) => v.trim());
     if (a?.length !== 12 || !a[0].match(/^\d{8,}$/)) {
@@ -85,17 +90,17 @@ exports.scanQR = async (req, res, next) => {
     }
     let exStation;
     deliveryStation && (exStation = deliveryStation);
-    const result = await dRx.upsertWithQR(a, stationId, new Date());
+    const result = await dRx.upsertWithQR(a, _id, new Date());
     if (!result) {
       return res.status(500).send({
         code: 500,
         message: "An unexpected error occurred. Please try again.",
       });
     }
-    if (exStation && !stationId.equals(exStation)) {
+    if (exStation && !_id.equals(exStation)) {
       dlvry.setDeliveryStagesToday(exStation);
     }
-    dlvry.setDeliveryStagesToday(stationId);
+    dlvry.setDeliveryStagesToday(_id);
     return res.status(200).send({ code: 200, data: result });
   } catch (e) {
     console.error(e);

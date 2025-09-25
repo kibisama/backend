@@ -193,6 +193,7 @@ const requestPuppet = (date) => {
             scheduleJob(setDelay(3), request);
             break;
           default:
+          // handle connection error
         }
         if (count === maxCount) {
           // mail notice of failure

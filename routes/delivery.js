@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const {
   get,
-  getStationId,
+  getStation,
+  getStationInfo,
   getSessions,
   getLogItems,
   postLog,
@@ -12,7 +13,8 @@ const {
 
 router.get("/", get);
 router.get("/unset/:rxID", unsetDeliveryStation);
-router.use("/:section", getStationId);
+router.use("/:section", getStation);
+router.get("/:section", getStationInfo);
 router.post("/:section", postLog);
 router.post("/:section/qr", scanQR);
 router.get("/:section/:date", getSessions);
