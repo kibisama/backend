@@ -265,7 +265,7 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
     station && (dRxSchema.deliveryStation = station);
     const dRx = await exports.upsertDRx(dRxSchema);
     return {
-      id: dRx._id,
+      id: dRx.rxID,
       _id: dRx._id,
       time: dRx.deliveryDate,
       rxDate: dRx.rxDate,
@@ -277,6 +277,18 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
       plan: _plan.planName || _plan.planID,
       patPay: dRx.patPay,
     };
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @param {string} rxID
+ * @returns {Promise<DRx|null|undefined>}
+ */
+exports.findDRxByRxID = async (rxID) => {
+  try {
+    return await DRx.findOne({ rxID });
   } catch (e) {
     console.error(e);
   }

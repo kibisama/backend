@@ -114,7 +114,6 @@ exports.getInventories = async (_id, sort, filled) => {
   }
 };
 
-const forms = [];
 /**
  * @param {[item.Item]} items
  * @returns {}

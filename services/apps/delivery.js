@@ -106,6 +106,7 @@ const setDeliveryLogsToday = async (stationId) => {
           path: "dRxes",
           select: {
             _id: 1,
+            rxID: 1,
             deliveryDate: 1,
             rxDate: 1,
             rxNumber: 1,
@@ -115,6 +116,7 @@ const setDeliveryLogsToday = async (stationId) => {
             patPay: 1,
             patient: 1,
             plan: 1,
+            deliveryLog: 1,
           },
         },
       }
@@ -284,6 +286,7 @@ exports.findDeliveryLogItems = async (date, stationId, session) => {
         path: "dRxes",
         select: {
           _id: 1,
+          rxID: 1,
           deliveryDate: 1,
           rxDate: 1,
           rxNumber: 1,
@@ -293,6 +296,7 @@ exports.findDeliveryLogItems = async (date, stationId, session) => {
           patPay: 1,
           patient: 1,
           plan: 1,
+          deliveryLog: 1,
         },
       });
       if (!log) {
@@ -375,7 +379,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
       await dRx.populate(["patient", "plan"]);
       /** @type {Row} **/
       const row = {
-        id: i + 1,
+        id: dRx.rxID,
         _id: dRx._id,
         time: dRx.deliveryDate,
         rxDate: dRx.rxDate,

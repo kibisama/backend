@@ -16,16 +16,17 @@ const {
  */
 /**
  * @param {Package|ObjectId} package
+ * @param {UpdateOption} option
  * @returns {Promise<PsPackage|undefined>}
  */
-exports.upsertPsPackage = async (package) => {
+exports.upsertPsPackage = async (package, option) => {
   try {
     const psPkg = await PsPackage.findOneAndUpdate(
       { package },
       {},
       { new: true, upsert: true }
     );
-    exports.updatePsPackage(psPkg);
+    exports.updatePsPackage(psPkg, option);
     return psPkg;
   } catch (e) {
     console.error(e);

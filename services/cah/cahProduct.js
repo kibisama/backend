@@ -29,16 +29,17 @@ const saveImgPath = "img/pharma-medium/";
 
 /**
  * @param {Package|ObjectId} package
+ * @param {UpdateOption} option
  * @returns {Promise<CAHProduct|undefined>}
  */
-exports.upsertProduct = async (package) => {
+exports.upsertProduct = async (package, option) => {
   try {
     const _cahProduct = await cahProduct.findOneAndUpdate(
       { package },
       {},
       { new: true, upsert: true }
     );
-    exports.updateProduct(_cahProduct);
+    exports.updateProduct(_cahProduct, option);
     return _cahProduct;
   } catch (e) {
     console.error(e);
@@ -113,18 +114,18 @@ const updateProductCallback = async (data, _cahPrd, option) => {
       await cahPrd.updateOne({
         $set: { lastUpdated: new Date(), active: false },
       });
-      /** Refreshing  __invUsageToday **/
-      const { getUsages } = require("../inv/inventory");
-      getUsages(undefined, true);
       if (!skipUpdateSource) {
         const { package } = cahPrd;
         const { alternative } = package;
         if (alternative?.cahProduct) {
-          return exports.updateProduct(alternative.cahProduct);
+          exports.updateProduct(alternative.cahProduct);
         } else {
-          return searchProduct(cahPrd.package.ndc11, searchProductCallback);
+          searchProduct(cahPrd.package.ndc11, searchProductCallback);
         }
       }
+      /** Refreshing  __invUsageToday **/
+      const { getUsages } = require("../inv/inventory");
+      getUsages(undefined, true);
     }
     const result = data.data;
     const {

@@ -7,9 +7,11 @@ const {
   getLogItems,
   postLog,
   scanQR,
+  unsetDeliveryStation,
 } = require("../controllers/delivery");
 
 router.get("/", get);
+router.get("/unset/:rxID", unsetDeliveryStation);
 router.use("/:section", getStationId);
 router.post("/:section", postLog);
 router.post("/:section/qr", scanQR);

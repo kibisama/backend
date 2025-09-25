@@ -72,7 +72,7 @@ exports.scanQR = async (req, res, next) => {
     const stationId = res.locals.stationId;
     const { data, delimiter } = req.body;
     const a = data?.split(delimiter || "|").map((v) => v.trim());
-    if (a?.length !== 12) {
+    if (a?.length !== 12 || !a[0].match(/^\d{8,}$/)) {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
     const _dRx = await dRx.upsertDRx({ rxID: a[0] });
@@ -97,6 +97,33 @@ exports.scanQR = async (req, res, next) => {
     }
     dlvry.setDeliveryStagesToday(stationId);
     return res.status(200).send({ code: 200, data: result });
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
+exports.unsetDeliveryStation = async (req, res, next) => {
+  try {
+    const { rxID } = req.params;
+    if (!rxID) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const _dRx = await dRx.findDRxByRxID(rxID);
+    if (!_dRx) {
+      return res.status(404).send({ code: 404, message: "Not Found" });
+    } else if (_dRx.deliveryLog) {
+      return res.status(409).send({
+        code: 409,
+        message: "Unable to update because the Rx has already been delivered.",
+      });
+    }
+    const { deliveryStation } = _dRx;
+    if (deliveryStation) {
+      await _dRx.updateOne({ $unset: { deliveryStation: 1 } });
+      dlvry.setDeliveryStagesToday(deliveryStation);
+    }
+    return res.status(200).send({ code: 200 });
   } catch (e) {
     console.error(e);
     next(e);
