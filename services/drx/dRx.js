@@ -247,7 +247,7 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
       patientLastName: a[4],
       patientFirstName: a[5],
     });
-    const _plan = await plan.upsertPlan({ planID: a[10] });
+    const _plan = a[10] ? await plan.upsertPlan({ planID: a[10] }) : void 0;
     /** @type {DRxSchema} **/
     const dRxSchema = {
       rxID: a[0],
@@ -259,7 +259,7 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
       refills: a[9],
       patPay: a[11],
       patient: _pt._id,
-      plan: _plan._id,
+      plan: _plan?._id,
     };
     deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
     station && (dRxSchema.deliveryStation = station);
