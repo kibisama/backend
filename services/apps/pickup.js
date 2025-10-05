@@ -4,6 +4,9 @@ const dayjs = require("dayjs");
 
 exports.path = process.env.PICKUP_IMG_LOCATION || `E:\\pickup`;
 const path = exports.path;
+if (!fs.existsSync(path)) {
+  fs.mkdirSync(path);
+}
 
 exports.init = (app) => {
   app.set("apps_pickup_state", "standby");
@@ -52,10 +55,11 @@ exports.createPickup = async (params, base64) => {
     const pickup = await Pickup.create(params);
     const binaryData = Buffer.from(base64, "base64");
     const fileName = pickup._id + ".png";
-    if (!fs.existsSync(path)) {
-      fs.mkdirSync(path);
-    }
-    fs.writeFileSync(path + "/" + fileName, binaryData);
+    fs.writeFile(path + "/" + fileName, binaryData, (err, data) => {
+      if (err) {
+        //
+      }
+    });
     return pickup;
   } catch (e) {
     console.error(e);
