@@ -56,6 +56,15 @@ exports.getLogItems = async (req, res, next) => {
   }
 };
 
+exports.getReceipt = async (req, res, next) => {
+  try {
+    //
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
 exports.postLog = async (req, res, next) => {
   try {
     const { _id } = res.locals.station;
