@@ -278,7 +278,7 @@ const selectSource = (result) => {
   if (!interpretCAHData(orangeBookCode)) {
     return;
   }
-  if (alts.length > 0) {
+  if (alts?.length > 0) {
     const { cheapSrcInStock, cheapSrc, cheap } = selectAlt(
       alts,
       orangeBookCode
