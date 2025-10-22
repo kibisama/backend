@@ -264,6 +264,43 @@ exports.findDeliverySessions = async (date, stationId) => {
 };
 
 /**
+ * Returns a dRxes-populated Delivery Log document.
+ * @param {string} date MMDDYYYY
+ * @param {ObjectId|string} stationId
+ * @param {string} session
+ * @param {} sort
+ * @returns {Promise<DeliveryLog|null|undefined>}
+ */
+exports.findDeliveryLog = async (date, stationId, session, sort) => {
+  try {
+    return await DeliveryLog.findOne({
+      date,
+      station: stationId,
+      session,
+    }).populate({
+      path: "dRxes",
+      select: {
+        _id: 1,
+        rxID: 1,
+        deliveryDate: 1,
+        rxDate: 1,
+        rxNumber: 1,
+        drugName: 1,
+        doctorName: 1,
+        rxQty: 1,
+        patPay: 1,
+        patient: 1,
+        plan: 1,
+        deliveryLog: 1,
+      },
+      sort,
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
  * @param {string} date
  * @param {string} stationId
  * @param {string} session
@@ -278,27 +315,7 @@ exports.findDeliveryLogItems = async (date, stationId, session) => {
       }
       return __DeliveryLogsToday[stationId][session];
     } else {
-      const log = await DeliveryLog.findOne({
-        date,
-        station: stationId,
-        session,
-      }).populate({
-        path: "dRxes",
-        select: {
-          _id: 1,
-          rxID: 1,
-          deliveryDate: 1,
-          rxDate: 1,
-          rxNumber: 1,
-          drugName: 1,
-          doctorName: 1,
-          rxQty: 1,
-          patPay: 1,
-          patient: 1,
-          plan: 1,
-          deliveryLog: 1,
-        },
-      });
+      const log = await exports.findDeliveryLog(date, stationId, session);
       if (!log) {
         return [];
       }
