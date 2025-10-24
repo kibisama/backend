@@ -44,7 +44,7 @@ const digitalRxSchema = new Schema({
   plan: { type: ObjectId, ref: "DRx Plan" },
   /* Payment Info */
   totalPaid: String,
-  patPay: String,
+  patPay: { type: String, default: "0" },
   insPaid: String,
   dispFeePaid: String,
   insuredID: String,

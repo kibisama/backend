@@ -67,20 +67,18 @@ exports.getReceipt = async (req, res, next) => {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }
     const count = log.dRxes.length;
-    let due = 0;
     const items = [];
     const dRxes = await dlvry.mapDeliveryLogs(log.dRxes);
     const pages = Math.ceil(count / RECEIPT_COUNT_PER_PAGE);
     for (let i = 0; i < pages; i++) {
       items.push(dRxes.splice(0, RECEIPT_COUNT_PER_PAGE));
     }
-    items.forEach((v) => v.forEach((w) => (due += Number(w.patPay))));
     return res.status(200).send({
       code: 200,
       data: {
         pages: pages.toString(),
         count: count.toString(),
-        due: due ? due.toFixed(2).toString() : "0",
+        due: log.due,
         date,
         session,
         station: {

@@ -342,8 +342,11 @@ exports.createDeliveryLog = async (station) => {
     const tx = await mongoose.startSession();
     const log = await tx.withTransaction(async () => {
       try {
+        let due = 0;
+        dRxes.forEach((v) => (due += Number(v.patPay || 0)));
+        due = due ? due.toFixed(2).toString() : "0";
         const log = (
-          await DeliveryLog.create([{ date, station, session, dRxes }], {
+          await DeliveryLog.create([{ date, station, session, dRxes, due }], {
             session: tx,
           })
         )[0];

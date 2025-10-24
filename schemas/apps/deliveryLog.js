@@ -25,6 +25,7 @@ const deliveryLogSchema = new mongoose.Schema({
       return v.length > 0;
     },
   },
+  due: String,
 });
 const model = mongoose.model(
   "Delivery Log",
