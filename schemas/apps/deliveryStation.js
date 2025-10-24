@@ -14,6 +14,7 @@ const deliveryStationSchema = new Schema({
     minLength: 3,
     maxLength: 3,
   },
+  active: { type: Boolean, default: true },
   name: { type: String, required: true },
   address: { type: String, required: true },
   city: { type: String, required: true },
