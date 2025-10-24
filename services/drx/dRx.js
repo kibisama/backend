@@ -257,7 +257,7 @@ exports.upsertWithQR = async (a, station, deliveryDate) => {
       doctorName: a[7],
       rxQty: a[8],
       refills: a[9],
-      patPay: a[11],
+      patPay: a[11] || "0",
       patient: _pt._id,
       plan: _plan?._id,
     };
