@@ -55,6 +55,7 @@ const digitalRxSchema = new Schema({
   // date of delivery recorded by service/apps/delivery
   deliveryDate: { type: Date, index: true },
   deliveryLog: { type: ObjectId, ref: "Delivery Log", index: true },
+  invoice: { type: ObjectId, ref: "Invoice", index: true },
 });
 
 const model = mongoose.model("DRx Rx", digitalRxSchema);
