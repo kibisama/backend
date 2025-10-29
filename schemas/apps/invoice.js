@@ -10,7 +10,7 @@ const invoiceSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  dateCreated: {
+  date: {
     type: Date,
     required: true,
     default: Date.now,
@@ -34,6 +34,7 @@ const invoiceSchema = new mongoose.Schema({
     type: [{ desription: String, due: String }],
   },
   paid: { type: Boolean, default: false },
+  count: Number,
   due: String,
 });
 const model = mongoose.model("Invoice", invoiceSchema);

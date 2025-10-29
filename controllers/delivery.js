@@ -166,7 +166,7 @@ exports.unsetDeliveryStation = async (req, res, next) => {
     }
     const { deliveryStation } = _dRx;
     if (deliveryStation) {
-      await _dRx.updateOne({ $unset: { deliveryStation: 1 } });
+      await _dRx.updateOne({ $unset: { deliveryStation: 1, deliveryDate: 1 } });
       dlvry.setDeliveryStagesToday(deliveryStation);
     }
     return res.status(200).send({ code: 200 });
