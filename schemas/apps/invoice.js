@@ -5,7 +5,7 @@ const {
 } = Schema;
 
 const invoiceSchema = new mongoose.Schema({
-  id: {
+  invoiceNumber: {
     type: String,
     required: true,
     unique: true,
@@ -33,7 +33,7 @@ const invoiceSchema = new mongoose.Schema({
   extraItems: {
     type: [{ desription: String, due: String }],
   },
-  paid: { type: Boolean, default: false },
+  status: { type: String, default: "OPEN" },
   count: Number,
   due: String,
 });
