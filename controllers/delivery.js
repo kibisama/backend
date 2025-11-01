@@ -176,6 +176,24 @@ exports.unsetDeliveryStation = async (req, res, next) => {
   }
 };
 
+exports.search = async (req, res, next) => {
+  try {
+    const { rxNumber } = req.query;
+    if (!rxNumber) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const _data = await dRx.findDRxForDeliveries(rxNumber);
+    if (_data.length === 0) {
+      return res.status(404).send({ code: 404, message: "Not Found" });
+    }
+    const data = await dlvry.mapSearchResults(_data);
+    return res.status(200).send({ code: 200, data });
+  } catch (e) {
+    console.error(e);
+    next(e);
+  }
+};
+
 // exports.post = async (req, res, next) => {
 //   const { method } = req.body;
 //   const { name } = req.params;

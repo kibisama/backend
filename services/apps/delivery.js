@@ -35,7 +35,7 @@ const presets = [
     city: "Los Angeles",
     state: "CA",
     zip: "90031",
-    phone: "(818) 761-1652",
+    phone: "(818) 985-8323",
   },
   {
     displayName: "LH Res",
@@ -45,7 +45,7 @@ const presets = [
     city: "Los Angeles",
     state: "CA",
     zip: "90031",
-    phone: "(818) 761-1652",
+    phone: "(818) 985-8323",
   },
   {
     displayName: "Pfleger Detox",
@@ -65,7 +65,7 @@ const presets = [
     city: "North Hollywood",
     state: "CA",
     zip: "91605",
-    phone: "(818) 761-1652",
+    phone: "(818) 985-8323",
   },
   {
     displayName: "Socorro Detox",
@@ -75,7 +75,17 @@ const presets = [
     city: "Los Angeles",
     state: "CA",
     zip: "90029",
-    phone: "(818) 761-1652",
+    phone: "(818) 985-8323",
+  },
+  {
+    displayName: "Socorro Res",
+    name: "CRI-Help Inc. Socorro Residential",
+    invoiceCode: "CSR",
+    address: "4445 Burns Ave.",
+    city: "Los Angeles",
+    state: "CA",
+    zip: "90029",
+    phone: "(818) 985-8323",
   },
   {
     displayName: "Teen Project",
@@ -417,6 +427,46 @@ exports.mapDeliveryLogs = async (dRxes) => {
       rows.push(row);
     }
     return rows;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @typedef {object} Row
+ * @property {string} id
+ * @property {string} rxNumber
+ * @property {Date} rxDate
+ * @property {string} patient
+ * @property {string} drugName
+ * @property {string} stationDisplayName
+ * @property {string} deliveryLogDate
+ * @property {string} session
+ */
+/**
+ * @param {[DRx]} dRxes
+ * @return {Promise<[Row]|undefined>}
+ */
+exports.mapSearchResults = async (dRxes) => {
+  const mappedResults = [];
+  try {
+    for (let i = 0; i < dRxes.length; i++) {
+      const dRx = dRxes[i];
+      await dRx.populate([
+        { path: "patient" },
+        { path: "deliveryStation" },
+        { path: "deliveryLog" },
+      ]);
+      //
+      //
+      //
+      //
+      //
+      //
+      mappedResults.push({});
+    }
+
+    return mappedResults;
   } catch (e) {
     console.error(e);
   }

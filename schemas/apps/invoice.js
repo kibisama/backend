@@ -33,7 +33,12 @@ const invoiceSchema = new mongoose.Schema({
   extraItems: {
     type: [{ desription: String, due: String }],
   },
-  status: { type: String, default: "OPEN" },
+  status: {
+    type: String,
+    required: true,
+    enum: ["CREATED", "PENDING", "PAID", "VOIDED"],
+    default: "CREATED",
+  },
   count: Number,
   due: String,
 });

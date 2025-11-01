@@ -10,10 +10,12 @@ const {
   postLog,
   scanQR,
   unsetDeliveryStation,
+  search,
 } = require("../controllers/delivery");
 
 router.get("/", get);
 router.get("/unset/:rxID", unsetDeliveryStation);
+router.get("/search", search);
 router.use("/:section", getStation);
 router.get("/:section", getStationInfo);
 router.post("/:section", postLog);

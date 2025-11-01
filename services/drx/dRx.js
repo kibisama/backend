@@ -177,15 +177,15 @@ exports.importDRxs = async (csvData) => {
       const data = csvData[i];
       const ptSchema = {};
       for (const field in ptIndexTable) {
-        ptSchema[field] = data[ptIndexTable[field]].trim();
+        ptSchema[field] = data[ptIndexTable[field]];
       }
       const planSchema = {};
       for (const field in planIndexTable) {
-        planSchema[field] = data[planIndexTable[field]].trim();
+        planSchema[field] = data[planIndexTable[field]];
       }
       const dRxSchema = {};
       for (const field in dRxIndexTable) {
-        dRxSchema[field] = data[dRxIndexTable[field]].trim();
+        dRxSchema[field] = data[dRxIndexTable[field]];
       }
       if (!ptIdTable[ptSchema.patientID]) {
         ptIdTable[ptSchema.patientID] = await pt.upsertPatient(ptSchema);
@@ -229,6 +229,20 @@ exports.findDRxByStation = async (
   }
   try {
     return await DRx.find(filter);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+/**
+ * @param {string} rxNumber
+ * @returns {Promise<[DRx]|undefined>}
+ */
+exports.findDRxForDeliveries = async (rxNumber) => {
+  try {
+    return await DRx.find({
+      $and: [{ rxNumber }, { deliveryStation: { $exists: true } }],
+    });
   } catch (e) {
     console.error(e);
   }
