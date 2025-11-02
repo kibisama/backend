@@ -54,6 +54,7 @@ const digitalRxSchema = new Schema({
   deliveryStation: { type: ObjectId, ref: "Delivery Station", index: true },
   // date of delivery recorded by service/apps/delivery
   deliveryDate: { type: Date, index: true },
+  returnDate: Date,
   deliveryLog: { type: ObjectId, ref: "Delivery Log", index: true },
   invoice: { type: ObjectId, ref: "Invoice", index: true },
 });

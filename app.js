@@ -8,13 +8,27 @@ const morgan = require("morgan");
 const dotenv = require("dotenv");
 dotenv.config();
 
+const isProductionMode = process.env.NODE_ENV === "production";
 const connect = require("./schemas");
 const app = express();
 app.set("port", process.env.PORT || 3001);
 connect();
-
 app.use(cors({ origin: "*" }));
-app.use(morgan("dev"));
+if (isProductionMode) {
+  app.use(morgan("combined"));
+  const helmet = require("helmet");
+  const hpp = require("hpp");
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: false,
+    })
+  );
+  app.use(hpp());
+} else {
+  app.use(morgan("dev"));
+}
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false }));
@@ -33,7 +47,7 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
   res.locals.message = err.message;
-  res.locals.error = process.env.NODE_ENV !== "production" ? err : {};
+  res.locals.error = isProductionMode ? {} : err;
   res.sendStatus(err.status || 500);
 });
 
