@@ -236,13 +236,15 @@ exports.findDRxByStation = async (
 
 /**
  * @param {string} rxNumber
+ * @param {ObjectId|string} [patient]
  * @returns {Promise<[DRx]|undefined>}
  */
-exports.findDRxForDeliveries = async (rxNumber) => {
+exports.findDRxForDeliveries = async (rxNumber, patient) => {
   try {
-    return await DRx.find({
-      $and: [{ rxNumber }, { deliveryStation: { $exists: true } }],
-    });
+    const $and = [];
+    rxNumber && $and.push({ rxNumber });
+    patient && $and.push({ patient });
+    return await DRx.find({ $and });
   } catch (e) {
     console.error(e);
   }

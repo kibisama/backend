@@ -178,11 +178,11 @@ exports.unsetDeliveryStation = async (req, res, next) => {
 
 exports.search = async (req, res, next) => {
   try {
-    const { rxNumber } = req.query;
-    if (!rxNumber) {
+    const { rxNumber, patient } = req.query;
+    if (!(rxNumber || patient)) {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
-    const _data = await dRx.findDRxForDeliveries(rxNumber);
+    const _data = await dRx.findDRxForDeliveries(rxNumber, patient);
     if (_data.length === 0) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }

@@ -64,7 +64,7 @@ exports.post = async (req, res) => {
     req.app.set("apps_pickup_state", "standby");
     return res.status(500).send({
       code: 500,
-      message: "An unexpected error occurred.",
+      message: "Internal Server Error",
     });
   }
 };

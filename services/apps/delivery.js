@@ -433,7 +433,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
 };
 
 /**
- * @typedef {object} Row
+ * @typedef {object} SearchResultRow
  * @property {string} id
  * @property {string} rxNumber
  * @property {Date} rxDate
@@ -457,13 +457,20 @@ exports.mapSearchResults = async (dRxes) => {
         { path: "deliveryStation" },
         { path: "deliveryLog" },
       ]);
-      //
-      //
-      //
-      //
-      //
-      //
-      mappedResults.push({});
+      const { rxID, rxNumber, rxDate, drugName } = dRx;
+      /** @type {SearchResultRow} **/
+      const row = { id: rxID, rxNumber, rxDate, drugName };
+      dRx.patient?.patientLastName &&
+        dRx.patient.patientFirstName &&
+        (row.patient = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
+      dRx.deliveryStation &&
+        (row.stationDisplayName = dRx.deliveryStation.displayName);
+      dRx.deliveryLog &&
+        (row.date = dayjs(dRx.deliveryLog.date, "MMDDYYYY").format(
+          "M. D. YYYY"
+        )) &&
+        (row.session = dRx.deliveryLog.session);
+      mappedResults.push(row);
     }
 
     return mappedResults;

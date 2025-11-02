@@ -75,6 +75,6 @@ exports.post = async (req, res) => {
     console.error(e);
     return res
       .status(500)
-      .send({ code: 500, message: "An unexpected error occurred." });
+      .send({ code: 500, message: "Internal Server Error" });
   }
 };
