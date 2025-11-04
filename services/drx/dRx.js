@@ -310,6 +310,22 @@ exports.findDRxByRxID = async (rxID) => {
   }
 };
 
+/**
+ * @param {string} rxID
+ * @returns {Promise<Awaited<ReturnType<DRx["updateOne"]>>|null|undefined>}
+ */
+exports.setReturnDate = async (rxID) => {
+  try {
+    const dRx = await DRx.findOne({ rxID });
+    if (!dRx) {
+      return null;
+    }
+    return await dRx.updateOne({ $set: { returnDate: new Date() } });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 //
 
 // /**

@@ -176,6 +176,26 @@ exports.unsetDeliveryStation = async (req, res, next) => {
   }
 };
 
+exports.reverseDelivery = async (req, res, next) => {
+  try {
+    const { rxID } = req.params;
+    if (!rxID) {
+      return res.status(400).send({ code: 400, message: "Bad Request" });
+    }
+    const result = await dRx.setReturnDate(rxID);
+    if (result === null) {
+      return res.status(404).send({ code: 404, message: "Not Found" });
+    } else if (!result) {
+      return res
+        .status(500)
+        .send({ code: 500, message: "Internal Server Error" });
+    }
+    return res.status(200).send({ code: 200 });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 exports.search = async (req, res, next) => {
   try {
     const { rxNumber, patient } = req.query;
