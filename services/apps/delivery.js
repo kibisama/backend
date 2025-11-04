@@ -395,6 +395,7 @@ exports.createDeliveryLog = async (station) => {
  * @property {string} plan
  * @property {string} patPay
  * @property {ObjectId} log
+ * @property {Date} returnDate
  */
 
 /**
@@ -419,6 +420,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
         rxQty: dRx.rxQty,
         patPay: dRx.patPay,
         log: dRx.deliveryLog,
+        returnDate: dRx.returnDate,
       };
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
@@ -442,6 +444,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
  * @property {string} stationDisplayName
  * @property {string} deliveryLogDate
  * @property {string} session
+ * @property {Date} returnDate
  */
 /**
  * @param {[DRx]} dRxes
@@ -457,9 +460,9 @@ exports.mapSearchResults = async (dRxes) => {
         { path: "deliveryStation" },
         { path: "deliveryLog" },
       ]);
-      const { rxID, rxNumber, rxDate, drugName } = dRx;
+      const { rxID, rxNumber, rxDate, drugName, returnDate } = dRx;
       /** @type {SearchResultRow} **/
-      const row = { id: rxID, rxNumber, rxDate, drugName };
+      const row = { id: rxID, rxNumber, rxDate, drugName, returnDate };
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
         (row.patient = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);
