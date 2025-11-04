@@ -190,7 +190,9 @@ exports.reverseDelivery = async (req, res, next) => {
         .status(500)
         .send({ code: 500, message: "Internal Server Error" });
     }
-    return res.status(200).send({ code: 200 });
+    return res
+      .status(200)
+      .send({ code: 200, data: (await dlvry.mapSearchResults(result))[0] });
   } catch (e) {
     console.error(e);
   }

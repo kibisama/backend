@@ -244,7 +244,7 @@ exports.findDRxForDeliveries = async (rxNumber, patient) => {
     const $and = [];
     rxNumber && $and.push({ rxNumber });
     patient && $and.push({ patient });
-    return await DRx.find({ $and });
+    return await DRx.find({ $and }).sort({ deliveryDate: -1 });
   } catch (e) {
     console.error(e);
   }
@@ -312,15 +312,15 @@ exports.findDRxByRxID = async (rxID) => {
 
 /**
  * @param {string} rxID
- * @returns {Promise<Awaited<ReturnType<DRx["updateOne"]>>|null|undefined>}
+ * @returns {Promise<DRx|null|undefined>}
  */
 exports.setReturnDate = async (rxID) => {
   try {
-    const dRx = await DRx.findOne({ rxID });
-    if (!dRx) {
-      return null;
-    }
-    return await dRx.updateOne({ $set: { returnDate: new Date() } });
+    return await DRx.findOneAndUpdate(
+      { rxID },
+      { $set: { returnDate: new Date() } },
+      { new: true }
+    );
   } catch (e) {
     console.error(e);
   }
