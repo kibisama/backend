@@ -46,6 +46,11 @@ exports.getLogItems = async (req, res, next) => {
   const { _id } = res.locals.station;
   try {
     const data = await dlvry.findDeliveryLogItems(date, _id, session);
+    if (!data) {
+      return res
+        .status(500)
+        .send({ code: 500, message: "Internal Server Error" });
+    }
     if (data.length === 0) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     }
