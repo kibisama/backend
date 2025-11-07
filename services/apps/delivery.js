@@ -420,7 +420,10 @@ exports.mapDeliveryLogs = async (dRxes) => {
         rxQty: dRx.rxQty,
         patPay: dRx.patPay,
         log: dRx.deliveryLog,
-        returnDate: dRx.returnDate,
+        returnDate:
+          dRx.returnDates.length > 0
+            ? dRx.returnDates[dRx.returnDates.length - 1]
+            : undefined,
       };
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
@@ -460,9 +463,18 @@ exports.mapSearchResults = async (dRxes) => {
         { path: "deliveryStation" },
         { path: "deliveryLog" },
       ]);
-      const { rxID, rxNumber, rxDate, drugName, returnDate } = dRx;
+      const { rxID, rxNumber, rxDate, drugName, returnDates } = dRx;
       /** @type {SearchResultRow} **/
-      const row = { id: rxID, rxNumber, rxDate, drugName, returnDate };
+      const row = {
+        id: rxID,
+        rxNumber,
+        rxDate,
+        drugName,
+        returnDate:
+          returnDates.length > 0
+            ? returnDates[returnDates.length - 1]
+            : undefined,
+      };
       dRx.patient?.patientLastName &&
         dRx.patient.patientFirstName &&
         (row.patient = `${dRx.patient.patientLastName}, ${dRx.patient.patientFirstName}`);

@@ -314,13 +314,17 @@ exports.findDRxByRxID = async (rxID) => {
  * @param {string} rxID
  * @returns {Promise<DRx|null|undefined>}
  */
-exports.setReturnDate = async (rxID) => {
+exports.setReturn = async (rxID) => {
   try {
-    return await DRx.findOneAndUpdate(
-      { rxID },
-      { $set: { returnDate: new Date() } },
-      { new: true }
-    );
+    const dRx = await exports.findDRxByRxID(rxID);
+    if (dRx.deliveryLog) {
+      await dRx.updateOne({
+        $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
+        $unset: { deliveryLog: 1, deliveryDate: 1, deliveryStation: 1 },
+      });
+      return await exports.findDRxByRxID(rxID);
+    }
+    return dRx;
   } catch (e) {
     console.error(e);
   }

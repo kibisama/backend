@@ -187,7 +187,7 @@ exports.reverseDelivery = async (req, res, next) => {
     if (!rxID) {
       return res.status(400).send({ code: 400, message: "Bad Request" });
     }
-    const result = await dRx.setReturnDate(rxID);
+    const result = await dRx.setReturn(rxID);
     if (result === null) {
       return res.status(404).send({ code: 404, message: "Not Found" });
     } else if (!result) {
@@ -197,7 +197,7 @@ exports.reverseDelivery = async (req, res, next) => {
     }
     return res
       .status(200)
-      .send({ code: 200, data: (await dlvry.mapSearchResults(result))[0] });
+      .send({ code: 200, data: (await dlvry.mapSearchResults([result]))[0] });
   } catch (e) {
     console.error(e);
   }
