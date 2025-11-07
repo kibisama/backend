@@ -421,7 +421,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
         patPay: dRx.patPay,
         log: dRx.deliveryLog,
         returnDate:
-          dRx.returnDates.length > 0
+          dRx.returnDates?.length > 0
             ? dRx.returnDates[dRx.returnDates.length - 1]
             : undefined,
       };
@@ -471,7 +471,7 @@ exports.mapSearchResults = async (dRxes) => {
         rxDate,
         drugName,
         returnDate:
-          returnDates.length > 0
+          returnDates?.length > 0
             ? returnDates[returnDates.length - 1]
             : undefined,
       };
