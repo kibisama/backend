@@ -127,6 +127,8 @@ exports.setDeliveryLogsToday = async (stationId) => {
             patient: 1,
             plan: 1,
             deliveryLog: 1,
+            returnDates: 1,
+            logHistory: 1,
           },
         },
       }
@@ -302,6 +304,8 @@ exports.findDeliveryLog = async (date, stationId, session, sort) => {
         patient: 1,
         plan: 1,
         deliveryLog: 1,
+        returnDates: 1,
+        logHistory: 1,
       },
       sort,
     });
@@ -382,6 +386,8 @@ exports.createDeliveryLog = async (station) => {
             patient: 1,
             plan: 1,
             deliveryLog: 1,
+            returnDates: 1,
+            logHistory: 1,
           },
         });
       } catch (e) {
