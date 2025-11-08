@@ -256,9 +256,14 @@ const refreshLogsToday = async () => {
 };
 
 /**
+ * @typedef {object} Session
+ * @property {string} session
+ * @property {ObjectId} logId
+ */
+/**
  * @param {string} date
  * @param {string} stationId
- * @returns {Promise<[string]|undefined>}
+ * @returns {Promise<[Session]|undefined>}
  */
 exports.findDeliverySessions = async (date, stationId) => {
   try {
@@ -267,7 +272,7 @@ exports.findDeliverySessions = async (date, stationId) => {
       return Object.keys(__DeliveryLogsToday[stationId]);
     } else {
       return (await DeliveryLog.find({ date, station: stationId })).map(
-        (v) => v.session
+        (v) => ({ session: v.session, logId: v._id })
       );
     }
   } catch (e) {
@@ -419,6 +424,7 @@ exports.createDeliveryLog = async (station) => {
  * @property {string} plan
  * @property {string} patPay
  * @property {ObjectId} log
+ * @property {[ObjectId]} logHistory
  * @property {Date} returnDate
  */
 
@@ -444,6 +450,7 @@ exports.mapDeliveryLogs = async (dRxes) => {
         rxQty: dRx.rxQty,
         patPay: dRx.patPay,
         log: dRx.deliveryLog,
+        logHistory: dRx.logHistory ?? [],
         returnDate:
           dRx.returnDates?.length > 0
             ? dRx.returnDates[dRx.returnDates.length - 1]
