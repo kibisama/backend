@@ -103,7 +103,7 @@ const presets = [
  * @param {string|ObjectId|DeliveryStation} stationId
  * @returns {Promise<void>}
  */
-const setDeliveryLogsToday = async (stationId) => {
+exports.setDeliveryLogsToday = async (stationId) => {
   try {
     const logs = await DeliveryLog.find(
       {
@@ -166,7 +166,7 @@ let __DeliveryLogsToday = { date: dayjs().format("MMDDYYYY"), stages: {} };
         __allDeliveryStations[station.id] = station;
         const { _id } = station;
         __DeliveryLogsToday[_id] = {};
-        await setDeliveryLogsToday(_id);
+        await exports.setDeliveryLogsToday(_id);
         await exports.setDeliveryStagesToday(_id);
       }
     }
@@ -224,7 +224,7 @@ exports.createDeliveryStation = async (schema) => {
     __allDeliveryStations[station.id] = station;
     const { _id } = station;
     __DeliveryLogsToday[_id] = {};
-    await setDeliveryLogsToday(_id);
+    await exports.setDeliveryLogsToday(_id);
     await exports.setDeliveryStagesToday(_id);
     return { code: 200, data: station };
   } catch (e) {
@@ -244,7 +244,7 @@ const refreshLogsToday = async () => {
       for (const station in __allDeliveryStations) {
         const _id = __allDeliveryStations[station]._id;
         __DeliveryLogsToday[_id] = {};
-        await setDeliveryLogsToday(_id);
+        await exports.setDeliveryLogsToday(_id);
         await exports.setDeliveryStagesToday(_id);
       }
     }
@@ -367,14 +367,30 @@ exports.createDeliveryLog = async (station) => {
             { session: tx }
           );
         }
-        __DeliveryLogsToday[station][log.session] = dRxes;
-        __DeliveryLogsToday.stages[station] = [];
-        return log;
+        return await log.populate({
+          path: "dRxes",
+          select: {
+            _id: 1,
+            rxID: 1,
+            deliveryDate: 1,
+            rxDate: 1,
+            rxNumber: 1,
+            drugName: 1,
+            doctorName: 1,
+            rxQty: 1,
+            patPay: 1,
+            patient: 1,
+            plan: 1,
+            deliveryLog: 1,
+          },
+        });
       } catch (e) {
         console.error(e);
       }
     });
     tx.endSession();
+    __DeliveryLogsToday[station][log.session] = log.dRxes;
+    __DeliveryLogsToday.stages[station] = [];
     return log;
   } catch (e) {
     console.error(e);

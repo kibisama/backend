@@ -2,6 +2,7 @@ const DRx = require("../../schemas/dRx/dRx");
 const pt = require("./patient");
 const plan = require("./plan");
 const dayjs = require("dayjs");
+const delivery = require("../apps/delivery");
 
 /**
  * @typedef {DRx.DigitalRx} DRx
@@ -322,6 +323,8 @@ exports.setReturn = async (rxID) => {
         $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
         $unset: { deliveryLog: 1, deliveryDate: 1, deliveryStation: 1 },
       });
+      dayjs(dRx.deliveryDate).isSame(dayjs(), "d") &&
+        (await delivery.setDeliveryLogsToday(dRx.deliveryStation));
       return await exports.findDRxByRxID(rxID);
     }
     return dRx;
