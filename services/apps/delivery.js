@@ -390,10 +390,9 @@ exports.createDeliveryLog = async (station) => {
             logHistory: 1,
           },
         });
-
-        __DeliveryLogsToday[station][log.session] = log.dRxes;
+        __DeliveryLogsToday[station][log.session] =
+          await exports.mapDeliveryLogs(log.dRxes);
         __DeliveryLogsToday.stages[station] = [];
-
         return log;
       } catch (e) {
         console.error(e);
