@@ -371,7 +371,7 @@ exports.createDeliveryLog = async (station) => {
             { session: tx }
           );
         }
-        return await log.populate({
+        await log.populate({
           path: "dRxes",
           select: {
             _id: 1,
@@ -390,13 +390,16 @@ exports.createDeliveryLog = async (station) => {
             logHistory: 1,
           },
         });
+
+        __DeliveryLogsToday[station][log.session] = log.dRxes;
+        __DeliveryLogsToday.stages[station] = [];
+
+        return log;
       } catch (e) {
         console.error(e);
       }
     });
     tx.endSession();
-    __DeliveryLogsToday[station][log.session] = log.dRxes;
-    __DeliveryLogsToday.stages[station] = [];
     return log;
   } catch (e) {
     console.error(e);
