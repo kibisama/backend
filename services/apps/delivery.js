@@ -267,14 +267,15 @@ const refreshLogsToday = async () => {
  */
 exports.findDeliverySessions = async (date, stationId) => {
   try {
-    if (date === dayjs().format("MMDDYYYY")) {
-      await refreshLogsToday();
-      return Object.keys(__DeliveryLogsToday[stationId]);
-    } else {
-      return (await DeliveryLog.find({ date, station: stationId })).map(
-        (v) => ({ session: v.session, logId: v._id })
-      );
-    }
+    // if (date === dayjs().format("MMDDYYYY")) {
+    //   await refreshLogsToday();
+    //   return Object.keys(__DeliveryLogsToday[stationId]);
+    // } else {
+    return (await DeliveryLog.find({ date, station: stationId })).map((v) => ({
+      session: v.session,
+      logId: v._id,
+    }));
+    // }
   } catch (e) {
     console.error(e);
   }
