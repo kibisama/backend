@@ -45,9 +45,16 @@ app.use((req, res, next) => {
   next(error);
 });
 
+const logger = require("./logger");
+
 app.use((err, req, res, next) => {
-  res.locals.message = err.message;
-  res.locals.error = isProductionMode ? {} : err;
+  logger.log({
+    level: "error",
+    message: err.message,
+    stack: err.stack,
+    timestamp: new Date().toString(),
+    req_ip: req.ip,
+  });
   res.sendStatus(err.status || 500);
 });
 
