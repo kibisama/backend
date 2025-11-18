@@ -18,7 +18,7 @@
     "winston": "^3.18.3"
   },
   "name": "backend",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "main": "app.js",
   "scripts": {
     "test": "jest",
