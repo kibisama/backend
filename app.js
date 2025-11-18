@@ -32,7 +32,8 @@ if (isProductionMode) {
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false }));
-
+const compression = require("compression");
+app.use(compression());
 const router = require("./routes");
 app.use("/", router);
 
