@@ -4,6 +4,7 @@ const DRx = require("../../schemas/dRx/dRx");
 const dRx = require("../dRx/dRx");
 const dayjs = require("dayjs");
 const mongoose = require("mongoose");
+const { refresh_cache_delivery } = require("../../api/client");
 
 /**
  * @typedef {DeliveryStation.DeliveryStation} DeliveryStation
@@ -150,6 +151,7 @@ exports.setDeliveryStagesToday = async (stationId) => {
     __DeliveryLogsToday.stages[stationId] = await exports.mapDeliveryLogs(
       await dRx.findDRxByStation(stationId)
     );
+    await refresh_cache_delivery(__allDeliveryStations[stationId].invoiceCode);
   } catch (e) {
     console.error(e);
   }
