@@ -5,15 +5,11 @@ const jwt = require("jsonwebtoken");
 const generateToken = () => jwt.sign("", process.env.JWT_ACCESS_TOKEN_SECRET);
 
 module.exports = {
-  url: "/api",
   async refresh_cache_delivery(invoiceCode) {
     try {
-      return await client.get(
-        `${this.url}/refresh_cache/delivery/${invoiceCode}`,
-        {
-          headers: { Authorization: `Bearer ${generateToken()}` },
-        }
-      );
+      return await client.get(`api/refresh_cache/delivery/${invoiceCode}`, {
+        headers: { Authorization: `Bearer ${generateToken()}` },
+      });
     } catch (e) {
       console.log(e);
       return e;
