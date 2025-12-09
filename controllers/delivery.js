@@ -1,5 +1,6 @@
 const dlvry = require("../services/apps/delivery");
 const dRx = require("../services/dRx/dRx");
+const { refresh_cache_delivery } = require("../api/client");
 
 exports.get = async (req, res, next) => {
   try {
@@ -120,7 +121,7 @@ exports.postLog = async (req, res, next) => {
 
 exports.scanQR = async (req, res, next) => {
   try {
-    const { _id } = res.locals.station;
+    const { _id, invoiceCode } = res.locals.station;
     const { data, delimiter } = req.body;
     const a = data?.split(delimiter || "|").map((v) => v.trim());
     if (a?.length !== 12 || !a[0].match(/^\d{8,}$/)) {
@@ -147,7 +148,9 @@ exports.scanQR = async (req, res, next) => {
       dlvry.setDeliveryStagesToday(exStation);
     }
     dlvry.setDeliveryStagesToday(_id);
-    return res.status(200).send({ code: 200, data: result });
+    res.status(200).send({ code: 200, data: result });
+    await refresh_cache_delivery(invoiceCode);
+    return;
   } catch (e) {
     console.error(e);
     next(e);
@@ -172,7 +175,9 @@ exports.unsetDeliveryStation = async (req, res, next) => {
     const { deliveryStation } = _dRx;
     if (deliveryStation) {
       await _dRx.updateOne({ $unset: { deliveryStation: 1, deliveryDate: 1 } });
+      await _dRx.populate("deliveryStation");
       dlvry.setDeliveryStagesToday(deliveryStation);
+      await refresh_cache_delivery(_dRx.deliveryStation.invoiceCode);
     }
     return res.status(200).send({ code: 200 });
   } catch (e) {
