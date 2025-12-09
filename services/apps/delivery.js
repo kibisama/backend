@@ -151,7 +151,16 @@ exports.setDeliveryStagesToday = async (stationId) => {
     __DeliveryLogsToday.stages[stationId] = await exports.mapDeliveryLogs(
       await dRx.findDRxByStation(stationId)
     );
-    await refresh_cache_delivery(__allDeliveryStations[stationId].invoiceCode);
+    //
+    let invoiceCode;
+    for (const station in __allDeliveryStations) {
+      if (__allDeliveryStations[station]._id.toString() === stationId) {
+        invoiceCode = __allDeliveryStations[station].invoiceCode;
+        break;
+      }
+    }
+    //
+    await refresh_cache_delivery(invoiceCode);
   } catch (e) {
     console.error(e);
   }
