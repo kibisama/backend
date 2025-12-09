@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const generateToken = () => jwt.sign("", process.env.JWT_ACCESS_TOKEN_SECRET);
 
 module.exports = {
-  url: "/system",
+  url: "/api",
   async refresh_cache_delivery(invoiceCode) {
     try {
       return await client.get(
