@@ -3,17 +3,19 @@ const client = axios.create();
 client.defaults.baseURL = process.env.CLIENT_ADDRESS;
 const jwt = require("jsonwebtoken");
 const generateToken = () =>
-  jwt.sign({ sub: "api" }, process.env.JWT_ACCESS_TOKEN_SECRET);
+  jwt.sign({ sub: "api" }, process.env.JWT_ACCESS_TOKEN_SECRET, {
+    expiresIn: "1m",
+  });
 
 module.exports = {
   async refresh_cache_delivery(invoiceCode) {
-    try {
-      return await client.get(`api/refresh_cache/delivery/${invoiceCode}`, {
-        headers: { Authorization: `Bearer ${generateToken()}` },
-      });
-    } catch (e) {
-      console.log(e);
-      return e;
-    }
+    return await client.get(`api/refresh_cache/delivery/${invoiceCode}`, {
+      headers: { Authorization: `Bearer ${generateToken()}` },
+    });
+  },
+  async getUsers() {
+    return await client.get("api/users", {
+      headers: { Authorization: `Bearer ${generateToken()}` },
+    });
   },
 };
