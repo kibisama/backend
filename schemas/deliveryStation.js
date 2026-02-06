@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
-const {
-  Types: { ObjectId },
-} = Schema;
 
 const deliveryStationSchema = new Schema({
-  id: { type: String, required: true, uppercase: true, unique: true },
   displayName: { type: String, required: true, unique: true },
   invoiceCode: {
     type: String,
@@ -14,19 +10,28 @@ const deliveryStationSchema = new Schema({
     minLength: 3,
     maxLength: 3,
   },
-  active: { type: Boolean, default: true },
+  active: { type: Boolean, required: true, default: true },
   name: { type: String, required: true },
   address: { type: String, required: true },
   city: { type: String, required: true },
   state: { type: String, required: true },
   zip: { type: String, required: true },
   phone: { type: String, required: true },
-  plan: { type: ObjectId, ref: "DRx Plan" },
 });
 
 const model = mongoose.model("Delivery Station", deliveryStationSchema);
 /**
- * @typedef {Awaited<ReturnType<model["create"]>>[0]} DeliveryStation
+ * @typedef {object} DeliveryStationSchema
+ * @property {string} displayName
+ * @property {string} invoiceCode
+ * @property {boolean} [active]
+ * @property {string} name
+ * @property {string} address
+ * @property {string} city
+ * @property {string} state
+ * @property {string} zip
+ * @property {string} phone
+ * @typedef {mongoose.HydratedDocument<DeliveryStationSchema>} DeliveryStation
  */
 
 module.exports = model;

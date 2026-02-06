@@ -10,7 +10,13 @@ const planSchema = new Schema({
 
 const model = mongoose.model("DRx Plan", planSchema);
 /**
- * @typedef {Awaited<ReturnType<model["create"]>>[0]} DRxPlan
+ * @typedef {object} DRxPlanSchema
+ * @property {string} planID
+ * @property {string} [planName]
+ * @property {string} [ansiBin]
+ * @property {string} [pcn]
+
+ * @typedef {mongoose.HydratedDocument<DRxPlan>} DRxPlan
  */
 
 module.exports = model;

@@ -8,11 +8,6 @@ const generateToken = () =>
   });
 
 module.exports = {
-  async refresh_cache_delivery(invoiceCode) {
-    return await client.get(`api/refresh_cache/delivery/${invoiceCode}`, {
-      headers: { Authorization: `Bearer ${generateToken()}` },
-    });
-  },
   async getUsers() {
     return await client.get("api/users", {
       headers: { Authorization: `Bearer ${generateToken()}` },

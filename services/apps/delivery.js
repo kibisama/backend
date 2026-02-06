@@ -131,7 +131,7 @@ exports.setDeliveryLogsToday = async (stationId) => {
             logHistory: 1,
           },
         },
-      }
+      },
     );
     for (let j = 0; j < logs.length; j++) {
       __DeliveryLogsToday[stationId][logs[j].session] =
@@ -148,7 +148,7 @@ exports.setDeliveryLogsToday = async (stationId) => {
 exports.setDeliveryStagesToday = async (stationId) => {
   try {
     __DeliveryLogsToday.stages[stationId] = await exports.mapDeliveryLogs(
-      await dRx.findDRxByStation(stationId)
+      await dRx.findDRxByStation(stationId),
     );
   } catch (e) {
     console.error(e);
@@ -374,7 +374,7 @@ exports.createDeliveryLog = async (station) => {
           await DRx.findByIdAndUpdate(
             dRxes[i]._id,
             { $set: { deliveryLog: log._id } },
-            { session: tx }
+            { session: tx },
           );
         }
         await log.populate({
@@ -514,7 +514,7 @@ exports.mapSearchResults = async (dRxes) => {
         (row.stationDisplayName = dRx.deliveryStation.displayName);
       dRx.deliveryLog &&
         (row.date = dayjs(dRx.deliveryLog.date, "MMDDYYYY").format(
-          "M. D. YYYY"
+          "M. D. YYYY",
         )) &&
         (row.session = dRx.deliveryLog.session);
       mappedResults.push(row);
