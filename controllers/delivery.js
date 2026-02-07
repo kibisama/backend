@@ -1,13 +1,13 @@
 // const dlvry = require("../services/apps/delivery");
-// const dRx = require("../services/dRx/dRx");
-// const mq = require("../rabbitmq");
+
+const sendToQueue = require("../rabbitmq");
 
 const delivery = require("../services/delivery");
-const station = require("../services/deliveryStation");
+const dRx = require("../services/dRx/dRx");
 
 exports.getActiveDeliveryStations = async (req, res, next) => {
   try {
-    return res.send(station.getActiveDeliveryStations());
+    return res.send(delivery.getActiveDeliveryStations());
   } catch (error) {
     next(error);
   }
@@ -15,7 +15,7 @@ exports.getActiveDeliveryStations = async (req, res, next) => {
 
 exports.getStation = (req, res, next) => {
   const { invoiceCode } = req.params;
-  const s = station.getDeliveryStation(invoiceCode.toUpperCase());
+  const s = delivery.getDeliveryStation(invoiceCode.toUpperCase());
   if (s) {
     res.locals.station = s;
     return next();
@@ -39,68 +39,65 @@ exports.getSessions = async (req, res, next) => {
   }
 };
 
+const queue_delivery_new = "delivery_new";
 exports.scanQR = async (req, res, next) => {
-      const { _id, invoiceCode } = res.locals.station;
-    const { data, delimiter } = req.body;
+  const station = res.locals.station;
+  const { data, delimiter } = req.body;
   try {
-
-    const a = data?.split(delimiter || "|").map((v) => v.trim());
-    if (a?.length !== 12 || !a[0].match(/^\d{8,}$/)) {
-      return res.status(400).send({ code: 400, message: "Bad Request" });
-    }
-    const _dRx = await dRx.upsertDRx({ rxID: a[0] });
-    const { deliveryLog, deliveryStation } = _dRx;
-    if (deliveryLog) {
-      return res.status(409).send({
-        code: 409,
-        message: "Unable to update because the Rx has already been delivered.",
-      });
-    }
+    const qr = dRx.decodeQR(data, delimiter);
+    const exDRx = await dRx.findDRxByRxID(qr.dRxSchema.rxID);
     let exStation;
-    deliveryStation && (exStation = deliveryStation);
-    const date = new Date();
-    const result = await dRx.upsertWithQR(a, _id, date);
-    if (!result) {
-      return res.status(500).send({
-        code: 500,
-        message: "An unexpected error occurred. Please try again.",
-      });
+    if (exDRx) {
+      const { deliveryLog, deliveryStation } = exDRx;
+      if (deliveryLog) {
+        return res
+          .status(422)
+          .send("Unable to update because the Rx has already been delivered.");
+      }
+      exStation = deliveryStation;
     }
-    if (exStation && !_id.equals(exStation)) {
-      dlvry.setDeliveryStagesToday(exStation);
+    const upserted = await dRx.upsertDRx(qr);
+    const deliveryDate = new Date();
+    await dRx.setDelivery(upserted, station, deliveryDate);
+    if (exStation && !station._id.equals(exStation)) {
+      await delivery.refresh_nodeCache_delivery_stages(exStation);
     }
-    dlvry.setDeliveryStagesToday(_id);
-    res.status(200).send({ code: 200, data: result });
-    await mq(
-      "delivery_new",
-      JSON.stringify({ stationCode: invoiceCode, date, data, delimiter }),
-    );
-    return;
-  } catch (e) {
-    console.error(e);
-    next(e);
+    await delivery.refresh_nodeCache_delivery_stages(station._id);
+    res.sendStatus(200);
+    // Todo: Outbox
+    const msgContent = JSON.stringify({
+      stationCode: station.invoiceCode,
+      date: deliveryDate,
+      data,
+      delimiter,
+    });
+    await sendToQueue(queue_delivery_new, msgContent);
+  } catch (error) {
+    next(error);
   }
 };
 
-// exports.getLogItems = async (req, res, next) => {
-//   const { date, session } = req.params;
-//   const { _id } = res.locals.station;
-//   try {
-//     const data = await dlvry.findDeliveryLogItems(date, _id, session);
-//     if (!data) {
-//       return res
-//         .status(500)
-//         .send({ code: 500, message: "Internal Server Error" });
-//     }
-//     if (data.length === 0) {
-//       return res.status(404).send({ code: 404, message: "Not Found" });
-//     }
-//     return res.status(200).send({ code: 200, data });
-//   } catch (e) {
-//     console.error(e);
-//     next(e);
-//   }
-// };
+exports.getLogItems = async (req, res, next) => {
+  const { date, session } = req.params;
+  const station = res.locals.station;
+  try {
+    if (session === "0") {
+      return res.send(delivery.getDeliveriesOnStage(station._id));
+    }
+    // const data = await dlvry.findDeliveryLogItems(date, _id, session);
+    // if (!data) {
+    //   return res
+    //     .status(500)
+    //     .send({ code: 500, message: "Internal Server Error" });
+    // }
+    // if (data.length === 0) {
+    //   return res.status(404).send({ code: 404, message: "Not Found" });
+    // }
+    // return res.status(200).send({ code: 200, data });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // const RECEIPT_COUNT_PER_PAGE = 40;
 // exports.getReceipt = async (req, res, next) => {
@@ -158,8 +155,6 @@ exports.scanQR = async (req, res, next) => {
 //     next(e);
 //   }
 // };
-
-
 
 // exports.unsetDeliveryStation = async (req, res, next) => {
 //   try {

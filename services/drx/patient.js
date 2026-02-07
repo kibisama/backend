@@ -1,9 +1,4 @@
-const Pt = require("../../schemas/dRx/patient");
-
-/**
- * @typedef {Pt.DRxPatient} DRxPt
- * @typedef {typeof Pt.schema.obj} DRxPtSchema
- */
+const Patient = require("../../schemas/drx/patient");
 
 exports.map_fields = {
   PatientID: "patientID",
@@ -21,43 +16,34 @@ exports.map_fields = {
 };
 
 /**
- * @param {DRxPtSchema} ptSchema
- * @returns {Promise<DRxPt|undefined>}
+ * @param {Patient.DRxPatientSchema} ptSchema
+ * @returns {Promise<Patient.DRxPatient>}
  */
 exports.upsertPatient = async (ptSchema) => {
-  try {
-    const { patientID } = ptSchema;
-    if (!patientID) {
-      return;
-    }
-    return await Pt.findOneAndUpdate(
-      { patientID },
-      { $set: ptSchema },
-      { new: true, upsert: true }
-    );
-  } catch (e) {
-    console.error(e);
+  const { patientID } = ptSchema;
+  if (!patientID) {
+    throw { status: 400 };
   }
+  return await Patient.findOneAndUpdate(
+    { patientID },
+    { $set: ptSchema },
+    { runValidators: true, new: true, upsert: true }
+  );
 };
 
 /**
  * @param {string} query LastInit,FirstInit
- * @returns {Promise<[{_id: ObjectId, label: string, dob: string}]|undefined>}
+ * @returns {Promise<{_id: ObjectId, label: string, dob: string}[]>}
  */
 exports.findPatient = async (query) => {
-  try {
-    const [last, first] = query.split(",").map((v) => v.trim());
-    const $and = [];
-    last &&
-      $and.push({ patientLastName: { $regex: `^${last}`, $options: "i" } });
-    first &&
-      $and.push({ patientFirstName: { $regex: `^${first}`, $options: "i" } });
-    return (await Pt.find({ $and })).map((v) => ({
-      _id: v._id,
-      label: v.patientLastName + "," + v.patientFirstName,
-      dob: v.patientDOB || "",
-    }));
-  } catch (e) {
-    console.error(e);
-  }
+  const [last, first] = query.split(",").map((v) => v.trim());
+  const $and = [];
+  last && $and.push({ patientLastName: { $regex: `^${last}`, $options: "i" } });
+  first &&
+    $and.push({ patientFirstName: { $regex: `^${first}`, $options: "i" } });
+  return (await Pt.find({ $and })).map((v) => ({
+    _id: v._id,
+    label: v.patientLastName + "," + v.patientFirstName,
+    dob: v.patientDOB || "",
+  }));
 };

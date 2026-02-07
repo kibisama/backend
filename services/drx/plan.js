@@ -1,10 +1,5 @@
 const Plan = require("../../schemas/dRx/plan");
 
-/**
- * @typedef {Plan.DRxPlan} Plan
- * @typedef {typeof Plan.schema.obj} PlanSchema
- */
-
 exports.map_fields = {
   PlanID: "planID",
   PlanName: "planName",
@@ -13,21 +8,17 @@ exports.map_fields = {
 };
 
 /**
- * @param {PlanSchema} planSchema
- * @returns {Promise<DRx|undefined>}
+ * @param {Plan.DRxPlanSchema}
+ * @returns {Promise<Plan.DRxPlan>}
  */
 exports.upsertPlan = async (planSchema) => {
-  try {
-    const { planID } = planSchema;
-    if (!planID) {
-      return;
-    }
-    return await Plan.findOneAndUpdate(
-      { planID },
-      { $set: planSchema },
-      { new: true, upsert: true }
-    );
-  } catch (e) {
-    console.error(e);
+  const { planID } = planSchema;
+  if (!planID) {
+    throw { status: 400 };
   }
+  return await Plan.findOneAndUpdate(
+    { planID },
+    { $set: planSchema },
+    { runValidators: true, new: true, upsert: true }
+  );
 };

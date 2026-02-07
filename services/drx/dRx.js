@@ -1,20 +1,11 @@
 const mongoose = require("mongoose");
-const Patient = require("../../schemas/drx/patient");
-const Plan = require("../../schemas/drx/plan");
-
 const DRx = require("../../schemas/dRx/dRx");
 const pt = require("./patient");
-const plan = require("./plan");
+const pl = require("./plan");
+const dl = require("../delivery");
+
 const dayjs = require("dayjs");
 const delivery = require("../apps/delivery");
-
-/**
- * @typedef {DRx.DigitalRx} DRx
- * @typedef {DRx.RxStatus} RxStatus
- * @typedef {DRx.RxStatusFin} RxStatusFin
- * @typedef {typeof DRx.schema.obj} DRxSchema
- * @typedef {import("mongoose").ObjectId} ObjectId
- */
 
 exports.map_fields = {
   /* Rx data */
@@ -135,26 +126,6 @@ exports.isRxOnly = (dRx) => {
   return false;
 };
 
-// /**
-//  * @param {DRxSchema} dRxSchema
-//  * @returns {Promise<DRx|undefined>}
-//  */
-// exports.upsertDRx = async (dRxSchema) => {
-//   try {
-//     const { rxID } = dRxSchema;
-//     if (!rxID) {
-//       return;
-//     }
-//     return await DRx.findOneAndUpdate(
-//       { rxID },
-//       { $set: dRxSchema },
-//       { new: true, upsert: true }
-//     );
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
-
 /**
  * Upserts dRx documents from a CSV json.
  * @param {[[string]]} csvData
@@ -218,7 +189,7 @@ exports.importDRxs = async (csvData) => {
 exports.findDRxByStation = async (
   deliveryStation,
   deliveryLog,
-  deliveryDate,
+  deliveryDate
 ) => {
   const day = deliveryDate ? dayjs(deliveryDate, "MMDDYYYY") : dayjs();
   const filter = {
@@ -250,66 +221,6 @@ exports.findDRxForDeliveries = async (rxNumber, patient) => {
     rxNumber && $and.push({ rxNumber });
     patient && $and.push({ patient });
     return await DRx.find({ $and }).sort({ deliveryDate: -1 });
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-/**
- * @param {[string]} a
- * @param {string} [station]
- * @param {Date} [deliveryDate]
- * @returns {Promise<import("../apps/delivery").Row|undefined>}
- */
-exports.upsertWithQR = async (a, station, deliveryDate) => {
-  try {
-    const _pt = await pt.upsertPatient({
-      patientID: a[3],
-      patientLastName: a[4],
-      patientFirstName: a[5],
-    });
-    const _plan = a[10] ? await plan.upsertPlan({ planID: a[10] }) : void 0;
-    /** @type {DRxSchema} **/
-    const dRxSchema = {
-      rxID: a[0],
-      rxNumber: a[1],
-      rxDate: a[2],
-      drugName: a[6],
-      doctorName: a[7],
-      rxQty: a[8],
-      refills: a[9],
-      patPay: a[11] || "0",
-      patient: _pt._id,
-      plan: _plan?._id,
-    };
-    deliveryDate instanceof Date && (dRxSchema.deliveryDate = deliveryDate);
-    station && (dRxSchema.deliveryStation = station);
-    const dRx = await exports.upsertDRx(dRxSchema);
-    return {
-      id: dRx.rxID,
-      _id: dRx._id,
-      time: dRx.deliveryDate,
-      rxDate: dRx.rxDate,
-      rxNumber: dRx.rxNumber,
-      patient: `${_pt.patientLastName}, ${_pt.patientFirstName}`,
-      doctorName: dRx.doctorName,
-      drugName: dRx.drugName,
-      rxQty: dRx.rxQty,
-      plan: _plan?.planName || _plan?.planID,
-      patPay: dRx.patPay,
-    };
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-/**
- * @param {string} rxID
- * @returns {Promise<DRx|null|undefined>}
- */
-exports.findDRxByRxID = async (rxID) => {
-  try {
-    return await DRx.findOne({ rxID });
   } catch (e) {
     console.error(e);
   }
@@ -353,16 +264,17 @@ exports.setReturn = async (rxID) => {
 
 /**
  * @typedef {object} Data
- * @property {import("../../schemas/drx/patient").DRxPatientSchema} patientSchema
- * @property {import("./plan").PlanSchema} planSchema
+ * @property {import("../../schemas/dRx/patient").DRxPatientSchema} patientSchema
+ * @property {import("../../schemas/dRx/plan").DRxPlanSchema} planSchema
+ * @property {import("../../schemas/dRx/dRx").DRxSchema} dRxSchema
  */
 
 /**
  * @param {string} qr
  * @param {string} delimiter
- * @returns {}
+ * @returns {Data}
  */
-const decodeQR = (qr, delimiter) => {
+exports.decodeQR = (qr, delimiter) => {
   const [
     rxID,
     rxNumber,
@@ -394,40 +306,74 @@ const decodeQR = (qr, delimiter) => {
     throw { status: 400 };
   }
   return {
-    rxID,
-    rxNumber,
-    rxDate,
-    patientID,
-    patientLastName,
-    patientFirstName,
-    drugName,
-    doctorName,
-    rxQty,
-    refills,
-    planID,
-    patPay,
+    dRxSchema: {
+      rxID,
+      rxNumber,
+      rxDate,
+      drugName,
+      doctorName,
+      rxQty,
+      refills,
+      patPay,
+    },
+    patientSchema: { patientID, patientLastName, patientFirstName },
+    planSchema: { planID },
   };
 };
 
 /**
  * @param {Data} data
- * @returns {Promise<>}
+ * @returns {Promise<DRx.DRx>}
  */
 exports.upsertDRx = async (data) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  const { patientSchema, planSchema } = data;
-  const patient = await Patient.findOneAndUpdate(
-    { patientID: patientSchema.patientID },
-    { $set: patientSchema },
-    { runValidators: true, upsert: true, new: true, session },
-  );
+  const { patientSchema, planSchema, dRxSchema } = data;
+  const patient = await pt.upsertPatient(patientSchema);
   let plan;
-  if (planSchema) {
-    plan = await Plan.findOneAndUpdate(
-      { planID: planSchema.planID },
-      { $set: planSchema },
-      { runValidators: true, upsert: true, new: true, session },
-    );
+  if (planSchema?.planID) {
+    plan = await pl.upsertPlan(planSchema);
   }
+  return await DRx.findOneAndUpdate(
+    { rxID: dRxSchema.rxID },
+    { $set: { ...dRxSchema, patient: patient._id, plan: plan?._id } },
+    { runValidators: true, new: true, upsert: true }
+  );
+};
+
+/**
+ * @param {string} rxID
+ * @returns {Promise<DRx.DRx|null>}
+ */
+exports.findDRxByRxID = async (rxID) => {
+  if (!rxID) {
+    throw { status: 400 };
+  }
+  return await DRx.findOne({ rxID });
+};
+
+/**
+ * @param {DRx.DRx} dRx
+ * @param {string|mongoose.ObjectId} station
+ * @param {Date} [deliveryDate]
+ * @param {Promise<DRx.DRx>}
+ */
+exports.setDelivery = async (dRx, station, deliveryDate = new Date()) => {
+  if (!mongoose.isValidObjectId(station)) {
+    throw { status: 400 };
+  }
+  dRx.deliveryStation = station;
+  dRx.deliveryDate = deliveryDate;
+  return await dRx.save();
+};
+
+/**
+ * @param {string|mongoose.ObjectId} deliveryStation
+ * @returns {Promise<DRx.DRx[]>}
+ */
+exports.findDRxesOnStage = async (deliveryStation) => {
+  const day = dayjs();
+  return await DRx.find({
+    deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
+    deliveryStation,
+    deliveryLog: { $exists: false },
+  });
 };
