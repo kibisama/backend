@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const DRx = require("../../schemas/dRx/dRx");
 const pt = require("./patient");
 const pl = require("./plan");
-const dl = require("../delivery");
 
 const dayjs = require("dayjs");
 const delivery = require("../apps/delivery");
@@ -189,7 +188,7 @@ exports.importDRxs = async (csvData) => {
 exports.findDRxByStation = async (
   deliveryStation,
   deliveryLog,
-  deliveryDate
+  deliveryDate,
 ) => {
   const day = deliveryDate ? dayjs(deliveryDate, "MMDDYYYY") : dayjs();
   const filter = {
@@ -335,7 +334,7 @@ exports.upsertDRx = async (data) => {
   return await DRx.findOneAndUpdate(
     { rxID: dRxSchema.rxID },
     { $set: { ...dRxSchema, patient: patient._id, plan: plan?._id } },
-    { runValidators: true, new: true, upsert: true }
+    { runValidators: true, new: true, upsert: true },
   );
 };
 
@@ -367,10 +366,11 @@ exports.setDelivery = async (dRx, station, deliveryDate = new Date()) => {
 
 /**
  * @param {string|mongoose.ObjectId} deliveryStation
+ * @param {dayjs.Dayjs} day
  * @returns {Promise<DRx.DRx[]>}
  */
-exports.findDRxesOnStage = async (deliveryStation) => {
-  const day = dayjs();
+exports.findDRxesOnStage = async (deliveryStation, day) => {
+  var day = day || dayjs();
   return await DRx.find({
     deliveryDate: { $gte: day.startOf("d"), $lte: day.endOf("d") },
     deliveryStation,

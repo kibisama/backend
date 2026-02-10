@@ -5,7 +5,7 @@ const {
   getStation,
   getStationInfo,
   getSessions,
-  // getLogItems,
+  findDeliveries,
   // getReceipt,
   // postLog,
   // scanQR,
@@ -23,7 +23,7 @@ router.get("/:invoiceCode", getStationInfo);
 // router.post("/:section", postLog);
 // router.post("/:section/qr", scanQR);
 router.get("/:invoiceCode/:date", getSessions);
-// router.get("/:section/:date/:session", getLogItems);
+router.get("/:invoiceCode/:date/:session", findDeliveries);
 // router.get("/:section/:date/:session/receipt", getReceipt);
 
 module.exports = router;

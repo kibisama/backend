@@ -77,23 +77,15 @@ exports.scanQR = async (req, res, next) => {
   }
 };
 
-exports.getLogItems = async (req, res, next) => {
+exports.findDeliveries = async (req, res, next) => {
   const { date, session } = req.params;
   const station = res.locals.station;
   try {
-    if (session === "0") {
-      return res.send(delivery.getDeliveriesOnStage(station._id));
+    const rows = await delivery.findDeliveries(date, station, session);
+    if (rows.length === 0) {
+      return res.sendStatus(404);
     }
-    // const data = await dlvry.findDeliveryLogItems(date, _id, session);
-    // if (!data) {
-    //   return res
-    //     .status(500)
-    //     .send({ code: 500, message: "Internal Server Error" });
-    // }
-    // if (data.length === 0) {
-    //   return res.status(404).send({ code: 404, message: "Not Found" });
-    // }
-    // return res.status(200).send({ code: 200, data });
+    return res.send(rows);
   } catch (error) {
     next(error);
   }

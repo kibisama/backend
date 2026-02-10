@@ -119,8 +119,8 @@ exports.handleSyncReq = async (stations) => {
         state: s.state,
         zip: s.zip,
         phone: s.phone,
-      }))
-    )
+      })),
+    ),
   );
 };
 
@@ -171,6 +171,10 @@ exports.findAllDeliveryStations = async () => {
   }));
 };
 
+/**
+ * DELIVERY LOGS
+ */
+
 const DeliveryLog = require("../schemas/deliveryLog");
 const dayjs = require("dayjs");
 const customParseFormat = require("dayjs/plugin/customParseFormat");
@@ -195,7 +199,7 @@ dayjs.extend(customParseFormat);
  */
 
 /**
- * @param {import("../schemas/dRx/dRx").DigitalRx[]} dRxes
+ * @param {import("../schemas/dRx/dRx").DRx[]} dRxes
  * @returns {DeliveryRow[]}
  */
 const deliveryRows = (dRxes) =>
@@ -233,7 +237,7 @@ const deliveryRows = (dRxes) =>
  */
 
 /**
- * @param {import("../schemas/dRx/dRx").DigitalRx[]} dRxes
+ * @param {import("../schemas/dRx/dRx").DRx[]} dRxes
  * @return {SearchResultRow[]>}
  */
 const searchResultRows = (dRxes) =>
@@ -316,31 +320,75 @@ const populate = async (logs) => {
 };
 
 const { findDRxesOnStage } = require("./dRx/dRx");
-const NodeCache = require("node-cache");
-let today = dayjs();
+
 // [deliveryStation._id]: DeliveryRow[]
 const nodeCache_delivery_stages = new NodeCache();
-
 /**
  * @param {string|import("mongoose").ObjectId} station
- * @returns {Promise<boolean>}
+ * @returns {Promise<DeliveryRow[]>}
  */
-exports.refresh_nodeCache_delivery_stages = async (station) =>
-  nodeCache_delivery_stages.set(
-    station.toString(),
-    await findDRxesOnStage(station)
-  );
+exports.refresh_nodeCache_delivery_stages = async (station) => {
+  const rows = deliveryRows(await findDRxesOnStage(station));
+  nodeCache_delivery_stages.set(station.toString(), rows);
+  return rows;
+};
 
+// [`${deliveryStation.invoiceCode} + ${deliveryLog.session}`]: DeliveryRow[]
+const nodeCache_delivery_today_sessions = new NodeCache();
 /**
- * @param {string|import("mongoose").ObjectId} station
+ * @param {string} invoiceCode
+ * @param {string} session
  * @returns {DeliveryRow[]}
  */
-exports.getDeliveriesOnStage = (station) =>
-  nodeCache_delivery_stages.get(station.toString());
+const get_nodeCache_delivery_today_sessions = (invoiceCode, session) =>
+  nodeCache_delivery_today_sessions.get(invoiceCode + session);
+
+/**
+ * @param {string} mmddyyyy
+ * @param {DeliveryStation.DeliveryStation} station
+ * @param {"0" | (string & {})} session
+ * @returns {Promise<DeliveryRow[]>}
+ */
+exports.findDeliveries = async (mmddyyyy, station, session) => {
+  if (!(mmddyyyy && station && session)) {
+    throw { status: 400 };
+  }
+  const day = dayjs(mmddyyyy, "MMDDYYYY");
+  if (day.isSame(dayjs(), "d")) {
+    if (session === "0") {
+      const cache = nodeCache_delivery_stages.get(station._id.toString());
+      if (!cache) {
+        return await exports.refresh_nodeCache_delivery_stages(station._id);
+      }
+    } else {
+      return get_nodeCache_delivery_today_sessions(
+        station.invoiceCode,
+        session,
+      );
+    }
+  } else {
+    if (session === "0") {
+      return deliveryRows(await findDRxesOnStage(station._id, day));
+    } else {
+      const log = await DeliveryLog.findOne({
+        date: mmddyyyy,
+        station,
+        session,
+      });
+      if (!log) {
+        return [];
+      } else {
+        await populate(log);
+        return deliveryRows(log.dRxes);
+      }
+    }
+  }
+};
 
 /**
  * INITIALIZE
  */
+const { scheduleJob } = require("node-schedule");
 (async function () {
   let stations = await DeliveryStation.find();
   if (stations.length === 0) {
@@ -354,12 +402,27 @@ exports.getDeliveriesOnStage = (station) =>
       active && nodeCache_stations.set(invoiceCode, station);
     }
   }
-  const activeStationKeys = nodeCache_delivery_stages.keys();
+  const activeStationKeys = nodeCache_stations.keys();
   for (let i = 0; i < activeStationKeys.length; i++) {
-    await exports.refresh_nodeCache_delivery_stages(
-      nodeCache_delivery_stages.get(activeStationKeys[i])._id
-    );
+    const station = nodeCache_stations.get(activeStationKeys[i]);
+    await exports.refresh_nodeCache_delivery_stages(station._id);
+    const logs = await DeliveryLog.find({
+      date: dayjs().format("MMDDYYYY"),
+      station: station,
+    });
+    if (logs.length > 0) {
+      await populate(logs);
+      logs.forEach((log) =>
+        nodeCache_delivery_today_sessions.set(
+          station.invoiceCode + log.session,
+          deliveryRows(log.dRxes),
+        ),
+      );
+    }
   }
   // sync RabbitMQ
   await exports.handleSyncReq(stations.length > 0 ? stations : undefined);
+  scheduleJob("0 0 * * *", function () {
+    nodeCache_delivery_stages.flushAll();
+  });
 })();
