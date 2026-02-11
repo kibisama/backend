@@ -1,9 +1,16 @@
+const mongoose = require("mongoose");
+const DeliveryStation = require("../schemas/deliveryStation");
+const DeliveryLog = require("../schemas/deliveryLog");
+const DRx = require("../schemas/dRx/dRx");
+const dayjs = require("dayjs");
+const customParseFormat = require("dayjs/plugin/customParseFormat");
+dayjs.extend(customParseFormat);
+const NodeCache = require("node-cache");
+
 /**
  * DELIVERY STATIONS
  */
-const DeliveryStation = require("../schemas/deliveryStation");
 
-const NodeCache = require("node-cache");
 // [deliveryStation.invoiceCode]: station
 const nodeCache_stations = new NodeCache();
 /** @type {DeliveryStation.DeliveryStationSchema[]} **/
@@ -119,8 +126,8 @@ exports.handleSyncReq = async (stations) => {
         state: s.state,
         zip: s.zip,
         phone: s.phone,
-      })),
-    ),
+      }))
+    )
   );
 };
 
@@ -175,11 +182,6 @@ exports.findAllDeliveryStations = async () => {
  * DELIVERY LOGS
  */
 
-const DeliveryLog = require("../schemas/deliveryLog");
-const dayjs = require("dayjs");
-const customParseFormat = require("dayjs/plugin/customParseFormat");
-dayjs.extend(customParseFormat);
-
 /**
  * @typedef {object} DeliveryRow
  * @property {number|string} id
@@ -202,7 +204,7 @@ dayjs.extend(customParseFormat);
  * @param {import("../schemas/dRx/dRx").DRx[]} dRxes
  * @returns {DeliveryRow[]}
  */
-const deliveryRows = (dRxes) =>
+exports.deliveryRows = (dRxes) =>
   dRxes.map((dRx) => ({
     id: dRx.rxID,
     _id: dRx._id,
@@ -213,7 +215,7 @@ const deliveryRows = (dRxes) =>
     doctorName: dRx.doctorName,
     rxQty: dRx.rxQty,
     patPay: dRx.patPay,
-    log: dRx.deliveryLog._id,
+    log: dRx.deliveryLog ? dRx.deliveryLog._id : undefined,
     logHistory: dRx.logHistory || [],
     returnDate:
       dRx.returnDates?.length > 0
@@ -321,24 +323,24 @@ const populate = async (logs) => {
 
 const { findDRxesOnStage } = require("./dRx/dRx");
 
-// [deliveryStation._id]: DeliveryRow[]
+// [deliveryStation._id]: DRx[]
 const nodeCache_delivery_stages = new NodeCache();
 /**
  * @param {string|import("mongoose").ObjectId} station
- * @returns {Promise<DeliveryRow[]>}
+ * @returns {Promise<DRx.DRx[]>}
  */
 exports.refresh_nodeCache_delivery_stages = async (station) => {
-  const rows = deliveryRows(await findDRxesOnStage(station));
-  nodeCache_delivery_stages.set(station.toString(), rows);
-  return rows;
+  const dRxes = await findDRxesOnStage(station);
+  nodeCache_delivery_stages.set(station.toString(), dRxes);
+  return dRxes;
 };
 
-// [`${deliveryStation.invoiceCode} + ${deliveryLog.session}`]: DeliveryRow[]
+// [`${deliveryStation.invoiceCode} + ${deliveryLog.session}`]: DRx[]
 const nodeCache_delivery_today_sessions = new NodeCache();
 /**
  * @param {string} invoiceCode
  * @param {string} session
- * @returns {DeliveryRow[]}
+ * @returns {DRx.DRx[]}
  */
 const get_nodeCache_delivery_today_sessions = (invoiceCode, session) =>
   nodeCache_delivery_today_sessions.get(invoiceCode + session);
@@ -347,7 +349,7 @@ const get_nodeCache_delivery_today_sessions = (invoiceCode, session) =>
  * @param {string} mmddyyyy
  * @param {DeliveryStation.DeliveryStation} station
  * @param {"0" | (string & {})} session
- * @returns {Promise<DeliveryRow[]>}
+ * @returns {Promise<DRx.DRx[]>}
  */
 exports.findDeliveries = async (mmddyyyy, station, session) => {
   if (!(mmddyyyy && station && session)) {
@@ -360,15 +362,16 @@ exports.findDeliveries = async (mmddyyyy, station, session) => {
       if (!cache) {
         return await exports.refresh_nodeCache_delivery_stages(station._id);
       }
+      return cache;
     } else {
       return get_nodeCache_delivery_today_sessions(
         station.invoiceCode,
-        session,
+        session
       );
     }
   } else {
     if (session === "0") {
-      return deliveryRows(await findDRxesOnStage(station._id, day));
+      return await findDRxesOnStage(station._id, day);
     } else {
       const log = await DeliveryLog.findOne({
         date: mmddyyyy,
@@ -379,9 +382,71 @@ exports.findDeliveries = async (mmddyyyy, station, session) => {
         return [];
       } else {
         await populate(log);
-        return deliveryRows(log.dRxes);
+        return log.dRxes;
       }
     }
+  }
+};
+
+/**
+ * @param {DeliveryStation.DeliveryStation} station
+ * @returns {Promise<DeliveryLog.DeliveryLog>}
+ */
+exports.createDeliveryLog = async (station) => {
+  /** @type {DRx.DRx[]}  **/
+  const dRxes = nodeCache_delivery_stages.get(station._id.toString());
+  if (rows.length === 0) {
+    throw { status: 404 };
+  }
+  let due = 0;
+  rows.forEach((row) => {
+    due += Number(row.patPay || 0);
+  });
+  due = due ? due.toFixed(2).toString() : "0";
+  const day = dayjs();
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    // WARNING: to pass a `session` to `Model.create()` in Mongoose, you **must** pass an array as the first argument.
+    const log = (
+      await DeliveryLog.create(
+        [
+          {
+            date: day.format("MMDDYYYY"),
+            station,
+            session: day.format("h:m:ss A"),
+            dRxes,
+            due,
+          },
+        ],
+        { session }
+      )
+    )[0];
+    for (let i = 0; i < dRxes.length; i++) {
+      const { _id, __v } = dRxes[i];
+      const updated = await DRx.findOneAndUpdate(
+        { _id, __v },
+        { $set: { deliveryLog: log._id }, $inc: { __v: 1 } },
+        { session }
+      );
+      if (!updated) {
+        throw { status: 409 };
+      }
+    }
+    await session.commitTransaction();
+    // check document versions are increased
+    const populated = await populate(log);
+    nodeCache_delivery_today_sessions.set(
+      station.invoiceCode + log.session,
+      populated.dRxes
+    );
+    exports.refresh_nodeCache_delivery_stages(station._id);
+    return log;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -415,8 +480,8 @@ const { scheduleJob } = require("node-schedule");
       logs.forEach((log) =>
         nodeCache_delivery_today_sessions.set(
           station.invoiceCode + log.session,
-          deliveryRows(log.dRxes),
-        ),
+          log.dRxes
+        )
       );
     }
   }

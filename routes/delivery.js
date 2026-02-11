@@ -7,8 +7,8 @@ const {
   getSessions,
   findDeliveries,
   // getReceipt,
-  // postLog,
-  // scanQR,
+  postLog,
+  scanQR,
   // unsetDeliveryStation,
   // reverseDelivery,
   // search,
@@ -20,8 +20,8 @@ router.get("/stations", getActiveDeliveryStations);
 // router.get("/search", search);
 router.use("/:invoiceCode", getStation);
 router.get("/:invoiceCode", getStationInfo);
-// router.post("/:section", postLog);
-// router.post("/:section/qr", scanQR);
+router.post("/:invoiceCode", postLog);
+router.post("/:invoiceCode/qr", scanQR);
 router.get("/:invoiceCode/:date", getSessions);
 router.get("/:invoiceCode/:date/:session", findDeliveries);
 // router.get("/:section/:date/:session/receipt", getReceipt);

@@ -59,7 +59,7 @@ const digitalRxSchema = new Schema(
     returnDates: [Date],
     logHistory: [{ type: ObjectId, ref: "Delivery Log" }],
   },
-  { timestamps: true },
+  { timestamps: true, optimisticConcurrency: true }
 );
 
 digitalRxSchema.post("findOne", async function (doc) {

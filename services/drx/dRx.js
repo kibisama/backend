@@ -188,7 +188,7 @@ exports.importDRxs = async (csvData) => {
 exports.findDRxByStation = async (
   deliveryStation,
   deliveryLog,
-  deliveryDate,
+  deliveryDate
 ) => {
   const day = deliveryDate ? dayjs(deliveryDate, "MMDDYYYY") : dayjs();
   const filter = {
@@ -224,30 +224,6 @@ exports.findDRxForDeliveries = async (rxNumber, patient) => {
     console.error(e);
   }
 };
-
-/**
- * @param {string} rxID
- * @returns {Promise<DRx|null|undefined>}
- */
-exports.setReturn = async (rxID) => {
-  try {
-    const dRx = await exports.findDRxByRxID(rxID);
-    if (dRx.deliveryLog) {
-      await dRx.updateOne({
-        $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
-        $unset: { deliveryLog: 1, deliveryDate: 1, deliveryStation: 1 },
-      });
-      dayjs(dRx.deliveryDate).isSame(dayjs(), "d") &&
-        (await delivery.setDeliveryLogsToday(dRx.deliveryStation));
-      return await exports.findDRxByRxID(rxID);
-    }
-    return dRx;
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-//
 
 // /**
 //  * @param {DRxObj} dRxObj
@@ -334,7 +310,7 @@ exports.upsertDRx = async (data) => {
   return await DRx.findOneAndUpdate(
     { rxID: dRxSchema.rxID },
     { $set: { ...dRxSchema, patient: patient._id, plan: plan?._id } },
-    { runValidators: true, new: true, upsert: true },
+    { runValidators: true, new: true, upsert: true }
   );
 };
 
@@ -366,7 +342,7 @@ exports.setDelivery = async (dRx, station, deliveryDate = new Date()) => {
 
 /**
  * @param {string|mongoose.ObjectId} deliveryStation
- * @param {dayjs.Dayjs} day
+ * @param {dayjs.Dayjs} [day]
  * @returns {Promise<DRx.DRx[]>}
  */
 exports.findDRxesOnStage = async (deliveryStation, day) => {
@@ -377,3 +353,41 @@ exports.findDRxesOnStage = async (deliveryStation, day) => {
     deliveryLog: { $exists: false },
   });
 };
+
+/**
+ * @param {DRx.DRx} dRx
+ * @param {Promise<DRx.DRx>}
+ */
+exports.unsetDelivery = async (dRx) => {
+  const updated = await dRx.findOneAndUpdate(
+    { _id: dRx._id, __v: dRx.__v },
+    { $unset: { deliveryStation: 1, deliveryDate: 1 } },
+    { new: true }
+  );
+  if (!updated) {
+    throw { status: 409 };
+  }
+  return updated;
+};
+
+// /**
+//  * @param {string} rxID
+//  * @returns {Promise<DRx|null|undefined>}
+//  */
+// exports.setReturn = async (rxID) => {
+//   try {
+//     const dRx = await exports.findDRxByRxID(rxID);
+//     if (dRx.deliveryLog) {
+//       await dRx.updateOne({
+//         $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
+//         $unset: { deliveryLog: 1, deliveryDate: 1, deliveryStation: 1 },
+//       });
+//       dayjs(dRx.deliveryDate).isSame(dayjs(), "d") &&
+//         (await delivery.setDeliveryLogsToday(dRx.deliveryStation));
+//       return await exports.findDRxByRxID(rxID);
+//     }
+//     return dRx;
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };

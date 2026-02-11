@@ -1,4 +1,4 @@
-const Patient = require("../../schemas/drx/patient");
+const Patient = require("../../schemas/dRx/patient");
 
 exports.map_fields = {
   PatientID: "patientID",
