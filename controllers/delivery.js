@@ -86,21 +86,21 @@ exports.unsetDeliveryStation = async (req, res, next) => {
     const _dRx = await dRx.findDRxByRxID(rxID);
     if (!_dRx) {
       return res.sendStatus(404);
-    } else if (_dRx.deliveryLog) {
-      return res.sendStatus(409);
     }
-    const { deliveredDate, deliveryStation } = _dRx;
-    if (deliveryStation || deliveredDate) {
+    const { deliveryDate, deliveryStation } = _dRx;
+    if (deliveryDate || deliveryStation) {
       await dRx.unsetDelivery(_dRx);
-      deliveryStation &&
-        dayjs(deliveredDate).isSame(dayjs(), "d") &&
-        (await delivery.refresh_nodeCache_delivery_stages(deliveryStation));
-      // Todo: Outbox
-      const msgContent = JSON.stringify({
-        rxID,
-        date: deliveredDate || new Date(),
-      });
-      await sendToQueue(queue_delivery_cancel, msgContent);
+      if (deliveryDate) {
+        deliveryStation &&
+          dayjs(deliveryDate).isSame(dayjs(), "d") &&
+          (await delivery.refresh_nodeCache_delivery_stages(deliveryStation));
+        // Todo: Outbox
+        const msgContent = JSON.stringify({
+          rxID,
+          date: deliveryDate,
+        });
+        await sendToQueue(queue_delivery_cancel, msgContent);
+      }
     }
     return res.sendStatus(200);
   } catch (error) {
@@ -108,28 +108,32 @@ exports.unsetDeliveryStation = async (req, res, next) => {
   }
 };
 
-exports.reverseDelivery = async (req, res, next) => {
+exports.returnDelivery = async (req, res, next) => {
   try {
     const { rxID } = req.params;
     const _dRx = await dRx.findDRxByRxID(rxID);
     if (!_dRx) {
       return res.sendStatus(404);
-    } else if (!_dRx.deliveryLog) {
-      return res.sendStatus(409);
     }
-    // const result = await dRx.setReturn(rxID);
-    // if (result === null) {
-    //   return res.status(404).send({ code: 404, message: "Not Found" });
-    // } else if (!result) {
-    //   return res
-    //     .status(500)
-    //     .send({ code: 500, message: "Internal Server Error" });
-    // }
-    // return res
-    //   .status(200)
-    //   .send({ code: 200, data: (await dlvry.mapSearchResults([result]))[0] });
+    const { deliveryStation, deliveryDate, deliveryLog } = _dRx;
+    await dRx.returnDelivery(_dRx);
+    if (deliveryStation && deliveryDate) {
+      dayjs(deliveryDate).isSame(dayjs(), "d") &&
+        (await delivery.refresh_nodeCache_delivery_today_sessions(
+          deliveryStation.invoiceCode,
+          deliveryLog.session
+        ));
+      // Todo: Outbox
+      const msgContent = JSON.stringify({
+        rxID,
+        stationCode: deliveryStation.invoiceCode,
+        date: deliveryDate,
+      });
+      await sendToQueue(queue_delivery_cancel, msgContent);
+    }
+    return res.sendStatus(200);
   } catch (error) {
-    console.error(error);
+    next(error);
   }
 };
 
@@ -205,20 +209,15 @@ exports.postLog = async (req, res, next) => {
 //   }
 // };
 
-// exports.search = async (req, res, next) => {
-//   try {
-//     const { rxNumber, patient } = req.query;
-//     if (!(rxNumber || patient)) {
-//       return res.status(400).send({ code: 400, message: "Bad Request" });
-//     }
-//     const _data = await dRx.findDRxForDeliveries(rxNumber, patient);
-//     if (_data.length === 0) {
-//       return res.status(404).send({ code: 404, message: "Not Found" });
-//     }
-//     const data = await dlvry.mapSearchResults(_data);
-//     return res.status(200).send({ code: 200, data });
-//   } catch (e) {
-//     console.error(e);
-//     next(e);
-//   }
-// };
+exports.search = async (req, res, next) => {
+  try {
+    const { rxNumber, patient } = req.query;
+    const result = await dRx.searchDRxWithRxNumberOrPatient(rxNumber, patient);
+    if (result.length === 0) {
+      return res.sendStatus(404);
+    }
+    return res.send(delivery.searchResultRows(result));
+  } catch (error) {
+    next(error);
+  }
+};

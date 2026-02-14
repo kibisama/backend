@@ -242,7 +242,7 @@ exports.deliveryRows = (dRxes) =>
  * @param {import("../schemas/dRx/dRx").DRx[]} dRxes
  * @return {SearchResultRow[]>}
  */
-const searchResultRows = (dRxes) =>
+exports.searchResultRows = (dRxes) =>
   dRxes.map((dRx) => ({
     id: dRx.rxID,
     rxNumber: dRx.rxNumber,
@@ -344,6 +344,26 @@ const nodeCache_delivery_today_sessions = new NodeCache();
  */
 const get_nodeCache_delivery_today_sessions = (invoiceCode, session) =>
   nodeCache_delivery_today_sessions.get(invoiceCode + session);
+/**
+ * @param {string} invoiceCode
+ * @param {string} session
+ * @returns {Promise<DRx.DRx[]>}
+ */
+exports.refresh_nodeCache_delivery_today_sessions = async (
+  invoiceCode,
+  session
+) => {
+  const station = exports.getDeliveryStation(invoiceCode);
+  const log = await DeliveryLog.findOne({
+    station,
+    date: dayjs().format("MMDDYYYY"),
+    session,
+  });
+  if (!log) throw { status: 404 };
+  await populate(log);
+  nodeCache_delivery_today_sessions.set(invoiceCode + session, log.dRxes);
+  return log.dRxes;
+};
 
 /**
  * @param {string} mmddyyyy
@@ -453,7 +473,6 @@ exports.createDeliveryLog = async (station) => {
 /**
  * INITIALIZE
  */
-const { scheduleJob } = require("node-schedule");
 (async function () {
   let stations = await DeliveryStation.find();
   if (stations.length === 0) {
@@ -487,7 +506,8 @@ const { scheduleJob } = require("node-schedule");
   }
   // sync RabbitMQ
   await exports.handleSyncReq(stations.length > 0 ? stations : undefined);
-  scheduleJob("0 0 * * *", function () {
-    nodeCache_delivery_stages.flushAll();
-  });
+  require("node-schedule").scheduleJob(
+    "0 0 * * *",
+    nodeCache_delivery_stages.flushAll
+  );
 })();

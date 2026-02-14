@@ -9,15 +9,15 @@ const {
   // getReceipt,
   postLog,
   scanQR,
-  // unsetDeliveryStation,
-  // reverseDelivery,
-  // search,
+  unsetDeliveryStation,
+  returnDelivery,
+  search,
 } = require("../controllers/delivery");
 
 router.get("/stations", getActiveDeliveryStations);
-// router.get("/unset/:rxID", unsetDeliveryStation);
-// router.get("/reverse/:rxID", reverseDelivery);
-// router.get("/search", search);
+router.get("/unset/:rxID", unsetDeliveryStation);
+router.get("/return/:rxID", returnDelivery);
+router.get("/search", search);
 router.use("/:invoiceCode", getStation);
 router.get("/:invoiceCode", getStationInfo);
 router.post("/:invoiceCode", postLog);

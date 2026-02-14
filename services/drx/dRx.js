@@ -209,22 +209,6 @@ exports.findDRxByStation = async (
   }
 };
 
-/**
- * @param {string} rxNumber
- * @param {ObjectId|string} [patient]
- * @returns {Promise<[DRx]|undefined>}
- */
-exports.findDRxForDeliveries = async (rxNumber, patient) => {
-  try {
-    const $and = [];
-    rxNumber && $and.push({ rxNumber });
-    patient && $and.push({ patient });
-    return await DRx.find({ $and }).sort({ deliveryDate: -1 });
-  } catch (e) {
-    console.error(e);
-  }
-};
-
 // /**
 //  * @param {DRxObj} dRxObj
 //  * @returns {undefined}
@@ -234,8 +218,6 @@ exports.findDRxForDeliveries = async (rxNumber, patient) => {
 //     exports.isRxOnly(dRxObj) &&
 //     upsertPackage(hyphenateNDC11(dRxObj.drugNDC), "ndc11");
 // };
-
-// REFACTORING
 
 /**
  * @typedef {object} Data
@@ -329,7 +311,7 @@ exports.findDRxByRxID = async (rxID) => {
  * @param {DRx.DRx} dRx
  * @param {string|mongoose.ObjectId} station
  * @param {Date} [deliveryDate]
- * @param {Promise<DRx.DRx>}
+ * @returns {Promise<DRx.DRx>}
  */
 exports.setDelivery = async (dRx, station, deliveryDate = new Date()) => {
   if (!mongoose.isValidObjectId(station)) {
@@ -355,39 +337,53 @@ exports.findDRxesOnStage = async (deliveryStation, day) => {
 };
 
 /**
+ * Returns the original document
+ * @param {DRx.DRx} dRx
+ * @returns {Promise<DRx.DRx>}
+ */
+exports.unsetDelivery = async (dRx) => {
+  if (!dRx.deliveryLog) {
+    const updated = await DRx.findOneAndUpdate(
+      { _id: dRx._id, __v: dRx.__v },
+      { $unset: { deliveryStation: 1, deliveryDate: 1 } }
+    );
+    if (updated) return updated;
+  }
+  throw { status: 409 };
+};
+
+/**
+ * Returns the original document
  * @param {DRx.DRx} dRx
  * @param {Promise<DRx.DRx>}
  */
-exports.unsetDelivery = async (dRx) => {
-  const updated = await dRx.findOneAndUpdate(
-    { _id: dRx._id, __v: dRx.__v },
-    { $unset: { deliveryStation: 1, deliveryDate: 1 } },
-    { new: true }
-  );
-  if (!updated) {
-    throw { status: 409 };
+exports.returnDelivery = async (dRx) => {
+  if (dRx.deliveryLog) {
+    const updated = await DRx.findOneAndUpdate(
+      { _id: dRx._id, __v: dRx.__v },
+      {
+        $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
+        $unset: { deliveryLog: 1, deliveryStation: 1, deliveryDate: 1 },
+      }
+    );
+    if (updated) return updated;
   }
-  return updated;
+  throw { status: 409 };
 };
 
-// /**
-//  * @param {string} rxID
-//  * @returns {Promise<DRx|null|undefined>}
-//  */
-// exports.setReturn = async (rxID) => {
-//   try {
-//     const dRx = await exports.findDRxByRxID(rxID);
-//     if (dRx.deliveryLog) {
-//       await dRx.updateOne({
-//         $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
-//         $unset: { deliveryLog: 1, deliveryDate: 1, deliveryStation: 1 },
-//       });
-//       dayjs(dRx.deliveryDate).isSame(dayjs(), "d") &&
-//         (await delivery.setDeliveryLogsToday(dRx.deliveryStation));
-//       return await exports.findDRxByRxID(rxID);
-//     }
-//     return dRx;
-//   } catch (e) {
-//     console.error(e);
-//   }
-// };
+/**
+ * At least one of the params is required
+ * @param {string} [rxNumber]
+ * @param {ObjectId|string} [patient]
+ * @returns {Promise<DRx[]>}
+ */
+exports.searchDRxWithRxNumberOrPatient = async (rxNumber, patient) => {
+  isValidPatient = mongoose.isValidObjectId(patient);
+  if (!(rxNumber || isValidPatient)) {
+    throw { status: 400 };
+  }
+  const $and = [];
+  rxNumber && $and.push({ rxNumber });
+  isValidPatient && $and.push({ patient });
+  return await DRx.find({ $and }).sort({ deliveryDate: -1 });
+};
