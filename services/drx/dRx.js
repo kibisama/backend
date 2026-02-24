@@ -4,7 +4,6 @@ const pt = require("./patient");
 const pl = require("./plan");
 
 const dayjs = require("dayjs");
-const delivery = require("../apps/delivery");
 
 exports.map_fields = {
   /* Rx data */
@@ -188,7 +187,7 @@ exports.importDRxs = async (csvData) => {
 exports.findDRxByStation = async (
   deliveryStation,
   deliveryLog,
-  deliveryDate
+  deliveryDate,
 ) => {
   const day = deliveryDate ? dayjs(deliveryDate, "MMDDYYYY") : dayjs();
   const filter = {
@@ -292,7 +291,7 @@ exports.upsertDRx = async (data) => {
   return await DRx.findOneAndUpdate(
     { rxID: dRxSchema.rxID },
     { $set: { ...dRxSchema, patient: patient._id, plan: plan?._id } },
-    { runValidators: true, new: true, upsert: true }
+    { runValidators: true, new: true, upsert: true },
   );
 };
 
@@ -345,7 +344,7 @@ exports.unsetDelivery = async (dRx) => {
   if (!dRx.deliveryLog) {
     const updated = await DRx.findOneAndUpdate(
       { _id: dRx._id, __v: dRx.__v },
-      { $unset: { deliveryStation: 1, deliveryDate: 1 } }
+      { $unset: { deliveryStation: 1, deliveryDate: 1 } },
     );
     if (updated) return updated;
   }
@@ -364,7 +363,7 @@ exports.returnDelivery = async (dRx) => {
       {
         $push: { logHistory: dRx.deliveryLog, returnDates: new Date() },
         $unset: { deliveryLog: 1, deliveryStation: 1, deliveryDate: 1 },
-      }
+      },
     );
     if (updated) return updated;
   }

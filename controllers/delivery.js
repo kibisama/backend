@@ -62,8 +62,8 @@ exports.scanQR = async (req, res, next) => {
     const upserted = await dRx.upsertDRx(qr);
     const deliveryDate = new Date();
     await dRx.setDelivery(upserted, station, deliveryDate);
-    if (exStation && !station._id.equals(exStation)) {
-      await delivery.refresh_nodeCache_delivery_stages(exStation);
+    if (exStation && !station._id.equals(exStation._id)) {
+      await delivery.refresh_nodeCache_delivery_stages(exStation._id);
     }
     await delivery.refresh_nodeCache_delivery_stages(station._id);
     res.sendStatus(200);
@@ -121,7 +121,7 @@ exports.returnDelivery = async (req, res, next) => {
       dayjs(deliveryDate).isSame(dayjs(), "d") &&
         (await delivery.refresh_nodeCache_delivery_today_sessions(
           deliveryStation.invoiceCode,
-          deliveryLog.session
+          deliveryLog.session,
         ));
       // Todo: Outbox
       const msgContent = JSON.stringify({

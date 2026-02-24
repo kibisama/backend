@@ -126,8 +126,8 @@ exports.handleSyncReq = async (stations) => {
         state: s.state,
         zip: s.zip,
         phone: s.phone,
-      }))
-    )
+      })),
+    ),
   );
 };
 
@@ -351,7 +351,7 @@ const get_nodeCache_delivery_today_sessions = (invoiceCode, session) =>
  */
 exports.refresh_nodeCache_delivery_today_sessions = async (
   invoiceCode,
-  session
+  session,
 ) => {
   const station = exports.getDeliveryStation(invoiceCode);
   const log = await DeliveryLog.findOne({
@@ -376,6 +376,7 @@ exports.findDeliveries = async (mmddyyyy, station, session) => {
     throw { status: 400 };
   }
   const day = dayjs(mmddyyyy, "MMDDYYYY");
+  let deliveries;
   if (day.isSame(dayjs(), "d")) {
     if (session === "0") {
       const cache = nodeCache_delivery_stages.get(station._id.toString());
@@ -384,9 +385,9 @@ exports.findDeliveries = async (mmddyyyy, station, session) => {
       }
       return cache;
     } else {
-      return get_nodeCache_delivery_today_sessions(
-        station.invoiceCode,
-        session
+      return (
+        get_nodeCache_delivery_today_sessions(station.invoiceCode, session) ||
+        []
       );
     }
   } else {
@@ -415,12 +416,12 @@ exports.findDeliveries = async (mmddyyyy, station, session) => {
 exports.createDeliveryLog = async (station) => {
   /** @type {DRx.DRx[]}  **/
   const dRxes = nodeCache_delivery_stages.get(station._id.toString());
-  if (rows.length === 0) {
+  if (dRxes.length === 0) {
     throw { status: 404 };
   }
   let due = 0;
-  rows.forEach((row) => {
-    due += Number(row.patPay || 0);
+  dRxes.forEach((dRx) => {
+    due += Number(dRx.patPay || 0);
   });
   due = due ? due.toFixed(2).toString() : "0";
   const day = dayjs();
@@ -439,7 +440,7 @@ exports.createDeliveryLog = async (station) => {
             due,
           },
         ],
-        { session }
+        { session },
       )
     )[0];
     for (let i = 0; i < dRxes.length; i++) {
@@ -447,7 +448,7 @@ exports.createDeliveryLog = async (station) => {
       const updated = await DRx.findOneAndUpdate(
         { _id, __v },
         { $set: { deliveryLog: log._id }, $inc: { __v: 1 } },
-        { session }
+        { session },
       );
       if (!updated) {
         throw { status: 409 };
@@ -458,7 +459,7 @@ exports.createDeliveryLog = async (station) => {
     const populated = await populate(log);
     nodeCache_delivery_today_sessions.set(
       station.invoiceCode + log.session,
-      populated.dRxes
+      populated.dRxes,
     );
     exports.refresh_nodeCache_delivery_stages(station._id);
     return log;
@@ -499,8 +500,8 @@ exports.createDeliveryLog = async (station) => {
       logs.forEach((log) =>
         nodeCache_delivery_today_sessions.set(
           station.invoiceCode + log.session,
-          log.dRxes
-        )
+          log.dRxes,
+        ),
       );
     }
   }
@@ -508,6 +509,6 @@ exports.createDeliveryLog = async (station) => {
   await exports.handleSyncReq(stations.length > 0 ? stations : undefined);
   require("node-schedule").scheduleJob(
     "0 0 * * *",
-    nodeCache_delivery_stages.flushAll
+    nodeCache_delivery_stages.flushAll,
   );
 })();

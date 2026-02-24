@@ -5,3 +5,161 @@
     at exports.findDeliveries (C:\Users\Administrator\Documents\kbsmWorkingTree\backend\controllers\delivery.js:85:14)
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
 }
+{
+  timestamp: Tue Feb 24 2026 02:16:00 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: ReferenceError: rows is not defined
+    at exports.createDeliveryLog (F:\backend\services\delivery.js:418:3)
+    at exports.postLog (F:\backend\controllers\delivery.js:157:32)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (F:\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (F:\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at F:\backend\node_modules\express\lib\router\index.js:284:15
+    at param (F:\backend\node_modules\express\lib\router\index.js:365:14)
+    at param (F:\backend\node_modules\express\lib\router\index.js:376:14)
+    at router.process_params (F:\backend\node_modules\express\lib\router\index.js:421:3)
+}
+{
+  timestamp: Tue Feb 24 2026 02:16:07 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: ReferenceError: rows is not defined
+    at exports.createDeliveryLog (F:\backend\services\delivery.js:418:3)
+    at exports.postLog (F:\backend\controllers\delivery.js:157:32)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (F:\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (F:\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at F:\backend\node_modules\express\lib\router\index.js:284:15
+    at param (F:\backend\node_modules\express\lib\router\index.js:365:14)
+    at param (F:\backend\node_modules\express\lib\router\index.js:376:14)
+    at router.process_params (F:\backend\node_modules\express\lib\router\index.js:421:3)
+}
+{
+  timestamp: Tue Feb 24 2026 02:16:11 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: ReferenceError: rows is not defined
+    at exports.createDeliveryLog (F:\backend\services\delivery.js:418:3)
+    at exports.postLog (F:\backend\controllers\delivery.js:157:32)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (F:\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (F:\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at F:\backend\node_modules\express\lib\router\index.js:284:15
+    at param (F:\backend\node_modules\express\lib\router\index.js:365:14)
+    at param (F:\backend\node_modules\express\lib\router\index.js:376:14)
+    at router.process_params (F:\backend\node_modules\express\lib\router\index.js:421:3)
+}
+{
+  timestamp: Tue Feb 24 2026 02:16:26 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: ReferenceError: rows is not defined
+    at exports.createDeliveryLog (F:\backend\services\delivery.js:418:3)
+    at exports.postLog (F:\backend\controllers\delivery.js:157:32)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (F:\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (F:\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at F:\backend\node_modules\express\lib\router\index.js:284:15
+    at param (F:\backend\node_modules\express\lib\router\index.js:365:14)
+    at param (F:\backend\node_modules\express\lib\router\index.js:376:14)
+    at router.process_params (F:\backend\node_modules\express\lib\router\index.js:421:3)
+}
+{
+  timestamp: Tue Feb 24 2026 02:17:34 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: ReferenceError: rows is not defined
+    at exports.createDeliveryLog (F:\backend\services\delivery.js:418:3)
+    at exports.postLog (F:\backend\controllers\delivery.js:157:32)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (F:\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (F:\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (F:\backend\node_modules\express\lib\router\layer.js:95:5)
+    at F:\backend\node_modules\express\lib\router\index.js:284:15
+    at param (F:\backend\node_modules\express\lib\router\index.js:365:14)
+    at param (F:\backend\node_modules\express\lib\router\index.js:376:14)
+    at router.process_params (F:\backend\node_modules\express\lib\router\index.js:421:3)
+}
+{
+  timestamp: Tue Feb 24 2026 02:26:31 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:26:33 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:26:41 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:26:47 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:27:25 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:27:31 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:27:49 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:27:50 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:27:52 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:30:44 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:30:44 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:33:12 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:34:46 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: TypeError: Cannot read properties of undefined (reading 'length')
+    at exports.findDeliveries (F:\backend\controllers\delivery.js:145:15)
+}
+{
+  timestamp: Tue Feb 24 2026 02:43:33 GMT-0800 (미 태평양 표준시),
+  req_ip: ::1,
+  message: undefined
+}
