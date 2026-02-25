@@ -49,6 +49,7 @@ app.use((req, res, next) => {
 const logger = require("./logger");
 
 app.use((err, req, res, next) => {
+  console.error(err);
   logger.log({
     level: "error",
     message: err.message,

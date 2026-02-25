@@ -15,21 +15,16 @@ const preset = {
 
 /**
  * @typedef {Settings.Settings} Settings
- * @typedef {typeof Settings.schema.obj} SettingsSchema
  */
 
 /** Caching Settings Document **/
 let __settings;
+
 /**
- * @returns {Promise<Settings|null|undefined>}
+ * @returns {Promise<Settings|null>}
  */
-exports.getSettings = async () => {
-  try {
-    return __settings || (__settings = await createPreset());
-  } catch (e) {
-    console.error(e);
-  }
-};
+exports.getSettings = async () =>
+  __settings || (__settings = await createPreset());
 
 /**
  * @returns {Promise<Settings|undefined>}

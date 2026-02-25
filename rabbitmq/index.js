@@ -10,6 +10,8 @@ const queues = {};
   ch = await conn.createChannel();
 })();
 
+// Todo: Outbox
+
 module.exports = async (queue, message) => {
   if (!queues[queue]) {
     await ch.assertQueue(queue, { durable: true });

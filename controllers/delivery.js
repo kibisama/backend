@@ -67,7 +67,6 @@ exports.scanQR = async (req, res, next) => {
     }
     await delivery.refresh_nodeCache_delivery_stages(station._id);
     res.sendStatus(200);
-    // Todo: Outbox
     const msgContent = JSON.stringify({
       stationCode: station.invoiceCode,
       date: deliveryDate,
@@ -94,7 +93,6 @@ exports.unsetDeliveryStation = async (req, res, next) => {
         deliveryStation &&
           dayjs(deliveryDate).isSame(dayjs(), "d") &&
           (await delivery.refresh_nodeCache_delivery_stages(deliveryStation));
-        // Todo: Outbox
         const msgContent = JSON.stringify({
           rxID,
           date: deliveryDate,
@@ -121,9 +119,8 @@ exports.returnDelivery = async (req, res, next) => {
       dayjs(deliveryDate).isSame(dayjs(), "d") &&
         (await delivery.refresh_nodeCache_delivery_today_sessions(
           deliveryStation.invoiceCode,
-          deliveryLog.session,
+          deliveryLog.session
         ));
-      // Todo: Outbox
       const msgContent = JSON.stringify({
         rxID,
         stationCode: deliveryStation.invoiceCode,
@@ -155,7 +152,6 @@ exports.postLog = async (req, res, next) => {
   try {
     const station = res.locals.station;
     const log = await delivery.createDeliveryLog(station);
-    // Todo: Outbox
     const msgContent = JSON.stringify({
       stationCode: station.invoiceCode,
       date: log.createdAt,
@@ -169,45 +165,44 @@ exports.postLog = async (req, res, next) => {
 };
 
 // const RECEIPT_COUNT_PER_PAGE = 40;
-// exports.getReceipt = async (req, res, next) => {
-//   const { date, session } = req.params;
-//   const { _id, name, address, city, state, zip, phone, invoiceCode } =
-//     res.locals.station;
-//   try {
-//     const log = await dlvry.findDeliveryLog(date, _id, session);
-//     if (log === null) {
-//       return res.status(404).send({ code: 404, message: "Not Found" });
-//     }
-//     const count = log.dRxes.length;
-//     const items = [];
-//     const dRxes = await dlvry.mapDeliveryLogs(log.dRxes);
-//     const pages = Math.ceil(count / RECEIPT_COUNT_PER_PAGE);
-//     for (let i = 0; i < pages; i++) {
-//       items.push(dRxes.splice(0, RECEIPT_COUNT_PER_PAGE));
-//     }
-//     return res.status(200).send({
-//       code: 200,
-//       data: {
-//         pages: pages.toString(),
-//         count: count.toString(),
-//         due: log.due,
-//         date,
-//         session,
-//         station: {
-//           name,
-//           address1: address,
-//           address2: `${city}, ${state} ${zip}`,
-//           phone,
-//           code: invoiceCode,
-//         },
-//         items,
-//       },
-//     });
-//   } catch (e) {
-//     console.error(e);
-//     next(e);
-//   }
-// };
+exports.getReceipt = async (req, res, next) => {
+  const { date, session } = req.params;
+  const { _id, name, address, city, state, zip, phone, invoiceCode } =
+    res.locals.station;
+  try {
+    const log = await dlvry.findDeliveryLog(date, _id, session);
+    if (log === null) {
+      return res.status(404).send({ code: 404, message: "Not Found" });
+    }
+    const count = log.dRxes.length;
+    const items = [];
+    const dRxes = await dlvry.mapDeliveryLogs(log.dRxes);
+    const pages = Math.ceil(count / RECEIPT_COUNT_PER_PAGE);
+    for (let i = 0; i < pages; i++) {
+      items.push(dRxes.splice(0, RECEIPT_COUNT_PER_PAGE));
+    }
+    return res.status(200).send({
+      code: 200,
+      data: {
+        pages: pages.toString(),
+        count: count.toString(),
+        due: log.due,
+        date,
+        session,
+        station: {
+          name,
+          address1: address,
+          address2: `${city}, ${state} ${zip}`,
+          phone,
+          code: invoiceCode,
+        },
+        items,
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 
 exports.search = async (req, res, next) => {
   try {
