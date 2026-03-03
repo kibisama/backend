@@ -99,14 +99,51 @@ const presets = [
 
 /**
  * @param {DeliveryStation.DeliveryStationSchema} schema
- * @returns {Proimse<void>}
+ * @returns {Proimse<DeliveryStation.DeliveryStation>}
  */
 exports.createDeliveryStation = async (schema) => {
-  if (!schema) {
+  if (
+    !schema ||
+    !(
+      schema.displayName &&
+      schema.invoiceCode &&
+      schema.name &&
+      schema.address &&
+      schema.city &&
+      schema.state &&
+      schema.zip &&
+      schema.phone
+    )
+  ) {
     throw { status: 400 };
   }
+  schema.invoiceCode = schema.invoiceCode.toUpperCase();
   const station = await DeliveryStation.create(schema);
   nodeCache_stations.set(station.invoiceCode, station);
+  return station;
+};
+
+/**
+ * @param {DeliveryStation.DeliveryStation} station
+ * @param {DeliveryStation.DeliveryStationSchema} $set
+ * @returns {Proimse<DeliveryStation.DeliveryStation>}
+ */
+exports.updateDeliveryStation = async (station, $set) => {
+  const { _id, __v, invoiceCode } = station;
+  const _station = await DeliveryStation.findOneAndUpdate(
+    { _id, __v },
+    { $set, $inc: { __v: 1 } },
+    { new: true, runValidators: true },
+  );
+  if (!_station) {
+    throw { status: 404 };
+  }
+  if (_station.active === true) {
+    nodeCache_stations.set(invoiceCode, _station);
+  } else {
+    nodeCache_stations.del(invoiceCode);
+  }
+  return _station;
 };
 
 /**
@@ -185,7 +222,7 @@ exports.findAllDeliveryStations = async () => {
 /**
  * @typedef {object} DeliveryRow
  * @property {number|string} id
- * @property {ObjectId} _id
+ * @property {string} _id
  * @property {Date} time
  * @property {Date} rxDate
  * @property {string} rxNumber
@@ -195,8 +232,8 @@ exports.findAllDeliveryStations = async () => {
  * @property {string} rxQty
  * @property {string} plan
  * @property {string} patPay
- * @property {ObjectId} log
- * @property {ObjectId[]} logHistory
+ * @property {string} log
+ * @property {string[]} logHistory
  * @property {Date} returnDate
  */
 
@@ -207,7 +244,7 @@ exports.findAllDeliveryStations = async () => {
 exports.deliveryRows = (dRxes) =>
   dRxes.map((dRx) => ({
     id: dRx.rxID,
-    _id: dRx._id,
+    _id: dRx._id.toString(),
     time: dRx.deliveryDate,
     rxDate: dRx.rxDate,
     rxNumber: dRx.rxNumber,
@@ -215,8 +252,10 @@ exports.deliveryRows = (dRxes) =>
     doctorName: dRx.doctorName,
     rxQty: dRx.rxQty,
     patPay: dRx.patPay,
-    log: dRx.deliveryLog ? dRx.deliveryLog._id : undefined,
-    logHistory: dRx.logHistory || [],
+    log: dRx.deliveryLog ? dRx.deliveryLog._id.toString() : undefined,
+    logHistory: dRx.logHistory
+      ? dRx.logHistory.map((log) => log._id.toString())
+      : [],
     returnDate:
       dRx.returnDates?.length > 0
         ? dRx.returnDates[dRx.returnDates.length - 1]
@@ -285,6 +324,22 @@ const sessions = (logs) =>
  */
 exports.findDeliverySessions = async (mmddyyyy, station) => {
   return sessions(await DeliveryLog.find({ date: mmddyyyy, station }));
+};
+
+/**
+ * returns populated dRxes
+ * @param {string} mmddyyyy
+ * @param {string|import("mongoose").ObjectId} station
+ * @param {string} session
+ * @returns {Promise<DeliveryLog.DeliveryLog>}
+ */
+exports.findDeliveryLog = async (mmddyyyy, station, session) => {
+  if (!(mmddyyyy && mongoose.isObjectIdOrHexString(station) && session))
+    throw { status: 400 };
+  const log = await DeliveryLog.findOne({ date: mmddyyyy, station, session });
+  if (!log) throw { status: 404 };
+  await populate(log);
+  return log;
 };
 
 const populateOption = {
@@ -376,7 +431,6 @@ exports.findDeliveries = async (mmddyyyy, station, session) => {
     throw { status: 400 };
   }
   const day = dayjs(mmddyyyy, "MMDDYYYY");
-  let deliveries;
   if (day.isSame(dayjs(), "d")) {
     if (session === "0") {
       const cache = nodeCache_delivery_stages.get(station._id.toString());

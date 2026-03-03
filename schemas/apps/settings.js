@@ -33,7 +33,18 @@ const appSettingsSchema = new mongoose.Schema({
 
 const model = mongoose.model("App Settings", appSettingsSchema);
 /**
- * @typedef {Awaited<ReturnType<model["create"]>>[0]} Settings
+ * @typedef {object} SettingsSchema
+ * @property {string} storeName
+ * @property {string} storeAddress
+ * @property {string} storeCity
+ * @property {string} storeState
+ * @property {string} storeZip
+ * @property {string} storePhone
+ * @property {string} storeFax
+ * @property {string} storeEmail
+ * @property {string} storeManagerLN
+ * @property {string} storeManagerFN
+ * @typedef {mongoose.HydratedDocument<SettingsSchema>} Settings
  */
 
 module.exports = model;

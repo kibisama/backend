@@ -13,45 +13,28 @@ const preset = {
   storeManagerFN: "Janice",
 };
 
-/**
- * @typedef {Settings.Settings} Settings
- */
-
 /** Caching Settings Document **/
 let __settings;
 
-/**
- * @returns {Promise<Settings|null>}
- */
-exports.getSettings = async () =>
-  __settings || (__settings = await createPreset());
+(async function () {
+  __settings = await Settings.findOne({});
+  if (!__settings) {
+    __settings = await Settings.create(preset);
+  }
+})();
 
 /**
- * @returns {Promise<Settings|undefined>}
+ * @returns {Settings.Settings}
  */
-const createPreset = async () => {
-  try {
-    const settings = await Settings.findOne({});
-    if (!settings) {
-      return await Settings.create(preset);
-    }
-    return settings;
-  } catch (e) {
-    console.error(e);
-  }
-};
+exports.getSettings = () => __settings;
+
 /**
- * @param {SettingsSchema} param
- * @returns {Promise<Settings|undefined>}
+ * @param {Settings.SettingsSchema} param
+ * @returns {Promise<Settings.Settings>}
  */
-exports.updateSettings = async (param) => {
-  try {
-    return (__settings = await Settings.findOneAndUpdate(
-      {},
-      { $set: param },
-      { new: true }
-    ));
-  } catch (e) {
-    console.error(e);
-  }
-};
+exports.updateSettings = async (param) =>
+  (__settings = await Settings.findOneAndUpdate(
+    { _id: __settings._id, __v: __settings.__v },
+    { $set: param, $inc: { __v: 1 } },
+    { new: true },
+  ));

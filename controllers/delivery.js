@@ -4,9 +4,20 @@ const sendToQueue = require("../rabbitmq");
 const queue_delivery_new = "delivery_new";
 const queue_delivery_ship = "delivery_ship";
 const queue_delivery_cancel = "delivery_cancel";
+const queue_station_new = "station_new";
+const queue_station_update = "station_update";
 
 const delivery = require("../services/delivery");
 const dRx = require("../services/dRx/dRx");
+
+exports.getAllDeliveryStations = async (req, res, next) => {
+  try {
+    const stations = await delivery.findAllDeliveryStations();
+    return res.send(stations.map((station, i) => ({ ...station, id: i })));
+  } catch (error) {
+    next(error);
+  }
+};
 
 exports.getActiveDeliveryStations = async (req, res, next) => {
   try {
@@ -20,8 +31,51 @@ exports.getStation = (req, res, next) => {
   const { invoiceCode } = req.params;
   try {
     const s = delivery.getDeliveryStation(invoiceCode.toUpperCase());
+    if (!s) {
+      return res.sendStatus(404);
+    }
     res.locals.station = s;
     return next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.postStation = async (req, res, next) => {
+  try {
+    const station = await delivery.createDeliveryStation(req.body);
+    const msgContent = JSON.stringify({
+      code: station.invoiceCode,
+      name: station.name,
+      address: station.address,
+      city: station.city,
+      state: station.state,
+      zip: station.zip,
+      phone: station.phone,
+    });
+    await sendToQueue(queue_station_new, msgContent);
+    return res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.putStation = async (req, res, next) => {
+  const _station = res.locals.station;
+  try {
+    const station = await delivery.updateDeliveryStation(_station, req.body);
+    const msgContent = JSON.stringify({
+      code: station.invoiceCode,
+      name: station.name,
+      address: station.address,
+      city: station.city,
+      state: station.state,
+      zip: station.zip,
+      phone: station.phone,
+      active: station.active,
+    });
+    await sendToQueue(queue_station_update, msgContent);
+    return res.sendStatus(200);
   } catch (error) {
     next(error);
   }
@@ -92,7 +146,9 @@ exports.unsetDeliveryStation = async (req, res, next) => {
       if (deliveryDate) {
         deliveryStation &&
           dayjs(deliveryDate).isSame(dayjs(), "d") &&
-          (await delivery.refresh_nodeCache_delivery_stages(deliveryStation));
+          (await delivery.refresh_nodeCache_delivery_stages(
+            deliveryStation._id,
+          ));
         const msgContent = JSON.stringify({
           rxID,
           date: deliveryDate,
@@ -119,7 +175,7 @@ exports.returnDelivery = async (req, res, next) => {
       dayjs(deliveryDate).isSame(dayjs(), "d") &&
         (await delivery.refresh_nodeCache_delivery_today_sessions(
           deliveryStation.invoiceCode,
-          deliveryLog.session
+          deliveryLog.session,
         ));
       const msgContent = JSON.stringify({
         rxID,
@@ -158,49 +214,36 @@ exports.postLog = async (req, res, next) => {
       rxIDs: log.dRxes.map((dRx) => dRx.rxID),
     });
     await sendToQueue(queue_delivery_ship, msgContent);
-    return res.sendStatus(200);
+    return res.send({ date: log.date, session: log.session });
   } catch (error) {
     next(error);
   }
 };
 
-// const RECEIPT_COUNT_PER_PAGE = 40;
 exports.getReceipt = async (req, res, next) => {
   const { date, session } = req.params;
   const { _id, name, address, city, state, zip, phone, invoiceCode } =
     res.locals.station;
   try {
-    const log = await dlvry.findDeliveryLog(date, _id, session);
-    if (log === null) {
-      return res.status(404).send({ code: 404, message: "Not Found" });
-    }
+    const log = await delivery.findDeliveryLog(date, _id, session);
+    const items = delivery.deliveryRows(log.dRxes);
     const count = log.dRxes.length;
-    const items = [];
-    const dRxes = await dlvry.mapDeliveryLogs(log.dRxes);
-    const pages = Math.ceil(count / RECEIPT_COUNT_PER_PAGE);
-    for (let i = 0; i < pages; i++) {
-      items.push(dRxes.splice(0, RECEIPT_COUNT_PER_PAGE));
-    }
-    return res.status(200).send({
-      code: 200,
-      data: {
-        pages: pages.toString(),
-        count: count.toString(),
-        due: log.due,
-        date,
-        session,
-        station: {
-          name,
-          address1: address,
-          address2: `${city}, ${state} ${zip}`,
-          phone,
-          code: invoiceCode,
-        },
-        items,
+    return res.send({
+      count: count.toString(),
+      due: log.due,
+      date,
+      session,
+      station: {
+        name,
+        address1: address,
+        address2: `${city}, ${state} ${zip}`,
+        phone,
+        code: invoiceCode,
       },
+      items,
     });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 };
 
